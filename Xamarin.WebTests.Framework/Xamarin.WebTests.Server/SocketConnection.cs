@@ -63,6 +63,8 @@ namespace Xamarin.WebTests.Server
 			Socket = socket;
 		}
 
+		public event EventHandler ClosedEvent;
+
 		public override async Task Initialize (TestContext ctx, CancellationToken cancellationToken)
 		{
 			if (Server.Delegate != null)
@@ -133,6 +135,8 @@ namespace Xamarin.WebTests.Server
 
 		protected override void Close ()
 		{
+			ClosedEvent?.Invoke (this, EventArgs.Empty);
+
 			if (reader != null) {
 				reader.Dispose ();
 				reader = null;

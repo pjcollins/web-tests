@@ -142,6 +142,11 @@ namespace Xamarin.WebTests.Server {
 			}
 		}
 
+		public virtual void CloseAll ()
+		{
+			cts.Cancel ();
+		}
+
 		public async Task Stop ()
 		{
 			TestContext.LogDebug (5, $"{ME}: STOP: {this}");

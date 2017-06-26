@@ -279,6 +279,8 @@ namespace Xamarin.WebTests.TestRunners
 					throw;
 				}
 			}
+
+			Server.CloseAll ();
 		}
 
 		Handler CreateHandler (TestContext ctx, bool primary)

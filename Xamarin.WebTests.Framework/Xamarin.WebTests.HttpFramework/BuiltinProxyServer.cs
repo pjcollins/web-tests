@@ -99,6 +99,12 @@ namespace Xamarin.WebTests.HttpFramework {
 			}
 		}
 
+		public override void CloseAll ()
+		{
+			currentListener.CloseAll ();
+			Target.CloseAll ();
+		}
+
 		public override Task StartParallel (TestContext ctx, CancellationToken cancellationToken)
 		{
 			throw new NotSupportedException ();

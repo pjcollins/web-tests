@@ -145,6 +145,8 @@ namespace Xamarin.WebTests.HttpFramework {
 
 		public abstract Task Stop (TestContext ctx, CancellationToken cancellationToken);
 
+		public abstract void CloseAll ();
+
 		#endregion
 
 		internal async Task<bool> InitializeConnection (TestContext ctx, HttpConnection connection, CancellationToken cancellationToken)
