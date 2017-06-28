@@ -89,7 +89,7 @@ namespace Xamarin.WebTests.TestRunners
 			};
 		}
 
-		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.Get404;
+		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.CancelMainWhileQueued;
 
 		static readonly HttpInstrumentationTestType[] WorkingTests = {
 			HttpInstrumentationTestType.Simple,
@@ -554,7 +554,8 @@ namespace Xamarin.WebTests.TestRunners
 
 		Stream IHttpServerDelegate.CreateNetworkStream (TestContext ctx, Socket socket, bool ownsSocket)
 		{
-			var instrumentation = new StreamInstrumentation (ctx, Parameters.Identifier, socket, ownsSocket);
+			var me = $"{Parameters.Identifier}:{serverInstrumentation == null}:{socket.RemoteEndPoint}";
+			var instrumentation = new StreamInstrumentation (ctx, me, socket, ownsSocket);
 			var old = Interlocked.CompareExchange (ref serverInstrumentation, instrumentation, null);
 			InstallReadHandler (ctx, old == null, instrumentation);
 			return instrumentation;
@@ -685,6 +686,7 @@ namespace Xamarin.WebTests.TestRunners
 					var request = await operation.WaitForRequest ().ConfigureAwait (false);
 					// Wait a bit to make sure the request has been queued.
 					await Task.Delay (2500).ConfigureAwait (false);
+					instrumentation.Dispose ();
 					currentOperation.Request.Request.Abort ();
 				}
 				break;
