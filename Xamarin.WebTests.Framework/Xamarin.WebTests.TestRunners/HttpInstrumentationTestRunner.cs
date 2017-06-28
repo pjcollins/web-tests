@@ -89,7 +89,7 @@ namespace Xamarin.WebTests.TestRunners
 			};
 		}
 
-		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.ReuseConnection2;
+		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.Get404;
 
 		static readonly HttpInstrumentationTestType[] WorkingTests = {
 			HttpInstrumentationTestType.Simple,
@@ -214,6 +214,10 @@ namespace Xamarin.WebTests.TestRunners
 				expectedStatus = HttpStatusCode.InternalServerError;
 				expectedError = WebExceptionStatus.RequestCanceled;
 				break;
+			case HttpInstrumentationTestType.Get404:
+				expectedStatus = HttpStatusCode.NotFound;
+				expectedError = WebExceptionStatus.ProtocolError;
+				break;
 			default:
 				expectedStatus = HttpStatusCode.OK;
 				expectedError = WebExceptionStatus.Success;
@@ -297,7 +301,7 @@ namespace Xamarin.WebTests.TestRunners
 				return new HttpInstrumentationHandler (this, null, !primary);
 			case HttpInstrumentationTestType.ReuseConnection2:
 				if (primary)
-					return new HttpInstrumentationHandler (this, null, false);
+					return new HttpInstrumentationHandler (this, HttpContent.HelloWorld, false);
 				return new HttpInstrumentationHandler (this, HttpContent.HelloWorld, true);
 			case HttpInstrumentationTestType.SimplePost:
 				return postHello;
@@ -309,6 +313,8 @@ namespace Xamarin.WebTests.TestRunners
 				return new RedirectHandler (postHello, HttpStatusCode.TemporaryRedirect);
 			case HttpInstrumentationTestType.NtlmChunked:
 				return new AuthenticationHandler (AuthenticationType.NTLM, chunkedPost);
+			case HttpInstrumentationTestType.Get404:
+				return new GetHandler (EffectiveType.ToString (), null, HttpStatusCode.NotFound);
 			default:
 				return hello;
 			}
@@ -590,6 +596,7 @@ namespace Xamarin.WebTests.TestRunners
 			switch (EffectiveType) {
 			case HttpInstrumentationTestType.Simple:
 			case HttpInstrumentationTestType.SimplePost:
+			case HttpInstrumentationTestType.Get404:
 				ctx.Assert (primary, "Primary request");
 				break;
 
