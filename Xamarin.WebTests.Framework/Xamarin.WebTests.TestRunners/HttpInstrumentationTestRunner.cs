@@ -274,9 +274,9 @@ namespace Xamarin.WebTests.TestRunners
 				secondOperation = StartSecond (ctx, cancellationToken, CreateHandler (ctx, false));
 				break;
 			case HttpInstrumentationTestType.CloseIdleConnection:
-				ctx.LogDebug (5, $"${me}: active connections: {currentOperation.ServicePoint.CurrentConnections}");
+				ctx.LogDebug (5, $"{me}: active connections: {currentOperation.ServicePoint.CurrentConnections}");
 				await Task.Delay ((int)(Parameters.IdleTime * 2.5)).ConfigureAwait (false);
-				ctx.LogDebug (5, $"${me}: active connections #1: {currentOperation.ServicePoint.CurrentConnections}");
+				ctx.LogDebug (5, $"{me}: active connections #1: {currentOperation.ServicePoint.CurrentConnections}");
 				break;
 			}
 
@@ -357,7 +357,7 @@ namespace Xamarin.WebTests.TestRunners
 		async Task HandleRequest (
 			TestContext ctx, HttpInstrumentationHandler handler,
 			HttpConnection connection, HttpRequest request,
-			CancellationToken cancellationToken)
+			AuthenticationState state, CancellationToken cancellationToken)
 		{
 			if (EffectiveType == HttpInstrumentationTestType.DummyDontUse)
 				await Task.Yield ();
@@ -368,10 +368,19 @@ namespace Xamarin.WebTests.TestRunners
 				if (handler == firstHandler)
 					return;
 				ctx.Assert (connection.RemoteEndPoint, Is.EqualTo (firstHandler.RemoteEndPoint), "RemoteEndPoint");
+				return;
 			}
 
 			if (EffectiveType == HttpInstrumentationTestType.ParallelNtlm) {
-				ctx.LogDebug (2, $"{handler.Message} TEST: ${request}");
+				var firstHandler = (HttpInstrumentationHandler)currentOperation.Handler;
+				ctx.LogDebug (2, $"{handler.Message}: TEST {state} {handler == firstHandler} {handler.RemoteEndPoint}");
+				if (handler != firstHandler || state != AuthenticationState.Challenge)
+					return;
+
+				var newHandler = (HttpInstrumentationHandler)firstHandler.Clone ();
+				var operation = await StartParallel (ctx, cancellationToken, newHandler).ConfigureAwait (false);
+				if (Interlocked.CompareExchange (ref queuedOperation, operation, null) != null)
+					throw ctx.AssertFail ("Invalid nested call");
 			}
 		}
 
@@ -511,6 +520,7 @@ namespace Xamarin.WebTests.TestRunners
 				case HttpInstrumentationTestType.ManyParallelRequestsStress:
 				case HttpInstrumentationTestType.ReuseConnection:
 				case HttpInstrumentationTestType.ReuseConnection2:
+				case HttpInstrumentationTestType.ParallelNtlm:
 					break;
 				default:
 					throw ctx.AssertFail (Parent.EffectiveType);
@@ -864,11 +874,15 @@ namespace Xamarin.WebTests.TestRunners
 				RequestFlags effectiveFlags, CancellationToken cancellationToken)
 			{
 				var me = $"{Message}.{nameof (HandleNtlmRequest)}";
-				ctx.LogDebug (3, $"${me}: {connection.RemoteEndPoint}");
+				ctx.LogDebug (3, $"{me}: {connection.RemoteEndPoint}");
 
 				AuthenticationState state;
 				var response = AuthManager.HandleAuthentication (ctx, connection, request, out state);
-				ctx.LogDebug (3, $"${me}: {connection.RemoteEndPoint} - {state} {response}");
+				ctx.LogDebug (3, $"{me}: {connection.RemoteEndPoint} - {state} {response}");
+
+				await TestRunner.HandleRequest (
+					ctx, this, connection, request, state, cancellationToken).ConfigureAwait (false);
+
 				if (response != null) {
 					connection.Server.RegisterHandler (request.Path, this);
 					return response;
@@ -883,7 +897,6 @@ namespace Xamarin.WebTests.TestRunners
 				RequestFlags effectiveFlags, CancellationToken cancellationToken)
 			{
 				RemoteEndPoint = connection.RemoteEndPoint;
-				await TestRunner.HandleRequest (ctx, this, connection, request, cancellationToken).ConfigureAwait (false);
 
 				switch (TestRunner.EffectiveType) {
 				case HttpInstrumentationTestType.ReuseConnection:
@@ -903,6 +916,8 @@ namespace Xamarin.WebTests.TestRunners
 					throw ctx.AssertFail (TestRunner.EffectiveType);
 				}
 
+				await TestRunner.HandleRequest (
+					ctx, this, connection, request, AuthenticationState.None, cancellationToken).ConfigureAwait (false);
 				return HttpResponse.CreateSuccess (Message);
 			}
 
