@@ -95,7 +95,7 @@ namespace Xamarin.WebTests.TestRunners
 			ME = $"{GetType ().Name}({EffectiveType})";
 		}
 
-		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.NtlmInstrumentation;
+		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.SimpleNtlm;
 
 		static readonly HttpInstrumentationTestType[] WorkingTests = {
 			HttpInstrumentationTestType.Simple,
@@ -312,7 +312,9 @@ namespace Xamarin.WebTests.TestRunners
 			switch (EffectiveType) {
 			case HttpInstrumentationTestType.SimpleNtlm:
 			case HttpInstrumentationTestType.NtlmWhileQueued:
-				return new AuthenticationHandler (AuthenticationType.NTLM, hello);
+				return new AuthenticationHandler (AuthenticationType.NTLM, hello) {
+					Flags = RequestFlags.KeepAlive
+				};
 			case HttpInstrumentationTestType.ReuseConnection:
 				return new HttpInstrumentationHandler (this, null, !primary);
 			case HttpInstrumentationTestType.ReuseConnection2:

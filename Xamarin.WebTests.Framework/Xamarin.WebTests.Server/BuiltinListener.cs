@@ -114,9 +114,11 @@ namespace Xamarin.WebTests.Server {
 			var connection = task.Result;
 
 			MainLoop (connection, cts.Token).ContinueWith (t => {
-				TestContext.LogDebug (5, $"{ME}: MAIN LOOP DONE: {t.Status}");
-				if (t.IsFaulted)
+				TestContext.LogDebug (5, $"{ME}: MAIN LOOP DONE: {connection.RemoteEndPoint} {t.Status} {t.Exception?.Message}");
+				if (t.IsFaulted) {
+					TestContext.LogDebug (5, $"{ME}: MAIN LOOP DONE - EX: {connection.RemoteEndPoint} {t.Exception}");
 					TestContext.AddException (ref currentError, t);
+				}
 				if (t.IsCompleted)
 					connection.Dispose ();
 
@@ -214,16 +216,20 @@ namespace Xamarin.WebTests.Server {
 				return;
 
 			while (!cancellationToken.IsCancellationRequested) {
-				TestContext.LogDebug (5, $"{ME}: MAIN LOOP");
+				TestContext.LogDebug (5, $"{ME}: MAIN LOOP: {connection.RemoteEndPoint}");
 				var wantToReuse = await HandleConnection (connection, cancellationToken);
-				TestContext.LogDebug (5, $"{ME}: MAIN LOOP #1: {wantToReuse}");
+				TestContext.LogDebug (5, $"{ME}: MAIN LOOP #1: {connection.RemoteEndPoint} {wantToReuse}");
 				if (!wantToReuse || cancellationToken.IsCancellationRequested)
 					break;
-
+	
 				bool connectionAvailable = connection.IsStillConnected ();
-				TestContext.LogDebug (5, $"{ME}: MAIN LOOP #2: {connectionAvailable} {closed} {cancellationToken.IsCancellationRequested}");
+				TestContext.LogDebug (5, $"{ME}: MAIN LOOP #2: {connection.RemoteEndPoint} {connectionAvailable} {closed} {cancellationToken.IsCancellationRequested}");
 				if (!closed && !connectionAvailable && !cancellationToken.IsCancellationRequested)
-					throw new ConnectionException ("Expecting another connection, but socket has been shut down.");
+				{
+					TestContext.LogMessage ("Expecting another connection, but socket has been shut down.");
+					// throw new ConnectionException ("Expecting another connection, but socket has been shut down.");
+					return;
+				}
 			}
 		}
 	}
