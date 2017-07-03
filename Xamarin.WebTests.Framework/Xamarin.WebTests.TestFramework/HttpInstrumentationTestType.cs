@@ -51,6 +51,8 @@ namespace Xamarin.WebTests.TestFramework
 		ReuseConnection2,
 		Get404,
 		CloseIdleConnection,
+		NtlmInstrumentation,
+		NtlmClosesConnection,
 		DummyDontUse
 	}
 }

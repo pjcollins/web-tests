@@ -89,7 +89,7 @@ namespace Xamarin.WebTests.TestRunners
 			};
 		}
 
-		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.CloseIdleConnection;
+		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.NtlmInstrumentation;
 
 		static readonly HttpInstrumentationTestType[] WorkingTests = {
 			HttpInstrumentationTestType.Simple,
@@ -333,6 +333,9 @@ namespace Xamarin.WebTests.TestRunners
 				return new GetHandler (EffectiveType.ToString (), null, HttpStatusCode.NotFound);
 			case HttpInstrumentationTestType.CloseIdleConnection:
 				return new HttpInstrumentationHandler (this, null, false);
+			case HttpInstrumentationTestType.NtlmInstrumentation:
+			case HttpInstrumentationTestType.NtlmClosesConnection:
+				return new HttpInstrumentationHandler (this, null, true);
 			default:
 				return hello;
 			}
@@ -715,6 +718,8 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.SimpleRedirect:
 			case HttpInstrumentationTestType.PostRedirect:
 			case HttpInstrumentationTestType.NtlmChunked:
+			case HttpInstrumentationTestType.NtlmInstrumentation:
+			case HttpInstrumentationTestType.NtlmClosesConnection:
 				break;
 
 			case HttpInstrumentationTestType.NtlmWhileQueued:
@@ -760,6 +765,18 @@ namespace Xamarin.WebTests.TestRunners
 				private set;
 			}
 
+			public Handler Target {
+				get;
+			}
+
+			public HttpAuthManager AuthManager {
+				get;
+			}
+
+			public ICredentials Credentials {
+				get;
+			}
+
 			public HttpInstrumentationHandler (HttpInstrumentationTestRunner parent, HttpContent content, bool closeConnection)
 				: base (parent.EffectiveType.ToString ())
 			{
@@ -770,25 +787,72 @@ namespace Xamarin.WebTests.TestRunners
 				Flags = RequestFlags.KeepAlive;
 				if (closeConnection)
 					Flags |= RequestFlags.CloseConnection;
+
+				switch (parent.EffectiveType) {
+				case HttpInstrumentationTestType.NtlmInstrumentation:
+				case HttpInstrumentationTestType.NtlmClosesConnection:
+					Credentials = new NetworkCredential ("xamarin", "monkey");
+					Target = new HelloWorldHandler (Message);
+					AuthManager = new HttpAuthManager (this, AuthenticationType.NTLM, Target);
+					break;
+				}
+			}
+
+			HttpInstrumentationHandler (HttpInstrumentationHandler other)
+				: base (other.Value)
+			{
+				TestRunner = other.TestRunner;
+				Content = other.Content;
+				CloseConnection = CloseConnection;
+				Message = other.Message;
+				Flags = other.Flags;
+				Credentials = other.Credentials;
+				Target = other.Target;
+				AuthManager = other.AuthManager;
 			}
 
 			public override object Clone ()
 			{
-				return new HttpInstrumentationHandler (TestRunner, Content, CloseConnection);
+				return new HttpInstrumentationHandler (this);
 			}
 
 			public override void ConfigureRequest (Request request, Uri uri)
 			{
-				if (TestRunner.EffectiveType == HttpInstrumentationTestType.ReuseConnection2) {
+				if (Credentials != null)
+					request.SetCredentials (Credentials);
+
+				switch (TestRunner.EffectiveType) {
+				case HttpInstrumentationTestType.ReuseConnection2:
 					request.Method = "POST";
 
 					if (Content != null) {
 						request.SetContentType ("text/plain");
 						request.Content = Content.RemoveTransferEncoding ();
 					}
+					break;
+
+				case HttpInstrumentationTestType.NtlmInstrumentation:
+				case HttpInstrumentationTestType.NtlmClosesConnection:
+					break;
 				}
 
 				base.ConfigureRequest (request, uri);
+			}
+
+			async Task<HttpResponse> HandleNtlmRequest (
+				TestContext ctx, HttpConnection connection, HttpRequest request,
+				RequestFlags effectiveFlags, CancellationToken cancellationToken)
+			{
+				string authHeader;
+				if (!request.Headers.TryGetValue ("Authorization", out authHeader))
+					authHeader = null;
+
+				var response = AuthManager.HandleAuthentication (ctx, connection, request, authHeader);
+				if (response != null)
+					return response;
+
+				cancellationToken.ThrowIfCancellationRequested ();
+				return await Target.HandleRequest (ctx, connection, request, effectiveFlags, cancellationToken);
 			}
 
 			protected internal override async Task<HttpResponse> HandleRequest (
@@ -803,6 +867,11 @@ namespace Xamarin.WebTests.TestRunners
 				case HttpInstrumentationTestType.ReuseConnection2:
 					ctx.Assert (request.Method, Is.EqualTo ("POST"), "method");
 					break;
+				case HttpInstrumentationTestType.NtlmInstrumentation:
+				case HttpInstrumentationTestType.NtlmClosesConnection:
+					return await HandleNtlmRequest (
+						ctx, connection, request, effectiveFlags, cancellationToken).ConfigureAwait (false);
+
 				default:
 					throw ctx.AssertFail (TestRunner.EffectiveType);
 				}
@@ -814,6 +883,8 @@ namespace Xamarin.WebTests.TestRunners
 
 			public override bool CheckResponse (TestContext ctx, Response response)
 			{
+				if (Target != null)
+					return Target.CheckResponse (ctx, response);
 				if (!ctx.Expect (response.Content, Is.Not.Null, "response.Content != null"))
 					return false;
 				if (!ctx.Expect (response.Content.Length, Is.EqualTo (Message.Length), "response.Content.Length"))
@@ -821,6 +892,41 @@ namespace Xamarin.WebTests.TestRunners
 				if (!ctx.Expect (response.Content.AsString (), Is.EqualTo (Message), "response.Content.AsString()"))
 					return false;
 				return true;
+			}
+		}
+
+		class HttpAuthManager : AuthenticationManager
+		{
+			public HttpInstrumentationHandler Handler {
+				get;
+			}
+			public Handler Target {
+				get;
+			}
+
+			public HttpAuthManager (HttpInstrumentationHandler handler, AuthenticationType type, Handler target)
+				: base (type)
+			{
+				Handler = handler;
+				Target = target;
+			}
+
+			protected override HttpResponse OnError (string message)
+			{
+				return HttpResponse.CreateError (message);
+			}
+
+			protected override HttpResponse OnUnauthenticated (HttpConnection connection, HttpRequest request, string token, bool omitBody)
+			{
+				var handler = (HttpInstrumentationHandler)Handler.Clone ();
+				if (omitBody)
+					handler.Flags |= RequestFlags.NoBody;
+				handler.Flags |= RequestFlags.Redirected;
+				connection.Server.RegisterHandler (request.Path, handler);
+
+				var response = new HttpResponse (HttpStatusCode.Unauthorized);
+				response.AddHeader ("WWW-Authenticate", token);
+				return response;
 			}
 		}
 	}

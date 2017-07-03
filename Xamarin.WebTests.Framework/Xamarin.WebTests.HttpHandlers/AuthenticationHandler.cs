@@ -120,7 +120,7 @@ namespace Xamarin.WebTests.HttpHandlers
 		public override void ConfigureRequest (Request request, Uri uri)
 		{
 			base.ConfigureRequest (request, uri);
-			request.SetCredentials (new NetworkCredential ("xamarin", "monkey"));
+			request.SetCredentials (GetCredentials ());
 		}
 
 		public ICredentials GetCredentials ()
