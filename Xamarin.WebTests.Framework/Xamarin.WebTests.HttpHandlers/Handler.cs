@@ -129,7 +129,7 @@ namespace Xamarin.WebTests.HttpHandlers
 			HttpResponse response;
 
 			try {
-				Debug (ctx, 1, "HANDLE REQUEST");
+				Debug (ctx, 1, $"HANDLE REQUEST: {connection.RemoteEndPoint}");
 				DumpHeaders (ctx, request);
 				connection.Server.CheckEncryption (ctx, connection.SslStream);
 				response = await HandleRequest (ctx, connection, request, Flags, cancellationToken);
@@ -151,11 +151,10 @@ namespace Xamarin.WebTests.HttpHandlers
 					await connection.WriteResponse (ctx, response, cancellationToken);
 				}
 
-				Debug (ctx, 1, "HANDLE REQUEST DONE", response);
+				var keepAlive = (response.KeepAlive ?? false) && ((Flags & RequestFlags.CloseConnection) == 0);
+				Debug (ctx, 1, $"HANDLE REQUEST DONE: {connection.RemoteEndPoint} {keepAlive}", response);
 				DumpHeaders (ctx, response);
-				if ((Flags & RequestFlags.CloseConnection) != 0)
-					return false;
-				return response.KeepAlive ?? false;
+				return keepAlive;
 			} catch (AssertionException ex) {
 				originalError = ex;
 				response = HttpResponse.CreateError (ex.Message);
