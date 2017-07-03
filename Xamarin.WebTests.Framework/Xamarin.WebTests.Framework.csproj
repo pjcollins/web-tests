@@ -195,7 +195,6 @@
     <Compile Include="Xamarin.WebTests.HttpHandlers\DelayHandler.cs" />
     <Compile Include="Xamarin.WebTests.HttpHandlers\AbortHandler.cs" />
     <Compile Include="Xamarin.WebTests.TestRunners\HttpInstrumentationTestRunner.cs" />
-    <Compile Include="Xamarin.WebTests.HttpHandlers\HttpInstrumentationHandler.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\HttpInstrumentationTestType.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\HttpInstrumentationTestRunnerAttribute.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\HttpInstrumentationTestParameters.cs" />

@@ -844,7 +844,7 @@ namespace Xamarin.WebTests.TestRunners
 				RequestFlags effectiveFlags, CancellationToken cancellationToken)
 			{
 				var me = $"{Message}.{nameof (HandleNtlmRequest)}";
-				ctx.LogDebug (5, $"${me}: {connection.RemoteEndPoint}");
+				ctx.LogDebug (3, $"${me}: {connection.RemoteEndPoint}");
 
 				string authHeader;
 				if (!request.Headers.TryGetValue ("Authorization", out authHeader))
