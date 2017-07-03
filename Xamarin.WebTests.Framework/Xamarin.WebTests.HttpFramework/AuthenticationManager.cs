@@ -73,9 +73,6 @@ namespace Xamarin.WebTests.HttpFramework
 			Credentials = credentials;
 		}
 
-		bool haveChallenge;
-		bool complete;
-
 		HttpResponse OnError (string format, params object[] args)
 		{
 			return OnError (string.Format (format, args));
@@ -100,7 +97,7 @@ namespace Xamarin.WebTests.HttpFramework
 		}
 
 		public HttpResponse HandleAuthentication (TestContext ctx, HttpConnection connection, HttpRequest request,
-		                                          out AuthenticationState state)
+							  out AuthenticationState state)
 		{
 			string authHeader;
 			if (!request.Headers.TryGetValue (RequestAuthHeader, out authHeader))
@@ -116,25 +113,7 @@ namespace Xamarin.WebTests.HttpFramework
 				return OnError ("Must not contain any auth header.");
 			}
 
-			if (request.Method == "GET" || request.Method == "HEAD" || request.Body == null) {
-				if (request.Headers.TryGetValue ("Transfer-Encoding", out string transferEncoding))
-					ctx.AssertFail ($"Must not send 'Transfer-Encoding' header with '${request.Method}' request.");
-				if (request.Headers.TryGetValue ("Content-Length", out string contentLength))
-					ctx.AssertFail ($"Must not send 'Content-Length' header with '${request.Method}' request.");
-			} else if (haveChallenge && !complete) {
-				if (request.Headers.TryGetValue ("Content-Length", out string contentLength))
-					ctx.Assert (int.Parse (contentLength), Is.EqualTo (0), "Must send zero-length content with NTLM challenge.");
-				else
-					ctx.AssertFail ("Must send 'Content-Length: 0' with NTLM challenge.");
-			} else {
-				if (request.Headers.TryGetValue ("Transfer-Encoding", out string transferEncoding))
-					ctx.Assert (transferEncoding, Is.EqualTo ("chunked"), "Transfer-Encoding");
-				else if (!request.Headers.TryGetValue ("Content-Length", out string contentLength))
-					ctx.AssertFail ("Need either 'Transfer-Encoding' or 'Content-Length'");
-			}
-
 			if (authHeader == null) {
-				haveChallenge = false;
 				state = AuthenticationState.Unauthenticated;
 				return OnUnauthenticated (ctx, connection, request, AuthenticationType.ToString ());
 			}
@@ -168,13 +147,10 @@ namespace Xamarin.WebTests.HttpFramework
 			}
 
 			var handler = DependencyInjector.Get<NTLMHandler> ();
-			if (handler.HandleNTLM (ref bytes, ref haveChallenge)) {
+			if (handler.HandleNTLM (ref bytes)) {
 				state = AuthenticationState.Authenticated;
 				return null;
 			}
-
-			if (haveChallenge)
-				complete = true;
 
 			state = AuthenticationState.Challenge;
 

@@ -29,6 +29,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Xamarin.AsyncTests;
+using Xamarin.AsyncTests.Constraints;
 
 namespace Xamarin.WebTests.HttpHandlers
 {
@@ -84,6 +85,24 @@ namespace Xamarin.WebTests.HttpHandlers
 		{
 			AuthenticationState state;
 			var response = Manager.HandleAuthentication (ctx, connection, request, out state);
+
+			if (request.Method == "GET" || request.Method == "HEAD" || request.Body == null) {
+				if (request.Headers.TryGetValue ("Transfer-Encoding", out string transferEncoding))
+					ctx.AssertFail ($"Must not send 'Transfer-Encoding' header with '${request.Method}' request.");
+				if (request.Headers.TryGetValue ("Content-Length", out string contentLength))
+					ctx.AssertFail ($"Must not send 'Content-Length' header with '${request.Method}' request.");
+			} else if (state == AuthenticationState.Challenge) {
+				if (request.Headers.TryGetValue ("Content-Length", out string contentLength))
+					ctx.Assert (int.Parse (contentLength), Is.EqualTo (0), "Must send zero-length content with NTLM challenge.");
+				else
+					ctx.AssertFail ("Must send 'Content-Length: 0' with NTLM challenge.");
+			} else {
+				if (request.Headers.TryGetValue ("Transfer-Encoding", out string transferEncoding))
+					ctx.Assert (transferEncoding, Is.EqualTo ("chunked"), "Transfer-Encoding");
+				else if (!request.Headers.TryGetValue ("Content-Length", out string contentLength))
+					ctx.AssertFail ("Need either 'Transfer-Encoding' or 'Content-Length'");
+			}
+
 			if (response != null) {
 				connection.Server.RegisterHandler (request.Path, this);
 				return response;

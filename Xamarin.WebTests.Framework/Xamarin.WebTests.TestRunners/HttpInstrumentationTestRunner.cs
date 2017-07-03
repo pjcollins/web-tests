@@ -381,6 +381,8 @@ namespace Xamarin.WebTests.TestRunners
 				var operation = await StartParallel (ctx, cancellationToken, newHandler).ConfigureAwait (false);
 				if (Interlocked.CompareExchange (ref queuedOperation, operation, null) != null)
 					throw ctx.AssertFail ("Invalid nested call");
+				await operation.WaitForRequest ();
+				// await operation.WaitForCompletion (false).ConfigureAwait (false);
 			}
 		}
 
