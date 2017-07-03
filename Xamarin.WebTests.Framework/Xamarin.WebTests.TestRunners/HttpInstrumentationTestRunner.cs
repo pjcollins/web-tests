@@ -306,15 +306,16 @@ namespace Xamarin.WebTests.TestRunners
 		Handler CreateHandler (TestContext ctx, bool primary)
 		{
 			var hello = new HelloWorldHandler (EffectiveType.ToString ());
+			var helloKeepAlive = new HelloWorldHandler (EffectiveType.ToString ()) {
+				Flags = RequestFlags.KeepAlive
+			};
 			var postHello = new PostHandler (EffectiveType.ToString (), HttpContent.HelloWorld);
 			var chunkedPost = new PostHandler (EffectiveType.ToString (), HttpContent.HelloChunked, TransferMode.Chunked);
 
 			switch (EffectiveType) {
 			case HttpInstrumentationTestType.SimpleNtlm:
 			case HttpInstrumentationTestType.NtlmWhileQueued:
-				return new AuthenticationHandler (AuthenticationType.NTLM, hello) {
-					Flags = RequestFlags.KeepAlive
-				};
+				return new AuthenticationHandler (AuthenticationType.NTLM, helloKeepAlive);
 			case HttpInstrumentationTestType.ReuseConnection:
 				return new HttpInstrumentationHandler (this, null, !primary);
 			case HttpInstrumentationTestType.ReuseConnection2:

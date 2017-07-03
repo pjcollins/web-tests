@@ -39,10 +39,26 @@ namespace Xamarin.WebTests.HttpHandlers
 	{
 		bool cloneable;
 
+		public AuthenticationType AuthenticationType {
+			get;
+		}
+
 		public AuthenticationHandler (AuthenticationType type, Handler target, string identifier = null)
 			: base (target, identifier ?? CreateIdentifier (type, target))
 		{
-			manager = new HttpAuthManager (type, target);
+			AuthenticationType = type;
+			if ((target.Flags & RequestFlags.KeepAlive) != 0)
+				Flags |= RequestFlags.KeepAlive;
+			manager = new HttpAuthManager (this);
+			cloneable = true;
+		}
+
+		AuthenticationHandler (AuthenticationHandler other)
+			: base ((Handler)other.Target.Clone (), other.Value)
+		{
+			AuthenticationType = other.AuthenticationType;
+			Flags = other.Flags;
+			manager = new HttpAuthManager (this);
 			cloneable = true;
 		}
 
@@ -52,8 +68,11 @@ namespace Xamarin.WebTests.HttpHandlers
 		}
 
 		AuthenticationHandler (HttpAuthManager manager)
-			: base (manager.Target, manager.Target.Value)
+			: base (manager.Handler.Target, manager.Handler.Target.Value)
 		{
+			AuthenticationType = manager.Handler.AuthenticationType;
+			if ((Target.Flags & RequestFlags.KeepAlive) != 0)
+				Flags |= RequestFlags.KeepAlive;
 			this.manager = manager;
 		}
 
@@ -61,18 +80,19 @@ namespace Xamarin.WebTests.HttpHandlers
 		{
 			if (!cloneable)
 				throw new InternalErrorException ();
-			var clonedTarget = (Handler)Target.Clone ();
-			return new AuthenticationHandler (manager.AuthenticationType, clonedTarget, Value);
+			return new AuthenticationHandler (this);
 		}
 
 		class HttpAuthManager : AuthenticationManager
 		{
-			public readonly Handler Target;
+			public AuthenticationHandler Handler {
+				get;
+			}
 
-			public HttpAuthManager (AuthenticationType type, Handler target)
-				: base (type)
+			public HttpAuthManager (AuthenticationHandler handler)
+				: base (handler.AuthenticationType)
 			{
-				Target = target;
+				Handler = handler;
 			}
 
 			protected override HttpResponse OnError (string message)
