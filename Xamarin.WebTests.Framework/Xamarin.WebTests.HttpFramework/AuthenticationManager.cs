@@ -35,9 +35,10 @@ namespace Xamarin.WebTests.HttpFramework
 
 	public enum AuthenticationState
 	{
+		None,
+		Unauthenticated,
+		Challenge,
 		Authenticated,
-		ResendRequest,
-		ResendRequestWithoutBody,
 		Error
 	}
 
@@ -85,8 +86,7 @@ namespace Xamarin.WebTests.HttpFramework
 			return HttpResponse.CreateError (message);
 		}
 
-		protected HttpResponse OnUnauthenticated (TestContext ctx, HttpConnection connection,
-		                                          HttpRequest request, string token, bool omitBody)
+		HttpResponse OnUnauthenticated (TestContext ctx, HttpConnection connection, HttpRequest request, string token)
 		{
 			var response = new HttpResponse (UnauthorizedStatus);
 			response.AddHeader (ResponseAuthHeader, token);
@@ -99,7 +99,8 @@ namespace Xamarin.WebTests.HttpFramework
 				request.SetCredentials (Credentials);
 		}
 
-		public HttpResponse HandleAuthentication (TestContext ctx, HttpConnection connection, HttpRequest request)
+		public HttpResponse HandleAuthentication (TestContext ctx, HttpConnection connection, HttpRequest request,
+		                                          out AuthenticationState state)
 		{
 			string authHeader;
 			if (!request.Headers.TryGetValue (RequestAuthHeader, out authHeader))
@@ -107,8 +108,11 @@ namespace Xamarin.WebTests.HttpFramework
 
 			if (AuthenticationType == AuthenticationType.ForceNone) {
 				// Must not contain any auth header
-				if (authHeader == null)
+				if (authHeader == null) {
+					state = AuthenticationState.None;
 					return null;
+				}
+				state = AuthenticationState.Error;
 				return OnError ("Must not contain any auth header.");
 			}
 
@@ -131,38 +135,51 @@ namespace Xamarin.WebTests.HttpFramework
 
 			if (authHeader == null) {
 				haveChallenge = false;
-				return OnUnauthenticated (ctx, connection, request, AuthenticationType.ToString (), AuthenticationType == AuthenticationType.NTLM);
+				state = AuthenticationState.Unauthenticated;
+				return OnUnauthenticated (ctx, connection, request, AuthenticationType.ToString ());
 			}
 
 			int pos = authHeader.IndexOf (' ');
 			var mode = authHeader.Substring (0, pos);
 			var arg = authHeader.Substring (pos + 1);
 
-			if (!mode.Equals (AuthenticationType.ToString ()))
+			if (!mode.Equals (AuthenticationType.ToString ())) {
+				state = AuthenticationState.Error;
 				return OnError ("Invalid authentication scheme: {0}", mode);
+			}
 
 			if (mode.Equals ("Basic")) {
-				if (arg.Equals ("eGFtYXJpbjptb25rZXk="))
+				if (arg.Equals ("eGFtYXJpbjptb25rZXk=")) {
+					state = AuthenticationState.Authenticated;
 					return null;
+				}
+				state = AuthenticationState.Error;
 				return OnError ("Invalid Basic Authentication header");
 			} else if (!mode.Equals ("NTLM")) {
+				state = AuthenticationState.Error;
 				return OnError ("Invalid authentication scheme: {0}", mode);
 			}
 
 			var bytes = Convert.FromBase64String (arg);
 
-			if (!DependencyInjector.IsAvailable (typeof(NTLMHandler)))
+			if (!DependencyInjector.IsAvailable (typeof (NTLMHandler))) {
+				state = AuthenticationState.Error;
 				return OnError ("NTLM Support not available.");
+			}
 
 			var handler = DependencyInjector.Get<NTLMHandler> ();
-			if (handler.HandleNTLM (ref bytes, ref haveChallenge))
+			if (handler.HandleNTLM (ref bytes, ref haveChallenge)) {
+				state = AuthenticationState.Authenticated;
 				return null;
+			}
 
 			if (haveChallenge)
 				complete = true;
 
+			state = AuthenticationState.Challenge;
+
 			var token = "NTLM " + Convert.ToBase64String (bytes);
-			return OnUnauthenticated (ctx, connection, request, token, false);
+			return OnUnauthenticated (ctx, connection, request, token);
 		}
 	}
 }

@@ -66,7 +66,8 @@ namespace Xamarin.WebTests.Server
 			request.AddHeader ("X-Forwarded-For", remoteAddress);
 
 			if (AuthenticationManager != null) {
-				var response = AuthenticationManager.HandleAuthentication (TestContext, connection, request);
+				AuthenticationState state;
+				var response = AuthenticationManager.HandleAuthentication (TestContext, connection, request, out state);
 				if (response != null) {
 					await connection.WriteResponse (TestContext, response, cancellationToken);
 					return false;

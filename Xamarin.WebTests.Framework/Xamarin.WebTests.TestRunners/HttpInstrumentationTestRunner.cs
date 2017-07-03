@@ -369,6 +369,10 @@ namespace Xamarin.WebTests.TestRunners
 					return;
 				ctx.Assert (connection.RemoteEndPoint, Is.EqualTo (firstHandler.RemoteEndPoint), "RemoteEndPoint");
 			}
+
+			if (EffectiveType == HttpInstrumentationTestType.ParallelNtlm) {
+				ctx.LogDebug (2, $"{handler.Message} TEST: ${request}");
+			}
 		}
 
 		async Task<Operation> StartParallel (TestContext ctx, CancellationToken cancellationToken, Handler handler,
@@ -735,7 +739,6 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.NtlmChunked:
 			case HttpInstrumentationTestType.NtlmInstrumentation:
 			case HttpInstrumentationTestType.NtlmClosesConnection:
-			case HttpInstrumentationTestType.ParallelNtlm:
 				break;
 
 			case HttpInstrumentationTestType.NtlmWhileQueued:
@@ -749,6 +752,15 @@ namespace Xamarin.WebTests.TestRunners
 
 			case HttpInstrumentationTestType.ReuseConnection:
 			case HttpInstrumentationTestType.ReuseConnection2:
+				break;
+
+			case HttpInstrumentationTestType.ParallelNtlm:
+				if (false && primary) {
+					var secondaryHandler = new HttpInstrumentationHandler (this, GetAuthenticationManager (), null, false);
+					var operation = await StartParallel (ctx, cancellationToken, secondaryHandler).ConfigureAwait (false);
+					if (Interlocked.CompareExchange (ref queuedOperation, operation, null) != null)
+						throw ctx.AssertFail ("Invalid nested call");
+				}
 				break;
 
 			default:
@@ -854,7 +866,9 @@ namespace Xamarin.WebTests.TestRunners
 				var me = $"{Message}.{nameof (HandleNtlmRequest)}";
 				ctx.LogDebug (3, $"${me}: {connection.RemoteEndPoint}");
 
-				var response = AuthManager.HandleAuthentication (ctx, connection, request);
+				AuthenticationState state;
+				var response = AuthManager.HandleAuthentication (ctx, connection, request, out state);
+				ctx.LogDebug (3, $"${me}: {connection.RemoteEndPoint} - {state} {response}");
 				if (response != null) {
 					connection.Server.RegisterHandler (request.Path, this);
 					return response;
@@ -868,6 +882,9 @@ namespace Xamarin.WebTests.TestRunners
 				TestContext ctx, HttpConnection connection, HttpRequest request,
 				RequestFlags effectiveFlags, CancellationToken cancellationToken)
 			{
+				RemoteEndPoint = connection.RemoteEndPoint;
+				await TestRunner.HandleRequest (ctx, this, connection, request, cancellationToken).ConfigureAwait (false);
+
 				switch (TestRunner.EffectiveType) {
 				case HttpInstrumentationTestType.ReuseConnection:
 				case HttpInstrumentationTestType.CloseIdleConnection:
@@ -886,8 +903,6 @@ namespace Xamarin.WebTests.TestRunners
 					throw ctx.AssertFail (TestRunner.EffectiveType);
 				}
 
-				RemoteEndPoint = connection.RemoteEndPoint;
-				await TestRunner.HandleRequest (ctx, this, connection, request, cancellationToken).ConfigureAwait (false);
 				return HttpResponse.CreateSuccess (Message);
 			}
 

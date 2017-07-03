@@ -82,7 +82,8 @@ namespace Xamarin.WebTests.HttpHandlers
 			TestContext ctx, HttpConnection connection, HttpRequest request,
 			RequestFlags effectiveFlags, CancellationToken cancellationToken)
 		{
-			var response = Manager.HandleAuthentication (ctx, connection, request);
+			AuthenticationState state;
+			var response = Manager.HandleAuthentication (ctx, connection, request, out state);
 			if (response != null) {
 				connection.Server.RegisterHandler (request.Path, this);
 				return response;
