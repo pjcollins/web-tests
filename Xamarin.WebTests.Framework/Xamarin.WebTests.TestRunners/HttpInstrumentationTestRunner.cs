@@ -104,16 +104,17 @@ namespace Xamarin.WebTests.TestRunners
 			HttpInstrumentationTestType.CancelMainWhileQueued,
 			HttpInstrumentationTestType.SimpleNtlm,
 			HttpInstrumentationTestType.NtlmWhileQueued,
+			HttpInstrumentationTestType.ReuseConnection,
 			HttpInstrumentationTestType.SimplePost,
 			HttpInstrumentationTestType.SimpleRedirect,
 			HttpInstrumentationTestType.PostRedirect,
 			HttpInstrumentationTestType.PostNtlm,
 			HttpInstrumentationTestType.NtlmChunked,
+			HttpInstrumentationTestType.Get404,
 		};
 
 		static readonly HttpInstrumentationTestType[] UnstableTests = {
-			HttpInstrumentationTestType.ReuseConnection,
-			HttpInstrumentationTestType.MartinTest,
+			HttpInstrumentationTestType.ReuseConnection2,
 		};
 
 		static readonly HttpInstrumentationTestType[] StressTests = {
