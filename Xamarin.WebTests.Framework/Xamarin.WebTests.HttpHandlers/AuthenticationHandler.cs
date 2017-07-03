@@ -53,7 +53,7 @@ namespace Xamarin.WebTests.HttpHandlers
 			AuthenticationType = type;
 			if ((target.Flags & RequestFlags.KeepAlive) != 0)
 				Flags |= RequestFlags.KeepAlive;
-			Manager = new AuthenticationManager (AuthenticationType, false);
+			Manager = new AuthenticationManager (AuthenticationType, GetCredentials ());
 			cloneable = true;
 		}
 
@@ -62,7 +62,7 @@ namespace Xamarin.WebTests.HttpHandlers
 		{
 			AuthenticationType = other.AuthenticationType;
 			Flags = other.Flags;
-			Manager = new AuthenticationManager (AuthenticationType, false);
+			Manager = new AuthenticationManager (AuthenticationType, GetCredentials ());
 			cloneable = true;
 		}
 
@@ -102,10 +102,10 @@ namespace Xamarin.WebTests.HttpHandlers
 		public override void ConfigureRequest (Request request, Uri uri)
 		{
 			base.ConfigureRequest (request, uri);
-			request.SetCredentials (GetCredentials ());
+			Manager.ConfigureRequest (request);
 		}
 
-		public ICredentials GetCredentials ()
+		internal static ICredentials GetCredentials ()
 		{
 			return new NetworkCredential ("xamarin", "monkey");
 		}

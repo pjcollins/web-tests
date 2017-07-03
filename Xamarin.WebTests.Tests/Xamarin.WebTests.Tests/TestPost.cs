@@ -224,7 +224,7 @@ namespace Xamarin.WebTests.Tests
 			cancellationToken.Register (() => client.CancelAsync ());
 			var authHandler = handler as AuthenticationHandler;
 			if (authHandler != null)
-				client.Credentials = authHandler.GetCredentials ();
+				client.Credentials = authHandler.Manager.Credentials;
 		}
 
 		[AsyncTest]

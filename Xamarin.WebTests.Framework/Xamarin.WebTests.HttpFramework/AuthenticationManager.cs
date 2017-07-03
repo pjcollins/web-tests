@@ -31,6 +31,7 @@ using Xamarin.AsyncTests.Constraints;
 namespace Xamarin.WebTests.HttpFramework
 {
 	using Server;
+	using HttpHandlers;
 
 	public enum AuthenticationState
 	{
@@ -51,6 +52,10 @@ namespace Xamarin.WebTests.HttpFramework
 			get;
 		}
 
+		public ICredentials Credentials {
+			get;
+		}
+
 		string RequestAuthHeader => IsProxy ? "Proxy-Authorization" : "Authorization";
 		string ResponseAuthHeader => IsProxy ? "Proxy-Authenticate" : "WWW-Authenticate";
 		HttpStatusCode UnauthorizedStatus => IsProxy ? HttpStatusCode.ProxyAuthenticationRequired : HttpStatusCode.Unauthorized;
@@ -59,6 +64,12 @@ namespace Xamarin.WebTests.HttpFramework
 		{
 			AuthenticationType = type;
 			IsProxy = isProxy;
+		}
+
+		public AuthenticationManager (AuthenticationType type, ICredentials credentials)
+		{
+			AuthenticationType = type;
+			Credentials = credentials;
 		}
 
 		bool haveChallenge;
@@ -80,6 +91,12 @@ namespace Xamarin.WebTests.HttpFramework
 			var response = new HttpResponse (UnauthorizedStatus);
 			response.AddHeader (ResponseAuthHeader, token);
 			return response;
+		}
+
+		public void ConfigureRequest (Request request)
+		{
+			if (Credentials != null)
+				request.SetCredentials (Credentials);
 		}
 
 		public HttpResponse HandleAuthentication (TestContext ctx, HttpConnection connection, HttpRequest request)

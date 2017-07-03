@@ -95,7 +95,7 @@ namespace Xamarin.WebTests.TestRunners
 			ME = $"{GetType ().Name}({EffectiveType})";
 		}
 
-		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.NtlmChunked;
+		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.ParallelNtlm;
 
 		static readonly HttpInstrumentationTestType[] WorkingTests = {
 			HttpInstrumentationTestType.Simple,
@@ -117,6 +117,7 @@ namespace Xamarin.WebTests.TestRunners
 			HttpInstrumentationTestType.PostNtlm,
 			HttpInstrumentationTestType.NtlmChunked,
 			HttpInstrumentationTestType.Get404,
+			HttpInstrumentationTestType.NtlmInstrumentation
 		};
 
 		static readonly HttpInstrumentationTestType[] UnstableTests = {
@@ -209,6 +210,7 @@ namespace Xamarin.WebTests.TestRunners
 		public async Task Run (TestContext ctx, CancellationToken cancellationToken)
 		{
 			var me = $"{ME}.{nameof (Run)}()";
+
 			var handler = CreateHandler (ctx, true);
 
 			HttpStatusCode expectedStatus;
@@ -303,6 +305,13 @@ namespace Xamarin.WebTests.TestRunners
 			Server.CloseAll ();
 		}
 
+		AuthenticationManager GetAuthenticationManager ()
+		{
+			var manager = new AuthenticationManager (AuthenticationType.NTLM, AuthenticationHandler.GetCredentials ());
+			var old = Interlocked.CompareExchange (ref authManager, manager, null);
+			return old ?? manager;
+		}
+
 		Handler CreateHandler (TestContext ctx, bool primary)
 		{
 			var hello = new HelloWorldHandler (EffectiveType.ToString ());
@@ -317,11 +326,11 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.NtlmWhileQueued:
 				return new AuthenticationHandler (AuthenticationType.NTLM, hello);
 			case HttpInstrumentationTestType.ReuseConnection:
-				return new HttpInstrumentationHandler (this, null, !primary);
+				return new HttpInstrumentationHandler (this, null, null, !primary);
 			case HttpInstrumentationTestType.ReuseConnection2:
 				if (primary)
-					return new HttpInstrumentationHandler (this, HttpContent.HelloWorld, false);
-				return new HttpInstrumentationHandler (this, HttpContent.HelloWorld, true);
+					return new HttpInstrumentationHandler (this, null, HttpContent.HelloWorld, false);
+				return new HttpInstrumentationHandler (this, null, HttpContent.HelloWorld, true);
 			case HttpInstrumentationTestType.SimplePost:
 				return postHello;
 			case HttpInstrumentationTestType.SimpleRedirect:
@@ -335,10 +344,11 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.Get404:
 				return new GetHandler (EffectiveType.ToString (), null, HttpStatusCode.NotFound);
 			case HttpInstrumentationTestType.CloseIdleConnection:
-				return new HttpInstrumentationHandler (this, null, false);
+				return new HttpInstrumentationHandler (this, null, null, false);
 			case HttpInstrumentationTestType.NtlmInstrumentation:
 			case HttpInstrumentationTestType.NtlmClosesConnection:
-				return new HttpInstrumentationHandler (this, null, true);
+			case HttpInstrumentationTestType.ParallelNtlm:
+				return new HttpInstrumentationHandler (this, GetAuthenticationManager (), null, true);
 			default:
 				return hello;
 			}
@@ -516,6 +526,8 @@ namespace Xamarin.WebTests.TestRunners
 				case HttpInstrumentationTestType.SimplePost:
 					currentRequest.SetContentLength (((PostHandler)Handler).Content.Length);
 					break;
+				case HttpInstrumentationTestType.SimpleNtlm:
+					break;
 				}
 			}
 
@@ -550,6 +562,7 @@ namespace Xamarin.WebTests.TestRunners
 		StreamInstrumentation serverInstrumentation;
 		Operation currentOperation;
 		Operation queuedOperation;
+		AuthenticationManager authManager;
 		int readHandlerCalled;
 
 		async Task<bool> IHttpServerDelegate.CheckCreateConnection (
@@ -722,6 +735,7 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.NtlmChunked:
 			case HttpInstrumentationTestType.NtlmInstrumentation:
 			case HttpInstrumentationTestType.NtlmClosesConnection:
+			case HttpInstrumentationTestType.ParallelNtlm:
 				break;
 
 			case HttpInstrumentationTestType.NtlmWhileQueued:
@@ -775,14 +789,12 @@ namespace Xamarin.WebTests.TestRunners
 				get;
 			}
 
-			public ICredentials Credentials {
-				get;
-			}
-
-			public HttpInstrumentationHandler (HttpInstrumentationTestRunner parent, HttpContent content, bool closeConnection)
+			public HttpInstrumentationHandler (HttpInstrumentationTestRunner parent, AuthenticationManager authManager,
+			                                   HttpContent content, bool closeConnection)
 				: base (parent.EffectiveType.ToString ())
 			{
 				TestRunner = parent;
+				AuthManager = authManager;
 				Content = content;
 				CloseConnection = closeConnection;
 				Message = $"{GetType ().Name}({parent.EffectiveType})";
@@ -790,14 +802,8 @@ namespace Xamarin.WebTests.TestRunners
 				if (closeConnection)
 					Flags |= RequestFlags.CloseConnection;
 
-				switch (parent.EffectiveType) {
-				case HttpInstrumentationTestType.NtlmInstrumentation:
-				case HttpInstrumentationTestType.NtlmClosesConnection:
-					Credentials = new NetworkCredential ("xamarin", "monkey");
+				if (AuthManager != null)
 					Target = new HelloWorldHandler (Message);
-					AuthManager = new AuthenticationManager (AuthenticationType.NTLM, false);
-					break;
-				}
 			}
 
 			HttpInstrumentationHandler (HttpInstrumentationHandler other)
@@ -808,7 +814,6 @@ namespace Xamarin.WebTests.TestRunners
 				CloseConnection = CloseConnection;
 				Message = other.Message;
 				Flags = other.Flags;
-				Credentials = other.Credentials;
 				Target = other.Target;
 				AuthManager = other.AuthManager;
 			}
@@ -820,8 +825,8 @@ namespace Xamarin.WebTests.TestRunners
 
 			public override void ConfigureRequest (Request request, Uri uri)
 			{
-				if (Credentials != null)
-					request.SetCredentials (Credentials);
+				if (AuthManager != null)
+					AuthManager.ConfigureRequest (request);
 
 				switch (TestRunner.EffectiveType) {
 				case HttpInstrumentationTestType.ReuseConnection2:
@@ -835,6 +840,7 @@ namespace Xamarin.WebTests.TestRunners
 
 				case HttpInstrumentationTestType.NtlmInstrumentation:
 				case HttpInstrumentationTestType.NtlmClosesConnection:
+				case HttpInstrumentationTestType.ParallelNtlm:
 					break;
 				}
 
@@ -872,6 +878,7 @@ namespace Xamarin.WebTests.TestRunners
 					break;
 				case HttpInstrumentationTestType.NtlmInstrumentation:
 				case HttpInstrumentationTestType.NtlmClosesConnection:
+				case HttpInstrumentationTestType.ParallelNtlm:
 					return await HandleNtlmRequest (
 						ctx, connection, request, effectiveFlags, cancellationToken).ConfigureAwait (false);
 

@@ -25,6 +25,7 @@
 // THE SOFTWARE.
 
 using System;
+using System.Net;
 using System.Security.Cryptography.X509Certificates;
 
 namespace Xamarin.WebTests.TestFramework
