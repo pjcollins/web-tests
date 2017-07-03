@@ -89,7 +89,7 @@ namespace Xamarin.WebTests.TestRunners
 			};
 		}
 
-		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.CancelQueuedRequest;
+		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.CloseIdleConnection;
 
 		static readonly HttpInstrumentationTestType[] WorkingTests = {
 			HttpInstrumentationTestType.Simple,
@@ -115,6 +115,7 @@ namespace Xamarin.WebTests.TestRunners
 
 		static readonly HttpInstrumentationTestType[] UnstableTests = {
 			HttpInstrumentationTestType.ReuseConnection2,
+			HttpInstrumentationTestType.CloseIdleConnection
 		};
 
 		static readonly HttpInstrumentationTestType[] StressTests = {
@@ -191,6 +192,9 @@ namespace Xamarin.WebTests.TestRunners
 				parameters.CountParallelRequests = 100;
 				parameters.ConnectionLimit = 25;
 				break;
+			case HttpInstrumentationTestType.CloseIdleConnection:
+				parameters.IdleTime = 750;
+				break;
 			}
 
 			return parameters;
@@ -261,6 +265,11 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.ReuseConnection2:
 				secondOperation = StartSecond (ctx, cancellationToken, CreateHandler (ctx, false));
 				break;
+			case HttpInstrumentationTestType.CloseIdleConnection:
+				ctx.LogDebug (5, $"${me}: active connections: {currentOperation.ServicePoint.CurrentConnections}");
+				await Task.Delay ((int)(Parameters.IdleTime * 2.5)).ConfigureAwait (false);
+				ctx.LogDebug (5, $"${me}: active connections #1: {currentOperation.ServicePoint.CurrentConnections}");
+				break;
 			}
 
 			if (secondOperation != null) {
@@ -316,6 +325,8 @@ namespace Xamarin.WebTests.TestRunners
 				return new AuthenticationHandler (AuthenticationType.NTLM, chunkedPost);
 			case HttpInstrumentationTestType.Get404:
 				return new GetHandler (EffectiveType.ToString (), null, HttpStatusCode.NotFound);
+			case HttpInstrumentationTestType.CloseIdleConnection:
+				return new HttpInstrumentationHandler (this, null, false);
 			default:
 				return hello;
 			}
@@ -599,6 +610,7 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.Simple:
 			case HttpInstrumentationTestType.SimplePost:
 			case HttpInstrumentationTestType.Get404:
+			case HttpInstrumentationTestType.CloseIdleConnection:
 				ctx.Assert (primary, "Primary request");
 				break;
 
@@ -779,6 +791,7 @@ namespace Xamarin.WebTests.TestRunners
 			{
 				switch (TestRunner.EffectiveType) {
 				case HttpInstrumentationTestType.ReuseConnection:
+				case HttpInstrumentationTestType.CloseIdleConnection:
 					ctx.Assert (request.Method, Is.EqualTo ("GET"), "method");
 					break;
 				case HttpInstrumentationTestType.ReuseConnection2:
