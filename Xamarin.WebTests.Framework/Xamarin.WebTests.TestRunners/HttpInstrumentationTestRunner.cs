@@ -89,7 +89,7 @@ namespace Xamarin.WebTests.TestRunners
 			};
 		}
 
-		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.CancelMainWhileQueued;
+		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.CancelQueuedRequest;
 
 		static readonly HttpInstrumentationTestType[] WorkingTests = {
 			HttpInstrumentationTestType.Simple,
