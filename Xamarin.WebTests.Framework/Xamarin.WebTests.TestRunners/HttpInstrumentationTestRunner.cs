@@ -265,11 +265,6 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.ReuseConnection2:
 				secondOperation = StartSecond (ctx, cancellationToken, CreateHandler (ctx, false));
 				break;
-			case HttpInstrumentationTestType.CloseIdleConnection:
-				ctx.LogDebug (5, $"${me}: active connections: {currentOperation.ServicePoint.CurrentConnections}");
-				await Task.Delay ((int)(Parameters.IdleTime * 2.5)).ConfigureAwait (false);
-				ctx.LogDebug (5, $"${me}: active connections #1: {currentOperation.ServicePoint.CurrentConnections}");
-				break;
 			}
 
 			if (secondOperation != null) {
@@ -294,7 +289,18 @@ namespace Xamarin.WebTests.TestRunners
 				}
 			}
 
+			ctx.LogDebug (2, $"{me} calling CloseAll().");
 			Server.CloseAll ();
+			ctx.LogDebug (2, $"{me} done calling CloseAll().");
+
+			switch (EffectiveType) {
+			case HttpInstrumentationTestType.CloseIdleConnection:
+				ctx.LogDebug (5, $"{me}: active connections: {currentOperation.ServicePoint.CurrentConnections}");
+				await Task.Delay ((int)(Parameters.IdleTime * 2.5)).ConfigureAwait (false);
+				ctx.LogDebug (5, $"{me}: active connections #1: {currentOperation.ServicePoint.CurrentConnections}");
+				break;
+			}
+
 		}
 
 		Handler CreateHandler (TestContext ctx, bool primary)

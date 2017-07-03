@@ -51,6 +51,7 @@ namespace Xamarin.WebTests.Server {
 		Exception currentError;
 		volatile TaskCompletionSource<bool> tcs;
 		volatile CancellationTokenSource cts;
+		volatile bool closed;
 
 		static int nextID;
 		public readonly int ID = ++nextID;
@@ -144,6 +145,8 @@ namespace Xamarin.WebTests.Server {
 
 		public virtual void CloseAll ()
 		{
+			closed = true;
+			TestContext.LogDebug (5, $"{ME}: CLOSE ALL");
 			cts.Cancel ();
 		}
 
@@ -218,8 +221,8 @@ namespace Xamarin.WebTests.Server {
 					break;
 
 				bool connectionAvailable = connection.IsStillConnected ();
-				TestContext.LogDebug (5, $"{ME}: MAIN LOOP #2: {connectionAvailable}");
-				if (!connectionAvailable && !cancellationToken.IsCancellationRequested)
+				TestContext.LogDebug (5, $"{ME}: MAIN LOOP #2: {connectionAvailable} {closed} {cancellationToken.IsCancellationRequested}");
+				if (!closed && !connectionAvailable && !cancellationToken.IsCancellationRequested)
 					throw new ConnectionException ("Expecting another connection, but socket has been shut down.");
 			}
 		}
