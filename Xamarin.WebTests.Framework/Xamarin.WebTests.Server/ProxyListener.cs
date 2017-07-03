@@ -244,7 +244,8 @@ namespace Xamarin.WebTests.Server
 				: base (type)
 			{ }
 
-			protected override HttpResponse OnUnauthenticated (HttpConnection connection, HttpRequest request, string token, bool omitBody)
+			protected override HttpResponse OnUnauthenticated (TestContext ctx, HttpConnection connection,
+			                                                   HttpRequest request, string token, bool omitBody)
 			{
 				var response = new HttpResponse (HttpStatusCode.ProxyAuthenticationRequired);
 				response.AddHeader ("Proxy-Authenticate", token);

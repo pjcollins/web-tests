@@ -80,7 +80,8 @@ namespace Xamarin.WebTests.HttpHandlers
 				return HttpResponse.CreateError (message);
 			}
 
-			protected override HttpResponse OnUnauthenticated (HttpConnection connection, HttpRequest request, string token, bool omitBody)
+			protected override HttpResponse OnUnauthenticated (TestContext ctx, HttpConnection connection,
+			                                                   HttpRequest request, string token, bool omitBody)
 			{
 				var handler = new AuthenticationHandler (this);
 				if (omitBody)

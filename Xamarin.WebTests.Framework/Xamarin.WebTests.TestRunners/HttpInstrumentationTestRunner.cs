@@ -76,6 +76,10 @@ namespace Xamarin.WebTests.TestRunners
 			get;
 		}
 
+		public string ME {
+			get;
+		}
+
 		public HttpInstrumentationTestRunner (IPortableEndPoint endpoint, HttpInstrumentationTestParameters parameters,
 						      ConnectionTestProvider provider, Uri uri, HttpServerFlags flags)
 			: base (endpoint, parameters)
@@ -87,6 +91,8 @@ namespace Xamarin.WebTests.TestRunners
 			Server = new BuiltinHttpServer (uri, endpoint, flags, parameters, null) {
 				Delegate = this, Instrumentation = this
 			};
+
+			ME = $"{GetType ().Name}({EffectiveType})";
 		}
 
 		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.NtlmInstrumentation;
@@ -202,7 +208,7 @@ namespace Xamarin.WebTests.TestRunners
 
 		public async Task Run (TestContext ctx, CancellationToken cancellationToken)
 		{
-			var me = $"{GetType ().Name}.{nameof (Run)}()";
+			var me = $"{ME}.{nameof (Run)}()";
 			var handler = CreateHandler (ctx, true);
 
 			HttpStatusCode expectedStatus;
@@ -265,6 +271,11 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.ReuseConnection2:
 				secondOperation = StartSecond (ctx, cancellationToken, CreateHandler (ctx, false));
 				break;
+			case HttpInstrumentationTestType.CloseIdleConnection:
+				ctx.LogDebug (5, $"${me}: active connections: {currentOperation.ServicePoint.CurrentConnections}");
+				await Task.Delay ((int)(Parameters.IdleTime * 2.5)).ConfigureAwait (false);
+				ctx.LogDebug (5, $"${me}: active connections #1: {currentOperation.ServicePoint.CurrentConnections}");
+				break;
 			}
 
 			if (secondOperation != null) {
@@ -289,18 +300,7 @@ namespace Xamarin.WebTests.TestRunners
 				}
 			}
 
-			ctx.LogDebug (2, $"{me} calling CloseAll().");
 			Server.CloseAll ();
-			ctx.LogDebug (2, $"{me} done calling CloseAll().");
-
-			switch (EffectiveType) {
-			case HttpInstrumentationTestType.CloseIdleConnection:
-				ctx.LogDebug (5, $"{me}: active connections: {currentOperation.ServicePoint.CurrentConnections}");
-				await Task.Delay ((int)(Parameters.IdleTime * 2.5)).ConfigureAwait (false);
-				ctx.LogDebug (5, $"{me}: active connections #1: {currentOperation.ServicePoint.CurrentConnections}");
-				break;
-			}
-
 		}
 
 		Handler CreateHandler (TestContext ctx, bool primary)
@@ -843,6 +843,9 @@ namespace Xamarin.WebTests.TestRunners
 				TestContext ctx, HttpConnection connection, HttpRequest request,
 				RequestFlags effectiveFlags, CancellationToken cancellationToken)
 			{
+				var me = $"{Message}.{nameof (HandleNtlmRequest)}";
+				ctx.LogDebug (5, $"${me}: {connection.RemoteEndPoint}");
+
 				string authHeader;
 				if (!request.Headers.TryGetValue ("Authorization", out authHeader))
 					authHeader = null;
@@ -904,11 +907,16 @@ namespace Xamarin.WebTests.TestRunners
 				get;
 			}
 
+			public string ME {
+				get;
+			}
+
 			public HttpAuthManager (HttpInstrumentationHandler handler, AuthenticationType type, Handler target)
 				: base (type)
 			{
 				Handler = handler;
 				Target = target;
+				ME = $"{Handler.TestRunner.ME}.{GetType ().Name}";
 			}
 
 			protected override HttpResponse OnError (string message)
@@ -916,8 +924,12 @@ namespace Xamarin.WebTests.TestRunners
 				return HttpResponse.CreateError (message);
 			}
 
-			protected override HttpResponse OnUnauthenticated (HttpConnection connection, HttpRequest request, string token, bool omitBody)
+			protected override HttpResponse OnUnauthenticated (TestContext ctx, HttpConnection connection,
+			                                                   HttpRequest request, string token, bool omitBody)
 			{
+				var me = $"{ME}.{nameof (OnUnauthenticated)}()";
+				ctx.LogDebug (5, $"{me}: {connection.RemoteEndPoint}");
+
 				var handler = (HttpInstrumentationHandler)Handler.Clone ();
 				if (omitBody)
 					handler.Flags |= RequestFlags.NoBody;
