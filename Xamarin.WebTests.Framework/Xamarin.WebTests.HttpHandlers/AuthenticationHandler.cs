@@ -43,13 +43,17 @@ namespace Xamarin.WebTests.HttpHandlers
 			get;
 		}
 
+		public AuthenticationManager Manager {
+			get;
+		}
+
 		public AuthenticationHandler (AuthenticationType type, Handler target, string identifier = null)
 			: base (target, identifier ?? CreateIdentifier (type, target))
 		{
 			AuthenticationType = type;
 			if ((target.Flags & RequestFlags.KeepAlive) != 0)
 				Flags |= RequestFlags.KeepAlive;
-			manager = new HttpAuthManager (this);
+			Manager = new AuthenticationManager (AuthenticationType, false);
 			cloneable = true;
 		}
 
@@ -58,22 +62,13 @@ namespace Xamarin.WebTests.HttpHandlers
 		{
 			AuthenticationType = other.AuthenticationType;
 			Flags = other.Flags;
-			manager = new HttpAuthManager (this);
+			Manager = new AuthenticationManager (AuthenticationType, false);
 			cloneable = true;
 		}
 
 		static string CreateIdentifier (AuthenticationType type, Handler target)
 		{
 			return string.Format ("Authentication({0}): {1}", type, target.Value);
-		}
-
-		AuthenticationHandler (HttpAuthManager manager)
-			: base (manager.Handler.Target, manager.Handler.Target.Value)
-		{
-			AuthenticationType = manager.Handler.AuthenticationType;
-			if ((Target.Flags & RequestFlags.KeepAlive) != 0)
-				Flags |= RequestFlags.KeepAlive;
-			this.manager = manager;
 		}
 
 		public override object Clone ()
@@ -83,51 +78,17 @@ namespace Xamarin.WebTests.HttpHandlers
 			return new AuthenticationHandler (this);
 		}
 
-		class HttpAuthManager : AuthenticationManager
-		{
-			public AuthenticationHandler Handler {
-				get;
-			}
-
-			public HttpAuthManager (AuthenticationHandler handler)
-				: base (handler.AuthenticationType)
-			{
-				Handler = handler;
-			}
-
-			protected override HttpResponse OnError (string message)
-			{
-				return HttpResponse.CreateError (message);
-			}
-
-			protected override HttpResponse OnUnauthenticated (TestContext ctx, HttpConnection connection,
-			                                                   HttpRequest request, string token, bool omitBody)
-			{
-				var handler = new AuthenticationHandler (this);
-				if (omitBody)
-					handler.Flags |= RequestFlags.NoBody;
-				handler.Flags |= RequestFlags.Redirected;
-				connection.Server.RegisterHandler (request.Path, handler);
-
-				var response = new HttpResponse (HttpStatusCode.Unauthorized);
-				response.AddHeader ("WWW-Authenticate", token);
-				return response;
-			}
-		}
-
-		readonly HttpAuthManager manager;
-
 		protected internal override async Task<HttpResponse> HandleRequest (
 			TestContext ctx, HttpConnection connection, HttpRequest request,
 			RequestFlags effectiveFlags, CancellationToken cancellationToken)
 		{
-			string authHeader;
-			if (!request.Headers.TryGetValue ("Authorization", out authHeader))
-				authHeader = null;
-
-			var response = manager.HandleAuthentication (ctx, connection, request, authHeader);
-			if (response != null)
+			var response = Manager.HandleAuthentication (ctx, connection, request);
+			if (response != null) {
+				connection.Server.RegisterHandler (request.Path, this);
 				return response;
+			}
+
+			effectiveFlags |= RequestFlags.Redirected;
 
 			cancellationToken.ThrowIfCancellationRequested (); 
 			return await Target.HandleRequest (ctx, connection, request, effectiveFlags, cancellationToken);

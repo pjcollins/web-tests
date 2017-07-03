@@ -40,16 +40,25 @@ namespace Xamarin.WebTests.HttpFramework
 		Error
 	}
 
-	public abstract class AuthenticationManager
+	public class AuthenticationManager
 	{
 		public AuthenticationType AuthenticationType {
 			get;
 			private set;
 		}
 
-		public AuthenticationManager (AuthenticationType type)
+		public bool IsProxy {
+			get;
+		}
+
+		string RequestAuthHeader => IsProxy ? "Proxy-Authorization" : "Authorization";
+		string ResponseAuthHeader => IsProxy ? "Proxy-Authenticate" : "WWW-Authenticate";
+		HttpStatusCode UnauthorizedStatus => IsProxy ? HttpStatusCode.ProxyAuthenticationRequired : HttpStatusCode.Unauthorized;
+
+		public AuthenticationManager (AuthenticationType type, bool isProxy)
 		{
 			AuthenticationType = type;
+			IsProxy = isProxy;
 		}
 
 		bool haveChallenge;
@@ -65,11 +74,20 @@ namespace Xamarin.WebTests.HttpFramework
 			return HttpResponse.CreateError (message);
 		}
 
-		protected abstract HttpResponse OnUnauthenticated (TestContext ctx, HttpConnection connection,
-		                                                   HttpRequest request, string token, bool omitBody);
-
-		public HttpResponse HandleAuthentication (TestContext ctx, HttpConnection connection, HttpRequest request, string authHeader)
+		protected HttpResponse OnUnauthenticated (TestContext ctx, HttpConnection connection,
+		                                          HttpRequest request, string token, bool omitBody)
 		{
+			var response = new HttpResponse (UnauthorizedStatus);
+			response.AddHeader (ResponseAuthHeader, token);
+			return response;
+		}
+
+		public HttpResponse HandleAuthentication (TestContext ctx, HttpConnection connection, HttpRequest request)
+		{
+			string authHeader;
+			if (!request.Headers.TryGetValue (RequestAuthHeader, out authHeader))
+				authHeader = null;
+
 			if (AuthenticationType == AuthenticationType.ForceNone) {
 				// Must not contain any auth header
 				if (authHeader == null)

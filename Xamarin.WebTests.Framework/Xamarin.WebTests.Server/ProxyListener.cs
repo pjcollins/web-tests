@@ -42,7 +42,9 @@ namespace Xamarin.WebTests.Server
 
 	class ProxyListener : BuiltinSocketListener
 	{
-		ProxyAuthManager authManager;
+		public AuthenticationManager AuthenticationManager {
+			get;
+		}
 
 		new public BuiltinProxyServer Server {
 			get { return (BuiltinProxyServer)base.Server; }
@@ -52,7 +54,7 @@ namespace Xamarin.WebTests.Server
 			: base (ctx, server)
 		{
 			if (Server.AuthenticationType != AuthenticationType.None)
-				authManager = new ProxyAuthManager (Server.AuthenticationType);
+				AuthenticationManager = new AuthenticationManager (Server.AuthenticationType, true);
 		}
 
 		protected override async Task<bool> HandleConnection (HttpConnection connection, CancellationToken cancellationToken)
@@ -63,11 +65,8 @@ namespace Xamarin.WebTests.Server
 			var remoteAddress = connection.RemoteEndPoint.Address;
 			request.AddHeader ("X-Forwarded-For", remoteAddress);
 
-			if (authManager != null) {
-				string authHeader;
-				if (!request.Headers.TryGetValue ("Proxy-Authorization", out authHeader))
-					authHeader = null;
-				var response = authManager.HandleAuthentication (TestContext, connection, request, authHeader);
+			if (AuthenticationManager != null) {
+				var response = AuthenticationManager.HandleAuthentication (TestContext, connection, request);
 				if (response != null) {
 					await connection.WriteResponse (TestContext, response, cancellationToken);
 					return false;
@@ -236,21 +235,6 @@ namespace Xamarin.WebTests.Server
 				throw;
 			}
 			return true;
-		}
-
-		class ProxyAuthManager : AuthenticationManager
-		{
-			public ProxyAuthManager (AuthenticationType type)
-				: base (type)
-			{ }
-
-			protected override HttpResponse OnUnauthenticated (TestContext ctx, HttpConnection connection,
-			                                                   HttpRequest request, string token, bool omitBody)
-			{
-				var response = new HttpResponse (HttpStatusCode.ProxyAuthenticationRequired);
-				response.AddHeader ("Proxy-Authenticate", token);
-				return response;
-			}
 		}
 	}
 }

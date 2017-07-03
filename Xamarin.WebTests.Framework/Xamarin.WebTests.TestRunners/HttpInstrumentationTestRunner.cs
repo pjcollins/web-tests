@@ -95,7 +95,7 @@ namespace Xamarin.WebTests.TestRunners
 			ME = $"{GetType ().Name}({EffectiveType})";
 		}
 
-		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.SimpleNtlm;
+		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.NtlmChunked;
 
 		static readonly HttpInstrumentationTestType[] WorkingTests = {
 			HttpInstrumentationTestType.Simple,
@@ -165,7 +165,7 @@ namespace Xamarin.WebTests.TestRunners
 		}
 
 		public static HttpInstrumentationTestParameters GetParameters (TestContext ctx, ConnectionTestCategory category,
-		                                                               HttpInstrumentationTestType type)
+									       HttpInstrumentationTestType type)
 		{
 			var certificateProvider = DependencyInjector.Get<ICertificateProvider> ();
 			var acceptAll = certificateProvider.AcceptAll ();
@@ -315,7 +315,7 @@ namespace Xamarin.WebTests.TestRunners
 			switch (EffectiveType) {
 			case HttpInstrumentationTestType.SimpleNtlm:
 			case HttpInstrumentationTestType.NtlmWhileQueued:
-				return new AuthenticationHandler (AuthenticationType.NTLM, helloKeepAlive);
+				return new AuthenticationHandler (AuthenticationType.NTLM, hello);
 			case HttpInstrumentationTestType.ReuseConnection:
 				return new HttpInstrumentationHandler (this, null, !primary);
 			case HttpInstrumentationTestType.ReuseConnection2:
@@ -362,8 +362,8 @@ namespace Xamarin.WebTests.TestRunners
 		}
 
 		async Task<Operation> StartParallel (TestContext ctx, CancellationToken cancellationToken, Handler handler,
-		                                     HttpStatusCode expectedStatus = HttpStatusCode.OK,
-		                                     WebExceptionStatus expectedError = WebExceptionStatus.Success)
+						     HttpStatusCode expectedStatus = HttpStatusCode.OK,
+						     WebExceptionStatus expectedError = WebExceptionStatus.Success)
 		{
 			await Server.StartParallel (ctx, cancellationToken).ConfigureAwait (false);
 			var operation = new Operation (this, handler, true, expectedStatus, expectedError);
@@ -372,16 +372,16 @@ namespace Xamarin.WebTests.TestRunners
 		}
 
 		async Task RunParallel (TestContext ctx, CancellationToken cancellationToken, Handler handler,
-		                        HttpStatusCode expectedStatus = HttpStatusCode.OK,
-		                        WebExceptionStatus expectedError = WebExceptionStatus.Success)
+					HttpStatusCode expectedStatus = HttpStatusCode.OK,
+					WebExceptionStatus expectedError = WebExceptionStatus.Success)
 		{
 			var operation = await StartParallel (ctx, cancellationToken, handler, expectedStatus, expectedError).ConfigureAwait (false);
 			await operation.WaitForCompletion ();
 		}
 
 		Operation StartSecond (TestContext ctx, CancellationToken cancellationToken, Handler handler,
-		                       HttpStatusCode expectedStatus = HttpStatusCode.OK,
-		                       WebExceptionStatus expectedError = WebExceptionStatus.Success)
+				       HttpStatusCode expectedStatus = HttpStatusCode.OK,
+				       WebExceptionStatus expectedError = WebExceptionStatus.Success)
 		{
 			var operation = new Operation (this, handler, true, expectedStatus, expectedError);
 			operation.Start (ctx, cancellationToken);
@@ -455,7 +455,7 @@ namespace Xamarin.WebTests.TestRunners
 			}
 
 			public Operation (HttpInstrumentationTestRunner parent, Handler handler,
-			                  bool parallel, HttpStatusCode expectedStatus, WebExceptionStatus expectedError)
+					  bool parallel, HttpStatusCode expectedStatus, WebExceptionStatus expectedError)
 				: base (parent.Server, handler, true)
 			{
 				Parent = parent;
@@ -556,8 +556,7 @@ namespace Xamarin.WebTests.TestRunners
 			TestContext ctx, HttpConnection connection, Task initTask,
 			CancellationToken cancellationToken)
 		{
-			try
-			{
+			try {
 				await initTask.ConfigureAwait (false);
 				return true;
 			} catch (OperationCanceledException) {
@@ -586,7 +585,7 @@ namespace Xamarin.WebTests.TestRunners
 		}
 
 		async Task<bool> IHttpInstrumentation.WriteResponse (TestContext ctx, HttpConnection connection,
-		                                                     HttpResponse response, CancellationToken cancellationToken)
+								     HttpResponse response, CancellationToken cancellationToken)
 		{
 			await connection.WriteResponse (ctx, response, cancellationToken).ConfigureAwait (false);
 			return true;
@@ -660,9 +659,9 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.ManyParallelRequestsStress:
 				ctx.Assert (currentOperation.HasRequest, "current request");
 				if (primary) {
-					var parallelTasks = new Task [Parameters.CountParallelRequests];
+					var parallelTasks = new Task[Parameters.CountParallelRequests];
 					for (int i = 0; i < parallelTasks.Length; i++)
-						parallelTasks [i] = RunParallel (ctx, cancellationToken, HelloWorldHandler.Simple);
+						parallelTasks[i] = RunParallel (ctx, cancellationToken, HelloWorldHandler.Simple);
 					await Task.WhenAll (parallelTasks).ConfigureAwait (false);
 				} else {
 					// ctx.Expect (currentServicePoint.CurrentConnections, Is.EqualTo (3), "ServicePoint.CurrentConnections");
@@ -772,7 +771,7 @@ namespace Xamarin.WebTests.TestRunners
 				get;
 			}
 
-			public HttpAuthManager AuthManager {
+			public AuthenticationManager AuthManager {
 				get;
 			}
 
@@ -796,7 +795,7 @@ namespace Xamarin.WebTests.TestRunners
 				case HttpInstrumentationTestType.NtlmClosesConnection:
 					Credentials = new NetworkCredential ("xamarin", "monkey");
 					Target = new HelloWorldHandler (Message);
-					AuthManager = new HttpAuthManager (this, AuthenticationType.NTLM, Target);
+					AuthManager = new AuthenticationManager (AuthenticationType.NTLM, false);
 					break;
 				}
 			}
@@ -849,13 +848,11 @@ namespace Xamarin.WebTests.TestRunners
 				var me = $"{Message}.{nameof (HandleNtlmRequest)}";
 				ctx.LogDebug (3, $"${me}: {connection.RemoteEndPoint}");
 
-				string authHeader;
-				if (!request.Headers.TryGetValue ("Authorization", out authHeader))
-					authHeader = null;
-
-				var response = AuthManager.HandleAuthentication (ctx, connection, request, authHeader);
-				if (response != null)
+				var response = AuthManager.HandleAuthentication (ctx, connection, request);
+				if (response != null) {
+					connection.Server.RegisterHandler (request.Path, this);
 					return response;
+				}
 
 				cancellationToken.ThrowIfCancellationRequested ();
 				return await Target.HandleRequest (ctx, connection, request, effectiveFlags, cancellationToken);
@@ -898,50 +895,6 @@ namespace Xamarin.WebTests.TestRunners
 				if (!ctx.Expect (response.Content.AsString (), Is.EqualTo (Message), "response.Content.AsString()"))
 					return false;
 				return true;
-			}
-		}
-
-		class HttpAuthManager : AuthenticationManager
-		{
-			public HttpInstrumentationHandler Handler {
-				get;
-			}
-			public Handler Target {
-				get;
-			}
-
-			public string ME {
-				get;
-			}
-
-			public HttpAuthManager (HttpInstrumentationHandler handler, AuthenticationType type, Handler target)
-				: base (type)
-			{
-				Handler = handler;
-				Target = target;
-				ME = $"{Handler.TestRunner.ME}.{GetType ().Name}";
-			}
-
-			protected override HttpResponse OnError (string message)
-			{
-				return HttpResponse.CreateError (message);
-			}
-
-			protected override HttpResponse OnUnauthenticated (TestContext ctx, HttpConnection connection,
-			                                                   HttpRequest request, string token, bool omitBody)
-			{
-				var me = $"{ME}.{nameof (OnUnauthenticated)}()";
-				ctx.LogDebug (5, $"{me}: {connection.RemoteEndPoint}");
-
-				var handler = (HttpInstrumentationHandler)Handler.Clone ();
-				if (omitBody)
-					handler.Flags |= RequestFlags.NoBody;
-				handler.Flags |= RequestFlags.Redirected;
-				connection.Server.RegisterHandler (request.Path, handler);
-
-				var response = new HttpResponse (HttpStatusCode.Unauthorized);
-				response.AddHeader ("WWW-Authenticate", token);
-				return response;
 			}
 		}
 	}
