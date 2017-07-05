@@ -38,16 +38,17 @@ namespace Xamarin.WebTests.HttpHandlers
 		public HelloWorldHandler (string identifier)
 			: base (identifier)
 		{
-			Message = string.Format ("Hello World ({0}:{1})!", ++next_id, identifier);
+			Message = string.Format ("Hello World ({0}:{1})!", ID, identifier);
 		}
 
 		public string Message {
 			get;
 		}
 
-		public static HelloWorldHandler Simple => new HelloWorldHandler ("SimpleHello");
-
-		static int next_id;
+		public static HelloWorldHandler GetSimple ()
+		{
+			return new HelloWorldHandler ("SimpleHello");
+		}
 
 		public override object Clone ()
 		{

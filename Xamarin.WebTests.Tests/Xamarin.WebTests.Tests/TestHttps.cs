@@ -111,7 +111,7 @@ namespace Xamarin.WebTests.Tests
 		[ConnectionTestCategory (ConnectionTestCategory.MartinTest)]
 		public async Task MartinTest2 (TestContext ctx, HttpServer server, CancellationToken cancellationToken)
 		{
-			var handler = HelloWorldHandler.Simple;
+			var handler = HelloWorldHandler.GetSimple ();
 			var authHandler = new AuthenticationHandler (AuthenticationType.NTLM, handler);
 			await TestRunner.RunTraditional (ctx, server, authHandler, cancellationToken).ConfigureAwait (false);
 		}

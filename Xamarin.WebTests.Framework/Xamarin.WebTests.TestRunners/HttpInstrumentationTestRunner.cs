@@ -736,7 +736,7 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.ParallelRequests:
 				ctx.Assert (currentOperation.HasRequest, "current request");
 				if (primary) {
-					await RunParallel (ctx, cancellationToken, HelloWorldHandler.Simple).ConfigureAwait (false);
+					await RunParallel (ctx, cancellationToken, HelloWorldHandler.GetSimple ()).ConfigureAwait (false);
 				} else {
 					ctx.Assert (currentOperation.ServicePoint.CurrentConnections, Is.EqualTo (2), "ServicePoint.CurrentConnections");
 				}
@@ -745,7 +745,7 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.SimpleQueuedRequest:
 				ctx.Assert (currentOperation.HasRequest, "current request");
 				if (primary) {
-					var operation = await StartParallel (ctx, cancellationToken, HelloWorldHandler.Simple).ConfigureAwait (false);
+					var operation = await StartParallel (ctx, cancellationToken, HelloWorldHandler.GetSimple ()).ConfigureAwait (false);
 					if (Interlocked.CompareExchange (ref queuedOperation, operation, null) != null)
 						throw ctx.AssertFail ("Invalid nested call");
 				}
@@ -754,8 +754,8 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.ThreeParallelRequests:
 				ctx.Assert (currentOperation.HasRequest, "current request");
 				if (primary) {
-					var secondTask = RunParallel (ctx, cancellationToken, HelloWorldHandler.Simple);
-					var thirdTask = RunParallel (ctx, cancellationToken, HelloWorldHandler.Simple);
+					var secondTask = RunParallel (ctx, cancellationToken, HelloWorldHandler.GetSimple ());
+					var thirdTask = RunParallel (ctx, cancellationToken, HelloWorldHandler.GetSimple ());
 					await Task.WhenAll (secondTask, thirdTask).ConfigureAwait (false);
 				} else {
 					// ctx.Assert (currentOperation.ServicePoint.CurrentConnections, Is.EqualTo (3), "ServicePoint.CurrentConnections");
@@ -769,7 +769,7 @@ namespace Xamarin.WebTests.TestRunners
 				if (primary) {
 					var parallelTasks = new Task[Parameters.CountParallelRequests];
 					for (int i = 0; i < parallelTasks.Length; i++)
-						parallelTasks[i] = RunParallel (ctx, cancellationToken, HelloWorldHandler.Simple);
+						parallelTasks[i] = RunParallel (ctx, cancellationToken, HelloWorldHandler.GetSimple ());
 					await Task.WhenAll (parallelTasks).ConfigureAwait (false);
 				} else {
 					// ctx.Expect (currentServicePoint.CurrentConnections, Is.EqualTo (3), "ServicePoint.CurrentConnections");
@@ -797,7 +797,7 @@ namespace Xamarin.WebTests.TestRunners
 				ctx.Assert (currentOperation.HasRequest, "current request");
 				if (primary) {
 					var operation = await StartParallel (
-						ctx, cancellationToken, HelloWorldHandler.Simple,
+						ctx, cancellationToken, HelloWorldHandler.GetSimple (),
 						HttpStatusCode.InternalServerError, WebExceptionStatus.RequestCanceled).ConfigureAwait (false);
 					if (Interlocked.CompareExchange (ref queuedOperation, operation, null) != null)
 						throw new InvalidOperationException ("Invalid nested call.");
@@ -812,7 +812,7 @@ namespace Xamarin.WebTests.TestRunners
 				ctx.Assert (currentOperation.HasRequest, "current request");
 				if (primary) {
 					var operation = await StartParallel (
-						ctx, cancellationToken, HelloWorldHandler.Simple).ConfigureAwait (false);
+						ctx, cancellationToken, HelloWorldHandler.GetSimple ()).ConfigureAwait (false);
 					if (Interlocked.CompareExchange (ref queuedOperation, operation, null) != null)
 						throw new InvalidOperationException ("Invalid nested call.");
 					var request = await operation.WaitForRequest ().ConfigureAwait (false);
@@ -835,7 +835,7 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.NtlmWhileQueued:
 				ctx.Assert (currentOperation.HasRequest, "current request");
 				if (primary) {
-					var operation = await StartParallel (ctx, cancellationToken, HelloWorldHandler.Simple).ConfigureAwait (false);
+					var operation = await StartParallel (ctx, cancellationToken, HelloWorldHandler.GetSimple ()).ConfigureAwait (false);
 					if (Interlocked.CompareExchange (ref queuedOperation, operation, null) != null)
 						throw ctx.AssertFail ("Invalid nested call");
 				}

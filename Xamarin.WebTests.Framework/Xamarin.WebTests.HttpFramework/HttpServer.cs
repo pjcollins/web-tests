@@ -171,7 +171,8 @@ namespace Xamarin.WebTests.HttpFramework {
 
 		public Uri RegisterHandler (TestContext ctx, Handler handler)
 		{
-			var path = string.Format ("/{0}/{1}/", handler.GetType (), ++nextId);
+			var id = Interlocked.Increment (ref nextId);
+			var path = string.Format ("/{0}/{1}/", handler.GetType (), id);
 			RegisterHandler (ctx, path, handler);
 			return new Uri (TargetUri, path);
 		}

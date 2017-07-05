@@ -39,7 +39,7 @@ namespace Xamarin.WebTests.HttpHandlers
 	public abstract class Handler : Xamarin.AsyncTests.ICloneable, ITestFilter, ITestParameter
 	{
 		static int next_id;
-		public readonly int ID = ++next_id;
+		public readonly int ID = Interlocked.Increment (ref next_id);
 
 		public RequestFlags Flags {
 			get { return flags; }
@@ -213,7 +213,7 @@ namespace Xamarin.WebTests.HttpHandlers
 		public override string ToString ()
 		{
 			var padding = string.IsNullOrEmpty (Value) ? string.Empty : ": ";
-			return string.Format ("[{0}{1}{2}]", GetType ().Name, padding, Value);
+			return $"[{GetType ().Name}:{ID}{padding}{Value}]";
 		}
 	}
 }

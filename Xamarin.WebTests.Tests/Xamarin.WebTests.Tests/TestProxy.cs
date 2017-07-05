@@ -122,10 +122,10 @@ namespace Xamarin.WebTests.Tests {
 
 			switch (filter) {
 			case "martin":
-				list.Add (HelloWorldHandler.Simple);
+				list.Add (HelloWorldHandler.GetSimple ());
 				break;
 			default:
-				list.Add (HelloWorldHandler.Simple);
+				list.Add (HelloWorldHandler.GetSimple ());
 				list.AddRange (TestPost.GetParameters (ctx, filter, HttpServerFlags.Proxy));
 				break;
 			}
