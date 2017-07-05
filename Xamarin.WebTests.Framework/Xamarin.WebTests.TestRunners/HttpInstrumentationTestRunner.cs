@@ -95,7 +95,7 @@ namespace Xamarin.WebTests.TestRunners
 			ME = $"{GetType ().Name}({EffectiveType})";
 		}
 
-		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.CloseIdleConnection;
+		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.ReuseConnection;
 
 		static readonly HttpInstrumentationTestType[] WorkingTests = {
 			HttpInstrumentationTestType.Simple,
@@ -277,6 +277,7 @@ namespace Xamarin.WebTests.TestRunners
 				ctx.LogDebug (5, $"{me}: active connections: {currentOperation.ServicePoint.CurrentConnections}");
 				await Task.Delay ((int)(Parameters.IdleTime * 2.5)).ConfigureAwait (false);
 				ctx.LogDebug (5, $"{me}: active connections #1: {currentOperation.ServicePoint.CurrentConnections}");
+				ctx.Assert (currentOperation.ServicePoint.CurrentConnections, Is.EqualTo (0), "current connections");
 				break;
 			}
 
