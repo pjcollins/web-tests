@@ -170,7 +170,7 @@ namespace Xamarin.WebTests.HttpFramework
 
 			StreamWriter writer = null;
 			if (!WriteAsBlob) {
-				writer = new StreamWriter (stream);
+				writer = new StreamWriter (stream, new ASCIIEncoding (), 1024, true);
 				writer.AutoFlush = true;
 			}
 
@@ -206,7 +206,7 @@ namespace Xamarin.WebTests.HttpFramework
 				if (!bodyWritten && Body != null) {
 					cancellationToken.ThrowIfCancellationRequested ();
 					if (writer == null) {
-						writer = new StreamWriter (stream);
+						writer = new StreamWriter (stream, new ASCIIEncoding (), 1024, true);
 						writer.AutoFlush = true;
 					}
 					await Body.WriteToAsync (writer);

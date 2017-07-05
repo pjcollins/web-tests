@@ -95,7 +95,7 @@ namespace Xamarin.WebTests.TestRunners
 			ME = $"{GetType ().Name}({EffectiveType})";
 		}
 
-		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.ReuseAfterPartialRead;
+		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.LargeHeader;
 
 		static readonly HttpInstrumentationTestType[] WorkingTests = {
 			HttpInstrumentationTestType.Simple,
@@ -333,6 +333,7 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.NtlmWhileQueued:
 				return new AuthenticationHandler (AuthenticationType.NTLM, hello);
 			case HttpInstrumentationTestType.ReuseConnection:
+				return new HttpInstrumentationHandler (this, null, null, !primary);
 			case HttpInstrumentationTestType.ReuseAfterPartialRead:
 				return new HttpInstrumentationHandler (this, null, ConnectionHandler.GetLargeStringContent (250), !primary);
 			case HttpInstrumentationTestType.ReuseConnection2:
@@ -955,12 +956,12 @@ namespace Xamarin.WebTests.TestRunners
 
 				switch (TestRunner.EffectiveType) {
 				case HttpInstrumentationTestType.LargeHeader:
-					response = HttpResponse.CreateSuccess (Message);
+					response = new HttpResponse (HttpStatusCode.OK, Content);
 					response.AddHeader ("LargeTest", ConnectionHandler.GetLargeTextBuffer (100));
 					break;
 
 				case HttpInstrumentationTestType.LargeHeader2:
-					response = HttpResponse.CreateSuccess (Message);
+					response = new HttpResponse (HttpStatusCode.OK, Content);
 					response.AddHeader ("LargeTest", ConnectionHandler.GetLargeTextBuffer (100));
 					response.WriteAsBlob = true;
 					break;

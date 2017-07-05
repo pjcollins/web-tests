@@ -25,6 +25,7 @@
 // THE SOFTWARE.
 using System;
 using System.IO;
+using System.Text;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
@@ -122,7 +123,7 @@ namespace Xamarin.WebTests.Server
 
 		internal override async Task WriteRequest (TestContext ctx, HttpRequest request, CancellationToken cancellationToken)
 		{
-			using (var writer = new StreamWriter (Stream)) {
+			using (var writer = new StreamWriter (Stream, new ASCIIEncoding (), 1024, true)) {
 				writer.AutoFlush = true;
 				await request.Write (writer, cancellationToken).ConfigureAwait (false);
 			}
