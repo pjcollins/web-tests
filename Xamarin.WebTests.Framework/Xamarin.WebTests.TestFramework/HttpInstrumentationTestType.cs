@@ -56,6 +56,7 @@ namespace Xamarin.WebTests.TestFramework
 		ParallelNtlm,
 		LargeHeader,
 		LargeHeader2,
+		SendResponseAsBlob,
 		DummyDontUse
 	}
 }

@@ -178,12 +178,20 @@ namespace Xamarin.WebTests.HttpFramework
 				var message = StatusMessage ?? ((HttpStatusCode)StatusCode).ToString ();
 				var headerLine = $"{ProtocolToString (Protocol)} {(int)StatusCode} {message}\r\n";
 
+				bool bodyWritten = false;
+
 				if (WriteAsBlob) {
 					var sb = new StringBuilder ();
 					sb.Append (headerLine);
 					foreach (var entry in Headers)
 						sb.Append ($"{entry.Key}: {entry.Value}\r\n");
 					sb.Append ("\r\n");
+
+					if (Body is StringContent stringContent) {
+						sb.Append (stringContent.AsString ());
+						bodyWritten = true;
+					}
+
 					var blob = Encoding.UTF8.GetBytes (sb.ToString ());
 					await stream.WriteAsync (blob, 0, blob.Length).ConfigureAwait (false);
 					await stream.FlushAsync ();
@@ -195,7 +203,7 @@ namespace Xamarin.WebTests.HttpFramework
 				if (instrumentation != null)
 					await instrumentation.ResponseHeadersWritten (ctx, cancellationToken).ConfigureAwait (false);
 
-				if (Body != null) {
+				if (!bodyWritten && Body != null) {
 					cancellationToken.ThrowIfCancellationRequested ();
 					if (writer == null) {
 						writer = new StreamWriter (stream);

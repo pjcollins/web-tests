@@ -95,7 +95,7 @@ namespace Xamarin.WebTests.TestRunners
 			ME = $"{GetType ().Name}({EffectiveType})";
 		}
 
-		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.LargeHeader2;
+		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.SendResponseAsBlob;
 
 		static readonly HttpInstrumentationTestType[] WorkingTests = {
 			HttpInstrumentationTestType.Simple,
@@ -118,7 +118,8 @@ namespace Xamarin.WebTests.TestRunners
 			HttpInstrumentationTestType.NtlmChunked,
 			HttpInstrumentationTestType.Get404,
 			HttpInstrumentationTestType.NtlmInstrumentation,
-			HttpInstrumentationTestType.LargeHeader
+			HttpInstrumentationTestType.LargeHeader,
+			HttpInstrumentationTestType.LargeHeader2
 		};
 
 		static readonly HttpInstrumentationTestType[] UnstableTests = {
@@ -355,6 +356,7 @@ namespace Xamarin.WebTests.TestRunners
 				return new HttpInstrumentationHandler (this, GetAuthenticationManager (), null, true);
 			case HttpInstrumentationTestType.LargeHeader:
 			case HttpInstrumentationTestType.LargeHeader2:
+			case HttpInstrumentationTestType.SendResponseAsBlob:
 				return new HttpInstrumentationHandler (this, null, null, true);
 			default:
 				return hello;
@@ -662,6 +664,7 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.CloseIdleConnection:
 			case HttpInstrumentationTestType.LargeHeader:
 			case HttpInstrumentationTestType.LargeHeader2:
+			case HttpInstrumentationTestType.SendResponseAsBlob:
 				ctx.Assert (primary, "Primary request");
 				break;
 
@@ -880,6 +883,7 @@ namespace Xamarin.WebTests.TestRunners
 
 				case HttpInstrumentationTestType.LargeHeader:
 				case HttpInstrumentationTestType.LargeHeader2:
+				case HttpInstrumentationTestType.SendResponseAsBlob:
 					break;
 				}
 
@@ -920,6 +924,7 @@ namespace Xamarin.WebTests.TestRunners
 				case HttpInstrumentationTestType.CloseIdleConnection:
 				case HttpInstrumentationTestType.LargeHeader:
 				case HttpInstrumentationTestType.LargeHeader2:
+				case HttpInstrumentationTestType.SendResponseAsBlob:
 					ctx.Assert (request.Method, Is.EqualTo ("GET"), "method");
 					break;
 
@@ -940,16 +945,27 @@ namespace Xamarin.WebTests.TestRunners
 				await TestRunner.HandleRequest (
 					ctx, this, connection, request, AuthenticationState.None, cancellationToken).ConfigureAwait (false);
 
-				var response = HttpResponse.CreateSuccess (Message);
+				HttpResponse response;
 
 				switch (TestRunner.EffectiveType) {
 				case HttpInstrumentationTestType.LargeHeader:
+					response = HttpResponse.CreateSuccess (Message);
 					response.AddHeader ("LargeTest", ConnectionHandler.GetLargeTextBuffer (100));
 					break;
 
 				case HttpInstrumentationTestType.LargeHeader2:
+					response = HttpResponse.CreateSuccess (Message);
 					response.AddHeader ("LargeTest", ConnectionHandler.GetLargeTextBuffer (100));
 					response.WriteAsBlob = true;
+					break;
+
+				case HttpInstrumentationTestType.SendResponseAsBlob:
+					response = HttpResponse.CreateSimple (HttpStatusCode.OK, ConnectionHandler.TheQuickBrownFox);
+					response.WriteAsBlob = true;
+					break;
+
+				default:
+					response = HttpResponse.CreateSuccess (Message);
 					break;
 				}
 
@@ -960,13 +976,20 @@ namespace Xamarin.WebTests.TestRunners
 			{
 				if (Target != null)
 					return Target.CheckResponse (ctx, response);
+
+				HttpContent expectedContent = null;
+				switch (TestRunner.EffectiveType) {
+				case HttpInstrumentationTestType.SendResponseAsBlob:
+					expectedContent = new StringContent (ConnectionHandler.TheQuickBrownFox);
+					break;
+				default:
+					expectedContent = new StringContent (Message);
+					break;
+				}
+
 				if (!ctx.Expect (response.Content, Is.Not.Null, "response.Content != null"))
 					return false;
-				if (!ctx.Expect (response.Content.Length, Is.EqualTo (Message.Length), "response.Content.Length"))
-					return false;
-				if (!ctx.Expect (response.Content.AsString (), Is.EqualTo (Message), "response.Content.AsString()"))
-					return false;
-				return true;
+				return HttpContent.Compare (ctx, response.Content, expectedContent, false, "response.Content");
 			}
 		}
 	}
