@@ -1012,7 +1012,7 @@ namespace Xamarin.WebTests.TestRunners
 					ctx, this, connection, request, state, cancellationToken).ConfigureAwait (false);
 
 				if (response != null) {
-					connection.Server.RegisterHandler (request.Path, this);
+					connection.Server.RegisterHandler (ctx, request.Path, this);
 					return response;
 				}
 

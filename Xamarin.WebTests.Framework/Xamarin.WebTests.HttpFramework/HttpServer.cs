@@ -169,21 +169,21 @@ namespace Xamarin.WebTests.HttpFramework {
 		static long nextId;
 		int countRequests;
 
-		public Uri RegisterHandler (Handler handler)
+		public Uri RegisterHandler (TestContext ctx, Handler handler)
 		{
 			var path = string.Format ("/{0}/{1}/", handler.GetType (), ++nextId);
-			RegisterHandler (path, handler);
+			RegisterHandler (ctx, path, handler);
 			return new Uri (TargetUri, path);
 		}
 
-		public abstract void RegisterHandler (string path, Handler handler);
+		public abstract void RegisterHandler (TestContext ctx, string path, Handler handler);
 
-		protected internal abstract Handler GetHandler (string path);
+		protected internal abstract Handler GetHandler (TestContext ctx, string path);
 
 		public async Task<bool> HandleConnection (TestContext ctx, HttpConnection connection,
 		                                          HttpRequest request, CancellationToken cancellationToken)
 		{
-			var handler = GetHandler (request.Path);
+			var handler = GetHandler (ctx, request.Path);
 			if (Delegate != null && !Delegate.HandleConnection (ctx, connection, request, handler))
 				return false;
 

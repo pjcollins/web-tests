@@ -64,14 +64,14 @@ namespace Xamarin.WebTests.HttpFramework {
 
 		AuthenticationType authType = AuthenticationType.None;
 
-		public override void RegisterHandler (string path, Handler handler)
+		public override void RegisterHandler (TestContext ctx, string path, Handler handler)
 		{
-			Target.RegisterHandler (path, handler);
+			Target.RegisterHandler (ctx, path, handler);
 		}
 
-		protected internal override Handler GetHandler (string path)
+		protected internal override Handler GetHandler (TestContext ctx, string path)
 		{
-			return Target.GetHandler (path);
+			return Target.GetHandler (ctx, path);
 		}
 
 		ProxyListener currentListener;

@@ -191,14 +191,14 @@ namespace Xamarin.WebTests.HttpHandlers
 		protected internal abstract Task<HttpResponse> HandleRequest (TestContext ctx, HttpConnection connection, HttpRequest request,
 		                                                              RequestFlags effectiveFlags, CancellationToken cancellationToken);
 
-		public Uri RegisterRequest (HttpServer server)
+		public Uri RegisterRequest (TestContext ctx, HttpServer server)
 		{
 			lock (this) {
 				if (hasRequest)
 					throw new InvalidOperationException ();
 				hasRequest = true;
 
-				return server.RegisterHandler (this);
+				return server.RegisterHandler (ctx, this);
 			}
 		}
 

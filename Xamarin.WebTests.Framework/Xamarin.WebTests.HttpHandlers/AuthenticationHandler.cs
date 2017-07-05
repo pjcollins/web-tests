@@ -104,7 +104,7 @@ namespace Xamarin.WebTests.HttpHandlers
 			}
 
 			if (response != null) {
-				connection.Server.RegisterHandler (request.Path, this);
+				connection.Server.RegisterHandler (ctx, request.Path, this);
 				return response;
 			}
 

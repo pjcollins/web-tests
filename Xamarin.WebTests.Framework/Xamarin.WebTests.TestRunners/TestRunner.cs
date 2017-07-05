@@ -96,7 +96,7 @@ namespace Xamarin.WebTests.TestRunners
 
 			Handler target = (Handler)Redirect ?? Handler;
 
-			var uri = target.RegisterRequest (Server);
+			var uri = target.RegisterRequest (ctx, Server);
 			var request = CreateRequest (ctx, uri);
 			ConfigureRequest (ctx, uri, request);
 
