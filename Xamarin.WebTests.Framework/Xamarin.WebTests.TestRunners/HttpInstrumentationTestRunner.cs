@@ -95,7 +95,7 @@ namespace Xamarin.WebTests.TestRunners
 			ME = $"{GetType ().Name}({EffectiveType})";
 		}
 
-		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.LargeHeader;
+		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.ReuseAfterPartialRead;
 
 		static readonly HttpInstrumentationTestType[] WorkingTests = {
 			HttpInstrumentationTestType.Simple,
@@ -396,6 +396,17 @@ namespace Xamarin.WebTests.TestRunners
 					throw ctx.AssertFail ("Invalid nested call");
 				await operation.WaitForRequest ();
 				// await operation.WaitForCompletion (false).ConfigureAwait (false);
+				return;
+			}
+
+			if (EffectiveType == HttpInstrumentationTestType.ReuseAfterPartialRead) {
+				var firstHandler = (HttpInstrumentationHandler)currentOperation.Handler;
+				ctx.LogDebug (2, $"{handler.Message}: {handler == firstHandler} {handler.RemoteEndPoint}");
+				if (handler == firstHandler)
+					return;
+				// We can't reuse the connection because we did not read the entire response.
+				ctx.Assert (connection.RemoteEndPoint, Is.Not.EqualTo (firstHandler.RemoteEndPoint), "RemoteEndPoint");
+				return;
 			}
 		}
 
@@ -502,6 +513,16 @@ namespace Xamarin.WebTests.TestRunners
 				ExpectedError = expectedError;
 				requestTask = new TaskCompletionSource<TraditionalRequest> ();
 				requestDoneTask = new TaskCompletionSource<bool> ();
+			}
+
+			protected override Request CreateRequest (TestContext ctx, Uri uri)
+			{
+				switch (Parent.EffectiveType) {
+				case HttpInstrumentationTestType.ReuseAfterPartialRead:
+					return new HttpInstrumentationRequest (Parent, uri);
+				default:
+					return base.CreateRequest (ctx, uri);
+				}
 			}
 
 			protected override void ConfigureRequest (TestContext ctx, Uri uri, Request request)
@@ -802,6 +823,45 @@ namespace Xamarin.WebTests.TestRunners
 			return ret;
 		}
 
+		class HttpInstrumentationRequest : TraditionalRequest
+		{
+			public HttpInstrumentationTestRunner TestRunner {
+				get;
+			}
+
+			public HttpInstrumentationRequest (HttpInstrumentationTestRunner runner, Uri uri)
+				: base (uri)
+			{
+				TestRunner = runner;
+			}
+
+			protected override async Task<Response> GetResponseFromHttp (
+				TestContext ctx, HttpWebResponse response, WebException error, CancellationToken cancellationToken)
+			{
+				cancellationToken.ThrowIfCancellationRequested ();
+				HttpContent content = null;
+
+				if (TestRunner.EffectiveType == HttpInstrumentationTestType.ReuseAfterPartialRead) {
+					var buffer = new byte[1234];
+					using (var stream = response.GetResponseStream ()) {
+						var ret = await stream.ReadAsync (buffer, 0, buffer.Length).ConfigureAwait (false);
+						ctx.Assert (ret, Is.EqualTo (buffer.Length));
+						content = StringContent.CreateMaybeNull (new ASCIIEncoding ().GetString (buffer, 0, ret));
+					}
+				} else {
+					using (var reader = new StreamReader (response.GetResponseStream ())) {
+						if (!reader.EndOfStream) {
+							var text = await reader.ReadToEndAsync ().ConfigureAwait (false);
+							content = StringContent.CreateMaybeNull (text);
+						}
+					}
+				}
+
+				response.Dispose ();
+				return new SimpleResponse (this, response.StatusCode, content, error);
+			}
+		}
+
 		class HttpInstrumentationHandler : Handler
 		{
 			public HttpInstrumentationTestRunner TestRunner {
@@ -989,9 +1049,14 @@ namespace Xamarin.WebTests.TestRunners
 				if (Target != null)
 					return Target.CheckResponse (ctx, response);
 
-				HttpContent expectedContent = Content ?? new StringContent (Message);
 				if (!ctx.Expect (response.Content, Is.Not.Null, "response.Content != null"))
 					return false;
+
+				if (TestRunner.EffectiveType == HttpInstrumentationTestType.ReuseAfterPartialRead) {
+					return ctx.Expect (response.Content.Length, Is.GreaterThan (0), "response.Content.Length");
+				}
+
+				HttpContent expectedContent = Content ?? new StringContent (Message);
 				return HttpContent.Compare (ctx, response.Content, expectedContent, false, "response.Content");
 			}
 		}
