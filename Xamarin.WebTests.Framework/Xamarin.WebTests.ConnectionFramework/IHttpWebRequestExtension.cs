@@ -77,6 +77,10 @@ namespace Xamarin.WebTests.ConnectionFramework
 		string Host {
 			get; set;
 		}
+
+		string ConnectionGroupName {
+			get; set;
+		}
 	}
 }
 

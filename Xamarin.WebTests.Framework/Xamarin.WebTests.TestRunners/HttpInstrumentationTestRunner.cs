@@ -95,7 +95,7 @@ namespace Xamarin.WebTests.TestRunners
 			ME = $"{GetType ().Name}({EffectiveType})";
 		}
 
-		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.CustomConnectionGroup;
+		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.CloseCustomConnectionGroup;
 
 		static readonly HttpInstrumentationTestType[] WorkingTests = {
 			HttpInstrumentationTestType.Simple,
@@ -121,7 +121,10 @@ namespace Xamarin.WebTests.TestRunners
 			HttpInstrumentationTestType.LargeHeader,
 			HttpInstrumentationTestType.LargeHeader2,
 			HttpInstrumentationTestType.SendResponseAsBlob,
-			HttpInstrumentationTestType.ReuseAfterPartialRead
+			HttpInstrumentationTestType.ReuseAfterPartialRead,
+			HttpInstrumentationTestType.CustomConnectionGroup,
+			HttpInstrumentationTestType.ReuseCustomConnectionGroup,
+			HttpInstrumentationTestType.CloseCustomConnectionGroup
 		};
 
 		static readonly HttpInstrumentationTestType[] UnstableTests = {
@@ -279,6 +282,7 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.ReuseConnection2:
 			case HttpInstrumentationTestType.ReuseAfterPartialRead:
 			case HttpInstrumentationTestType.CustomConnectionGroup:
+			case HttpInstrumentationTestType.ReuseCustomConnectionGroup:
 				secondOperation = StartSecond (ctx, cancellationToken, CreateHandler (ctx, false));
 				break;
 			case HttpInstrumentationTestType.CloseIdleConnection:
@@ -286,6 +290,11 @@ namespace Xamarin.WebTests.TestRunners
 				await Task.Delay ((int)(Parameters.IdleTime * 2.5)).ConfigureAwait (false);
 				ctx.LogDebug (5, $"{me}: active connections #1: {currentOperation.ServicePoint.CurrentConnections}");
 				ctx.Assert (currentOperation.ServicePoint.CurrentConnections, Is.EqualTo (0), "current connections");
+				break;
+			case HttpInstrumentationTestType.CloseCustomConnectionGroup:
+				ctx.LogDebug (5, $"{me}: active connections: {currentOperation.ServicePoint.CurrentConnections}");
+				currentOperation.ServicePoint.CloseConnectionGroup (currentOperation.Request.RequestExt.ConnectionGroupName);
+				ctx.LogDebug (5, $"{me}: active connections #1: {currentOperation.ServicePoint.CurrentConnections}");
 				break;
 			}
 
@@ -355,6 +364,7 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.Get404:
 				return new GetHandler (EffectiveType.ToString (), null, HttpStatusCode.NotFound);
 			case HttpInstrumentationTestType.CloseIdleConnection:
+			case HttpInstrumentationTestType.CloseCustomConnectionGroup:
 				return new HttpInstrumentationHandler (this, null, null, false);
 			case HttpInstrumentationTestType.NtlmInstrumentation:
 			case HttpInstrumentationTestType.NtlmClosesConnection:
@@ -365,6 +375,7 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.SendResponseAsBlob:
 				return new HttpInstrumentationHandler (this, null, ConnectionHandler.TheQuickBrownFoxContent, true);
 			case HttpInstrumentationTestType.CustomConnectionGroup:
+			case HttpInstrumentationTestType.ReuseCustomConnectionGroup:
 				return new HttpInstrumentationHandler (this, null, null, !primary);
 			default:
 				return hello;
@@ -378,6 +389,7 @@ namespace Xamarin.WebTests.TestRunners
 		{
 			switch (EffectiveType) {
 			case HttpInstrumentationTestType.ReuseConnection:
+			case HttpInstrumentationTestType.ReuseCustomConnectionGroup:
 				MustReuseConnection ();
 				break;
 
@@ -386,11 +398,13 @@ namespace Xamarin.WebTests.TestRunners
 				break;
 
 			case HttpInstrumentationTestType.ReuseAfterPartialRead:
+				// We can't reuse the connection because we did not read the entire response.
 				MustNotReuseConnection ();
 				break;
 
 			case HttpInstrumentationTestType.CustomConnectionGroup:
-				MustReuseConnection ();
+				// We can't reuse the connection because we're in a different connection group.
+				MustNotReuseConnection ();
 				break;
 			}
 
@@ -415,7 +429,6 @@ namespace Xamarin.WebTests.TestRunners
 				ctx.LogDebug (2, $"{handler.Message}: {handler == firstHandler} {handler.RemoteEndPoint}");
 				if (handler == firstHandler)
 					return;
-				// We can't reuse the connection because we did not read the entire response.
 				ctx.Assert (connection.RemoteEndPoint, Is.Not.EqualTo (firstHandler.RemoteEndPoint), "RemoteEndPoint");
 			}
 
@@ -579,6 +592,9 @@ namespace Xamarin.WebTests.TestRunners
 				case HttpInstrumentationTestType.ParallelNtlm:
 				case HttpInstrumentationTestType.CustomConnectionGroup:
 					break;
+				case HttpInstrumentationTestType.ReuseCustomConnectionGroup:
+					currentRequest.RequestExt.ConnectionGroupName = "custom";
+					break;
 				default:
 					throw ctx.AssertFail (Parent.EffectiveType);
 				}
@@ -597,7 +613,9 @@ namespace Xamarin.WebTests.TestRunners
 				case HttpInstrumentationTestType.SimplePost:
 					currentRequest.SetContentLength (((PostHandler)Handler).Content.Length);
 					break;
-				case HttpInstrumentationTestType.SimpleNtlm:
+				case HttpInstrumentationTestType.CustomConnectionGroup:
+				case HttpInstrumentationTestType.ReuseCustomConnectionGroup:
+					currentRequest.RequestExt.ConnectionGroupName = "custom";
 					break;
 				}
 			}
@@ -708,6 +726,7 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.SimplePost:
 			case HttpInstrumentationTestType.Get404:
 			case HttpInstrumentationTestType.CloseIdleConnection:
+			case HttpInstrumentationTestType.CloseCustomConnectionGroup:
 			case HttpInstrumentationTestType.LargeHeader:
 			case HttpInstrumentationTestType.LargeHeader2:
 			case HttpInstrumentationTestType.SendResponseAsBlob:
@@ -826,6 +845,7 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.ReuseConnection2:
 			case HttpInstrumentationTestType.ReuseAfterPartialRead:
 			case HttpInstrumentationTestType.CustomConnectionGroup:
+			case HttpInstrumentationTestType.ReuseCustomConnectionGroup:
 				break;
 
 			case HttpInstrumentationTestType.ParallelNtlm:
@@ -1009,11 +1029,13 @@ namespace Xamarin.WebTests.TestRunners
 				switch (TestRunner.EffectiveType) {
 				case HttpInstrumentationTestType.ReuseConnection:
 				case HttpInstrumentationTestType.CloseIdleConnection:
+				case HttpInstrumentationTestType.CloseCustomConnectionGroup:
 				case HttpInstrumentationTestType.LargeHeader:
 				case HttpInstrumentationTestType.LargeHeader2:
 				case HttpInstrumentationTestType.SendResponseAsBlob:
 				case HttpInstrumentationTestType.ReuseAfterPartialRead:
 				case HttpInstrumentationTestType.CustomConnectionGroup:
+				case HttpInstrumentationTestType.ReuseCustomConnectionGroup:
 					ctx.Assert (request.Method, Is.EqualTo ("GET"), "method");
 					break;
 
