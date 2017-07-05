@@ -54,6 +54,7 @@ namespace Xamarin.WebTests.TestFramework
 		NtlmInstrumentation,
 		NtlmClosesConnection,
 		ParallelNtlm,
+		LargeHeader,
 		DummyDontUse
 	}
 }
