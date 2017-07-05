@@ -26,6 +26,7 @@
 using System;
 using System.IO;
 using System.Net;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xamarin.AsyncTests;
@@ -61,8 +62,18 @@ namespace Xamarin.WebTests.HttpFramework
 			}
 		}
 
+		public bool WriteAsBlob {
+			get { return writeAsBlob; }
+			set {
+				if (responseWritten)
+					throw new InvalidOperationException ();
+				writeAsBlob = value;
+			}
+		}
+
 		bool? keepAlive;
 		bool responseWritten;
+		bool writeAsBlob;
 
 		public HttpResponse (HttpStatusCode status, HttpContent content = null)
 		{
@@ -149,24 +160,54 @@ namespace Xamarin.WebTests.HttpFramework
 			Body = await ReadBody (ctx, reader, cancellationToken);
 		}
 
-		public async Task Write (TestContext ctx, StreamWriter writer, CancellationToken cancellationToken,
-		                         IHttpInstrumentation instrumentation = null)
+		public async Task Write (TestContext ctx, Stream stream, CancellationToken cancellationToken,
+					 IHttpInstrumentation instrumentation = null)
 		{
 			CheckHeaders ();
 			responseWritten = true;
 
 			cancellationToken.ThrowIfCancellationRequested ();
 
-			var message = StatusMessage ?? ((HttpStatusCode)StatusCode).ToString ();
-			await writer.WriteAsync (string.Format ("{0} {1} {2}\r\n", ProtocolToString (Protocol), (int)StatusCode, message));
-			await WriteHeaders (writer, cancellationToken);
+			StreamWriter writer = null;
+			if (!WriteAsBlob) {
+				writer = new StreamWriter (stream);
+				writer.AutoFlush = true;
+			}
 
-			if (instrumentation != null)
-				await instrumentation.ResponseHeadersWritten (ctx, cancellationToken).ConfigureAwait (false);
+			try {
+				var message = StatusMessage ?? ((HttpStatusCode)StatusCode).ToString ();
+				var headerLine = $"{ProtocolToString (Protocol)} {(int)StatusCode} {message}\r\n";
 
-			if (Body != null)
-				await Body.WriteToAsync (writer);
-			await writer.FlushAsync ();
+				if (WriteAsBlob) {
+					var sb = new StringBuilder ();
+					sb.Append (headerLine);
+					foreach (var entry in Headers)
+						sb.Append ($"{entry.Key}: {entry.Value}\r\n");
+					sb.Append ("\r\n");
+					var blob = Encoding.UTF8.GetBytes (sb.ToString ());
+					await stream.WriteAsync (blob, 0, blob.Length).ConfigureAwait (false);
+					await stream.FlushAsync ();
+				} else {
+					await writer.WriteAsync (headerLine).ConfigureAwait (false);
+					await WriteHeaders (writer, cancellationToken);
+				}
+
+				if (instrumentation != null)
+					await instrumentation.ResponseHeadersWritten (ctx, cancellationToken).ConfigureAwait (false);
+
+				if (Body != null) {
+					cancellationToken.ThrowIfCancellationRequested ();
+					if (writer == null) {
+						writer = new StreamWriter (stream);
+						writer.AutoFlush = true;
+					}
+					await Body.WriteToAsync (writer);
+				}
+				await stream.FlushAsync ();
+			} finally {
+				if (writer != null)
+					writer.Dispose ();
+			}
 		}
 
 		public static HttpResponse CreateSimple (HttpStatusCode status, string body = null)

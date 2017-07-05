@@ -55,7 +55,6 @@ namespace Xamarin.WebTests.Server
 		Stream networkStream;
 		SslStream sslStream;
 		HttpStreamReader reader;
-		StreamWriter writer;
 
 		public SocketConnection (HttpServer server, Socket socket)
 			: base (server, (IPEndPoint)socket.RemoteEndPoint)
@@ -80,8 +79,6 @@ namespace Xamarin.WebTests.Server
 			}
 
 			reader = new HttpStreamReader (Stream);
-			writer = new StreamWriter (Stream);
-			writer.AutoFlush = true;
 		}
 
 		async Task<SslStream> CreateSslStream (TestContext ctx, Stream innerStream, CancellationToken cancellationToken)
@@ -123,14 +120,17 @@ namespace Xamarin.WebTests.Server
 			return HttpResponse.Read (ctx, reader, cancellationToken);
 		}
 
-		internal override Task WriteRequest (TestContext ctx, HttpRequest request, CancellationToken cancellationToken)
+		internal override async Task WriteRequest (TestContext ctx, HttpRequest request, CancellationToken cancellationToken)
 		{
-			return request.Write (writer, cancellationToken);
+			using (var writer = new StreamWriter (Stream)) {
+				writer.AutoFlush = true;
+				await request.Write (writer, cancellationToken).ConfigureAwait (false);
+			}
 		}
 
 		internal override Task WriteResponse (TestContext ctx, HttpResponse response, CancellationToken cancellationToken)
 		{
-			return response.Write (ctx, writer, cancellationToken, Server.Instrumentation);
+			return response.Write (ctx, Stream, cancellationToken, Server.Instrumentation);
 		}
 
 		protected override void Close ()
@@ -140,10 +140,6 @@ namespace Xamarin.WebTests.Server
 			if (reader != null) {
 				reader.Dispose ();
 				reader = null;
-			}
-			if (writer != null) {
-				writer.Dispose ();
-				writer.Dispose ();
 			}
 			if (sslStream != null) {
 				sslStream.Dispose ();

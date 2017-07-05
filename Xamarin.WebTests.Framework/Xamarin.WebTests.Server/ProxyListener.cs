@@ -136,11 +136,8 @@ namespace Xamarin.WebTests.Server
 
 			var targetStream = new NetworkStream (targetSocket, true);
 
-			var writer = new StreamWriter (stream, new ASCIIEncoding ());
-			writer.AutoFlush = true;
-
 			var connectionEstablished = new HttpResponse (HttpStatusCode.OK, HttpProtocol.Http10, "Connection established");
-			await connectionEstablished.Write (TestContext, writer, cancellationToken).ConfigureAwait (false);
+			await connectionEstablished.Write (TestContext, stream, cancellationToken).ConfigureAwait (false);
 
 			try {
 				await RunTunnel (stream, targetStream, cancellationToken);
