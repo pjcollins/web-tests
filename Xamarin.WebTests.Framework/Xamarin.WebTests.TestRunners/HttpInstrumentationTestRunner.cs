@@ -551,8 +551,10 @@ namespace Xamarin.WebTests.TestRunners
 			public void Start (TestContext ctx, CancellationToken cancellationToken)
 			{
 				runTask = Run (ctx, cancellationToken, ExpectedStatus, ExpectedError).ContinueWith (t => {
-					if (t.IsFaulted || t.IsCanceled)
-						requestDoneTask.TrySetResult (false);
+					if (t.IsFaulted)
+						requestDoneTask.TrySetException (t.Exception);
+					else if (t.IsCanceled)
+						requestDoneTask.TrySetCanceled ();
 					else
 						requestDoneTask.TrySetResult (true);
 				});
@@ -566,7 +568,7 @@ namespace Xamarin.WebTests.TestRunners
 			public async Task<bool> WaitForCompletion (bool ignoreErrors = false)
 			{
 				try {
-					await runTask.ConfigureAwait (false);
+					await requestDoneTask.Task.ConfigureAwait (false);
 					return true;
 				} catch {
 					if (ignoreErrors)
