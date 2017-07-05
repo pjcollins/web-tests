@@ -351,6 +351,8 @@ namespace Xamarin.WebTests.TestFramework
 			0x68, 0x65, 0x20, 0x6c, 0x61, 0x7a, 0x79, 0x20, 0x64, 0x6f, 0x67
 		};
 
+		public static readonly StringContent TheQuickBrownFoxContent = new StringContent (TheQuickBrownFox);
+
 		public static string GetLargeTextBuffer (int count)
 		{
 			var sb = new StringBuilder ();
@@ -360,6 +362,11 @@ namespace Xamarin.WebTests.TestFramework
 				sb.Append ($"The quick brown fox jumps over the lazy dog {count - i} times.");
 			}
 			return sb.ToString ();
+		}
+
+		public static StringContent GetLargeStringContent (int count)
+		{
+			return new StringContent (GetLargeTextBuffer (count));
 		}
 
 		public static byte[] GetTextBuffer (string type)

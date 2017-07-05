@@ -95,7 +95,7 @@ namespace Xamarin.WebTests.TestRunners
 			ME = $"{GetType ().Name}({EffectiveType})";
 		}
 
-		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.SendResponseAsBlob;
+		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.ReuseAfterPartialRead;
 
 		static readonly HttpInstrumentationTestType[] WorkingTests = {
 			HttpInstrumentationTestType.Simple,
@@ -119,7 +119,8 @@ namespace Xamarin.WebTests.TestRunners
 			HttpInstrumentationTestType.Get404,
 			HttpInstrumentationTestType.NtlmInstrumentation,
 			HttpInstrumentationTestType.LargeHeader,
-			HttpInstrumentationTestType.LargeHeader2
+			HttpInstrumentationTestType.LargeHeader2,
+			HttpInstrumentationTestType.SendResponseAsBlob
 		};
 
 		static readonly HttpInstrumentationTestType[] UnstableTests = {
@@ -275,6 +276,7 @@ namespace Xamarin.WebTests.TestRunners
 				break;
 			case HttpInstrumentationTestType.ReuseConnection:
 			case HttpInstrumentationTestType.ReuseConnection2:
+			case HttpInstrumentationTestType.ReuseAfterPartialRead:
 				secondOperation = StartSecond (ctx, cancellationToken, CreateHandler (ctx, false));
 				break;
 			case HttpInstrumentationTestType.CloseIdleConnection:
@@ -331,7 +333,8 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.NtlmWhileQueued:
 				return new AuthenticationHandler (AuthenticationType.NTLM, hello);
 			case HttpInstrumentationTestType.ReuseConnection:
-				return new HttpInstrumentationHandler (this, null, null, !primary);
+			case HttpInstrumentationTestType.ReuseAfterPartialRead:
+				return new HttpInstrumentationHandler (this, null, ConnectionHandler.GetLargeStringContent (250), !primary);
 			case HttpInstrumentationTestType.ReuseConnection2:
 				if (primary)
 					return new HttpInstrumentationHandler (this, null, HttpContent.HelloWorld, false);
@@ -357,7 +360,7 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.LargeHeader:
 			case HttpInstrumentationTestType.LargeHeader2:
 			case HttpInstrumentationTestType.SendResponseAsBlob:
-				return new HttpInstrumentationHandler (this, null, null, true);
+				return new HttpInstrumentationHandler (this, null, ConnectionHandler.TheQuickBrownFoxContent, true);
 			default:
 				return hello;
 			}
@@ -531,6 +534,7 @@ namespace Xamarin.WebTests.TestRunners
 				case HttpInstrumentationTestType.ManyParallelRequestsStress:
 				case HttpInstrumentationTestType.ReuseConnection:
 				case HttpInstrumentationTestType.ReuseConnection2:
+				case HttpInstrumentationTestType.ReuseAfterPartialRead:
 				case HttpInstrumentationTestType.ParallelNtlm:
 					break;
 				default:
@@ -778,6 +782,7 @@ namespace Xamarin.WebTests.TestRunners
 
 			case HttpInstrumentationTestType.ReuseConnection:
 			case HttpInstrumentationTestType.ReuseConnection2:
+			case HttpInstrumentationTestType.ReuseAfterPartialRead:
 				break;
 
 			case HttpInstrumentationTestType.ParallelNtlm:
@@ -925,6 +930,7 @@ namespace Xamarin.WebTests.TestRunners
 				case HttpInstrumentationTestType.LargeHeader:
 				case HttpInstrumentationTestType.LargeHeader2:
 				case HttpInstrumentationTestType.SendResponseAsBlob:
+				case HttpInstrumentationTestType.ReuseAfterPartialRead:
 					ctx.Assert (request.Method, Is.EqualTo ("GET"), "method");
 					break;
 
@@ -960,7 +966,12 @@ namespace Xamarin.WebTests.TestRunners
 					break;
 
 				case HttpInstrumentationTestType.SendResponseAsBlob:
-					response = HttpResponse.CreateSimple (HttpStatusCode.OK, ConnectionHandler.TheQuickBrownFox);
+					response = new HttpResponse (HttpStatusCode.OK, Content);
+					response.WriteAsBlob = true;
+					break;
+
+				case HttpInstrumentationTestType.ReuseAfterPartialRead:
+					response = new HttpResponse (HttpStatusCode.OK, Content);
 					response.WriteAsBlob = true;
 					break;
 
@@ -977,16 +988,7 @@ namespace Xamarin.WebTests.TestRunners
 				if (Target != null)
 					return Target.CheckResponse (ctx, response);
 
-				HttpContent expectedContent = null;
-				switch (TestRunner.EffectiveType) {
-				case HttpInstrumentationTestType.SendResponseAsBlob:
-					expectedContent = new StringContent (ConnectionHandler.TheQuickBrownFox);
-					break;
-				default:
-					expectedContent = new StringContent (Message);
-					break;
-				}
-
+				HttpContent expectedContent = Content ?? new StringContent (Message);
 				if (!ctx.Expect (response.Content, Is.Not.Null, "response.Content != null"))
 					return false;
 				return HttpContent.Compare (ctx, response.Content, expectedContent, false, "response.Content");
