@@ -95,7 +95,7 @@ namespace Xamarin.WebTests.TestRunners
 			ME = $"{GetType ().Name}({EffectiveType})";
 		}
 
-		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.LargeHeader;
+		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.LargeHeader2;
 
 		static readonly HttpInstrumentationTestType[] WorkingTests = {
 			HttpInstrumentationTestType.Simple,
@@ -354,6 +354,7 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.ParallelNtlm:
 				return new HttpInstrumentationHandler (this, GetAuthenticationManager (), null, true);
 			case HttpInstrumentationTestType.LargeHeader:
+			case HttpInstrumentationTestType.LargeHeader2:
 				return new HttpInstrumentationHandler (this, null, null, true);
 			default:
 				return hello;
@@ -660,6 +661,7 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.Get404:
 			case HttpInstrumentationTestType.CloseIdleConnection:
 			case HttpInstrumentationTestType.LargeHeader:
+			case HttpInstrumentationTestType.LargeHeader2:
 				ctx.Assert (primary, "Primary request");
 				break;
 
@@ -877,6 +879,7 @@ namespace Xamarin.WebTests.TestRunners
 					break;
 
 				case HttpInstrumentationTestType.LargeHeader:
+				case HttpInstrumentationTestType.LargeHeader2:
 					break;
 				}
 
@@ -916,11 +919,14 @@ namespace Xamarin.WebTests.TestRunners
 				case HttpInstrumentationTestType.ReuseConnection:
 				case HttpInstrumentationTestType.CloseIdleConnection:
 				case HttpInstrumentationTestType.LargeHeader:
+				case HttpInstrumentationTestType.LargeHeader2:
 					ctx.Assert (request.Method, Is.EqualTo ("GET"), "method");
 					break;
+
 				case HttpInstrumentationTestType.ReuseConnection2:
 					ctx.Assert (request.Method, Is.EqualTo ("POST"), "method");
 					break;
+
 				case HttpInstrumentationTestType.NtlmInstrumentation:
 				case HttpInstrumentationTestType.NtlmClosesConnection:
 				case HttpInstrumentationTestType.ParallelNtlm:
@@ -939,6 +945,11 @@ namespace Xamarin.WebTests.TestRunners
 				switch (TestRunner.EffectiveType) {
 				case HttpInstrumentationTestType.LargeHeader:
 					response.AddHeader ("LargeTest", ConnectionHandler.GetLargeTextBuffer (100));
+					break;
+
+				case HttpInstrumentationTestType.LargeHeader2:
+					response.AddHeader ("LargeTest", ConnectionHandler.GetLargeTextBuffer (100));
+					response.WriteAsBlob = true;
 					break;
 				}
 
