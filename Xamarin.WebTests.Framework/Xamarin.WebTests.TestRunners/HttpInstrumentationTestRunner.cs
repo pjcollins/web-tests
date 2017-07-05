@@ -95,7 +95,7 @@ namespace Xamarin.WebTests.TestRunners
 			ME = $"{GetType ().Name}({EffectiveType})";
 		}
 
-		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.ReuseAfterPartialRead;
+		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.CustomConnectionGroup;
 
 		static readonly HttpInstrumentationTestType[] WorkingTests = {
 			HttpInstrumentationTestType.Simple,
@@ -120,7 +120,8 @@ namespace Xamarin.WebTests.TestRunners
 			HttpInstrumentationTestType.NtlmInstrumentation,
 			HttpInstrumentationTestType.LargeHeader,
 			HttpInstrumentationTestType.LargeHeader2,
-			HttpInstrumentationTestType.SendResponseAsBlob
+			HttpInstrumentationTestType.SendResponseAsBlob,
+			HttpInstrumentationTestType.ReuseAfterPartialRead
 		};
 
 		static readonly HttpInstrumentationTestType[] UnstableTests = {
@@ -277,6 +278,7 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.ReuseConnection:
 			case HttpInstrumentationTestType.ReuseConnection2:
 			case HttpInstrumentationTestType.ReuseAfterPartialRead:
+			case HttpInstrumentationTestType.CustomConnectionGroup:
 				secondOperation = StartSecond (ctx, cancellationToken, CreateHandler (ctx, false));
 				break;
 			case HttpInstrumentationTestType.CloseIdleConnection:
@@ -362,6 +364,8 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.LargeHeader2:
 			case HttpInstrumentationTestType.SendResponseAsBlob:
 				return new HttpInstrumentationHandler (this, null, ConnectionHandler.TheQuickBrownFoxContent, true);
+			case HttpInstrumentationTestType.CustomConnectionGroup:
+				return new HttpInstrumentationHandler (this, null, null, !primary);
 			default:
 				return hello;
 			}
@@ -372,19 +376,26 @@ namespace Xamarin.WebTests.TestRunners
 			HttpConnection connection, HttpRequest request,
 			AuthenticationState state, CancellationToken cancellationToken)
 		{
-			if (EffectiveType == HttpInstrumentationTestType.DummyDontUse)
-				await Task.Yield ();
+			switch (EffectiveType) {
+			case HttpInstrumentationTestType.ReuseConnection:
+				MustReuseConnection ();
+				break;
 
-			if (EffectiveType == HttpInstrumentationTestType.ReuseConnection) {
-				var firstHandler = (HttpInstrumentationHandler)currentOperation.Handler;
-				ctx.LogDebug (2, $"{handler.Message}: {handler == firstHandler} {handler.RemoteEndPoint}");
-				if (handler == firstHandler)
-					return;
-				ctx.Assert (connection.RemoteEndPoint, Is.EqualTo (firstHandler.RemoteEndPoint), "RemoteEndPoint");
-				return;
+			case HttpInstrumentationTestType.ParallelNtlm:
+				await ParallelNtlm ().ConfigureAwait (false);
+				break;
+
+			case HttpInstrumentationTestType.ReuseAfterPartialRead:
+				MustNotReuseConnection ();
+				break;
+
+			case HttpInstrumentationTestType.CustomConnectionGroup:
+				MustReuseConnection ();
+				break;
 			}
 
-			if (EffectiveType == HttpInstrumentationTestType.ParallelNtlm) {
+			async Task ParallelNtlm ()
+			{
 				var firstHandler = (HttpInstrumentationHandler)currentOperation.Handler;
 				ctx.LogDebug (2, $"{handler.Message}: TEST {state} {handler == firstHandler} {handler.RemoteEndPoint}");
 				if (handler != firstHandler || state != AuthenticationState.Challenge)
@@ -396,17 +407,25 @@ namespace Xamarin.WebTests.TestRunners
 					throw ctx.AssertFail ("Invalid nested call");
 				await operation.WaitForRequest ();
 				// await operation.WaitForCompletion (false).ConfigureAwait (false);
-				return;
 			}
 
-			if (EffectiveType == HttpInstrumentationTestType.ReuseAfterPartialRead) {
+			void MustNotReuseConnection ()
+			{
 				var firstHandler = (HttpInstrumentationHandler)currentOperation.Handler;
 				ctx.LogDebug (2, $"{handler.Message}: {handler == firstHandler} {handler.RemoteEndPoint}");
 				if (handler == firstHandler)
 					return;
 				// We can't reuse the connection because we did not read the entire response.
 				ctx.Assert (connection.RemoteEndPoint, Is.Not.EqualTo (firstHandler.RemoteEndPoint), "RemoteEndPoint");
-				return;
+			}
+
+			void MustReuseConnection ()
+			{
+				var firstHandler = (HttpInstrumentationHandler)currentOperation.Handler;
+				ctx.LogDebug (2, $"{handler.Message}: {handler == firstHandler} {handler.RemoteEndPoint}");
+				if (handler == firstHandler)
+					return;
+				ctx.Assert (connection.RemoteEndPoint, Is.EqualTo (firstHandler.RemoteEndPoint), "RemoteEndPoint");
 			}
 		}
 
@@ -558,6 +577,7 @@ namespace Xamarin.WebTests.TestRunners
 				case HttpInstrumentationTestType.ReuseConnection2:
 				case HttpInstrumentationTestType.ReuseAfterPartialRead:
 				case HttpInstrumentationTestType.ParallelNtlm:
+				case HttpInstrumentationTestType.CustomConnectionGroup:
 					break;
 				default:
 					throw ctx.AssertFail (Parent.EffectiveType);
@@ -805,6 +825,7 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.ReuseConnection:
 			case HttpInstrumentationTestType.ReuseConnection2:
 			case HttpInstrumentationTestType.ReuseAfterPartialRead:
+			case HttpInstrumentationTestType.CustomConnectionGroup:
 				break;
 
 			case HttpInstrumentationTestType.ParallelNtlm:
@@ -992,6 +1013,7 @@ namespace Xamarin.WebTests.TestRunners
 				case HttpInstrumentationTestType.LargeHeader2:
 				case HttpInstrumentationTestType.SendResponseAsBlob:
 				case HttpInstrumentationTestType.ReuseAfterPartialRead:
+				case HttpInstrumentationTestType.CustomConnectionGroup:
 					ctx.Assert (request.Method, Is.EqualTo ("GET"), "method");
 					break;
 

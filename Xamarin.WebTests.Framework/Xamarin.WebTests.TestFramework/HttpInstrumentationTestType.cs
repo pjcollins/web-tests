@@ -58,6 +58,6 @@ namespace Xamarin.WebTests.TestFramework
 		LargeHeader2,
 		SendResponseAsBlob,
 		ReuseAfterPartialRead,
-		DummyDontUse
+		CustomConnectionGroup
 	}
 }
