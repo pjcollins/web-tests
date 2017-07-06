@@ -1066,6 +1066,9 @@ namespace Xamarin.WebTests.TestRunners
 					break;
 
 				case HttpInstrumentationTestType.AbortResponse:
+					await Task.Delay (500);
+					TestRunner.currentOperation.Request.Request.Abort ();
+					await Task.WhenAny (Request.WaitForCompletion (), Task.Delay (10000));
 					break;
 
 				default:
@@ -1284,6 +1287,7 @@ namespace Xamarin.WebTests.TestRunners
 					break;
 
 				case HttpInstrumentationTestType.ReadTimeout:
+				case HttpInstrumentationTestType.AbortResponse:
 					content = new HttpInstrumentationContent (TestRunner, currentRequest);
 					response = new HttpResponse (HttpStatusCode.OK, content);
 					break;
