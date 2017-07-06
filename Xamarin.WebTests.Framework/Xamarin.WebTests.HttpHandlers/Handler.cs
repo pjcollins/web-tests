@@ -138,18 +138,8 @@ namespace Xamarin.WebTests.HttpHandlers
 				if (!response.KeepAlive.HasValue && ((Flags & RequestFlags.KeepAlive) != 0))
 					response.KeepAlive = true;
 
-				bool responseWritten = false;
-				var instrumentation = connection.Server.Instrumentation;
-				if (instrumentation != null) {
-					cancellationToken.ThrowIfCancellationRequested ();
-					responseWritten = await instrumentation.WriteResponse (
-						ctx, connection, response, cancellationToken).ConfigureAwait (false);
-				}
-
-				if (!responseWritten) {
-					cancellationToken.ThrowIfCancellationRequested ();
-					await connection.WriteResponse (ctx, response, cancellationToken);
-				}
+				cancellationToken.ThrowIfCancellationRequested ();
+				await connection.WriteResponse (ctx, response, cancellationToken);
 
 				var keepAlive = (response.KeepAlive ?? false) && ((Flags & RequestFlags.CloseConnection) == 0);
 				Debug (ctx, 1, $"HANDLE REQUEST DONE: {connection.RemoteEndPoint} {keepAlive}", response);

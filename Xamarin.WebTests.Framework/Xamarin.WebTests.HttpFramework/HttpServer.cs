@@ -59,10 +59,6 @@ namespace Xamarin.WebTests.HttpFramework {
 			get; set;
 		}
 
-		public IHttpInstrumentation Instrumentation {
-			get; set;
-		}
-
 		public IPortableEndPoint ListenAddress {
 			get;
 		}
