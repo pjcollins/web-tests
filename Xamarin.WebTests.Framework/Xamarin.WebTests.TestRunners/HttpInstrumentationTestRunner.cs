@@ -963,10 +963,10 @@ namespace Xamarin.WebTests.TestRunners
 					break;
 
 				case HttpInstrumentationTestType.ReadTimeout:
-					return await ReadWithTimeout (1500).ConfigureAwait (false);
+					return await ReadWithTimeout (1500, WebExceptionStatus.Timeout).ConfigureAwait (false);
 
 				case HttpInstrumentationTestType.AbortResponse:
-					return await ReadWithTimeout (0).ConfigureAwait (false);
+					return await ReadWithTimeout (0, WebExceptionStatus.RequestCanceled).ConfigureAwait (false);
 
 				default:
 					content = await ReadAsString ().ConfigureAwait (false);
@@ -979,7 +979,7 @@ namespace Xamarin.WebTests.TestRunners
 				finishedTcs.TrySetResult (true);
 				return new SimpleResponse (this, status, content, error);
 
-				async Task<Response> ReadWithTimeout (int timeout)
+				async Task<Response> ReadWithTimeout (int timeout, WebExceptionStatus expectedStatus)
 				{
 					StreamReader reader = null;
 					try {
@@ -994,7 +994,7 @@ namespace Xamarin.WebTests.TestRunners
 						await readTask.ConfigureAwait (false);
 						throw ctx.AssertFail ("Expected exception.");
 					} catch (WebException wexc) {
-						ctx.Assert (wexc.Status, Is.EqualTo (WebExceptionStatus.Timeout));
+						ctx.Assert ((WebExceptionStatus)wexc.Status, Is.EqualTo (expectedStatus));
 						return new SimpleResponse (this, HttpStatusCode.OK, null, null);
 					} finally {
 						finishedTcs.TrySetResult (true);
@@ -1322,15 +1322,20 @@ namespace Xamarin.WebTests.TestRunners
 				if (Target != null)
 					return Target.CheckResponse (ctx, response);
 
-				if (TestRunner.EffectiveType == HttpInstrumentationTestType.ReadTimeout)
+				switch (TestRunner.EffectiveType) {
+				case HttpInstrumentationTestType.ReadTimeout:
+				case HttpInstrumentationTestType.AbortResponse:
 					return ctx.Expect (response.Status, Is.EqualTo (HttpStatusCode.OK), "response.StatusCode");
+
+				case HttpInstrumentationTestType.ReuseAfterPartialRead:
+					if (!ctx.Expect (response.Content, Is.Not.Null, "response.Content != null"))
+						return false;
+
+					return ctx.Expect (response.Content.Length, Is.GreaterThan (0), "response.Content.Length");
+				}
 
 				if (!ctx.Expect (response.Content, Is.Not.Null, "response.Content != null"))
 					return false;
-
-				if (TestRunner.EffectiveType == HttpInstrumentationTestType.ReuseAfterPartialRead) {
-					return ctx.Expect (response.Content.Length, Is.GreaterThan (0), "response.Content.Length");
-				}
 
 				HttpContent expectedContent = Content ?? new StringContent (Message);
 				return HttpContent.Compare (ctx, response.Content, expectedContent, false, "response.Content");
