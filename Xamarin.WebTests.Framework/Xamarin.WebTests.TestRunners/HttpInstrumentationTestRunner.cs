@@ -95,7 +95,7 @@ namespace Xamarin.WebTests.TestRunners
 			ME = $"{GetType ().Name}({EffectiveType})";
 		}
 
-		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.NtlmWhileQueued;
+		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.AbortResponse;
 
 		static readonly HttpInstrumentationTestType[] WorkingTests = {
 			HttpInstrumentationTestType.Simple,
@@ -109,7 +109,6 @@ namespace Xamarin.WebTests.TestRunners
 			HttpInstrumentationTestType.CancelQueuedRequest,
 			HttpInstrumentationTestType.CancelMainWhileQueued,
 			HttpInstrumentationTestType.SimpleNtlm,
-			HttpInstrumentationTestType.NtlmWhileQueued,
 			HttpInstrumentationTestType.ReuseConnection,
 			HttpInstrumentationTestType.SimplePost,
 			HttpInstrumentationTestType.SimpleRedirect,
@@ -133,6 +132,7 @@ namespace Xamarin.WebTests.TestRunners
 			HttpInstrumentationTestType.ReuseConnection2,
 			HttpInstrumentationTestType.CloseIdleConnection,
 			HttpInstrumentationTestType.NtlmClosesConnection,
+			HttpInstrumentationTestType.NtlmWhileQueued,
 			HttpInstrumentationTestType.ParallelNtlm
 		};
 
@@ -387,6 +387,7 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.ReuseCustomConnectionGroup:
 			case HttpInstrumentationTestType.CloseRequestStream:
 			case HttpInstrumentationTestType.ReadTimeout:
+			case HttpInstrumentationTestType.AbortResponse:
 				return new HttpInstrumentationHandler (this, null, null, !primary);
 			default:
 				return hello;
@@ -567,6 +568,7 @@ namespace Xamarin.WebTests.TestRunners
 				case HttpInstrumentationTestType.CloseRequestStream:
 				case HttpInstrumentationTestType.ReadTimeout:
 				case HttpInstrumentationTestType.NtlmWhileQueued:
+				case HttpInstrumentationTestType.AbortResponse:
 					return new HttpInstrumentationRequest (Parent, uri);
 				default:
 					return base.CreateRequest (ctx, uri);
@@ -758,6 +760,7 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.SendResponseAsBlob:
 			case HttpInstrumentationTestType.CloseRequestStream:
 			case HttpInstrumentationTestType.ReadTimeout:
+			case HttpInstrumentationTestType.AbortResponse:
 				ctx.Assert (primary, "Primary request");
 				break;
 
@@ -952,6 +955,10 @@ namespace Xamarin.WebTests.TestRunners
 				case HttpInstrumentationTestType.ReadTimeout:
 					return await ReadWithTimeout (1500).ConfigureAwait (false);
 
+				case HttpInstrumentationTestType.AbortResponse:
+					content = await ReadAsString ().ConfigureAwait (false);
+					break;
+
 				default:
 					content = await ReadAsString ().ConfigureAwait (false);
 					break;
@@ -1054,6 +1061,9 @@ namespace Xamarin.WebTests.TestRunners
 					await writer.WriteAsync (ConnectionHandler.TheQuickBrownFox).ConfigureAwait (false);
 					await writer.FlushAsync ();
 					await Task.WhenAny (Request.WaitForCompletion (), Task.Delay (10000));
+					break;
+
+				case HttpInstrumentationTestType.AbortResponse:
 					break;
 
 				default:
@@ -1222,6 +1232,7 @@ namespace Xamarin.WebTests.TestRunners
 				case HttpInstrumentationTestType.ReuseCustomConnectionGroup:
 				case HttpInstrumentationTestType.CloseRequestStream:
 				case HttpInstrumentationTestType.ReadTimeout:
+				case HttpInstrumentationTestType.AbortResponse:
 					ctx.Assert (request.Method, Is.EqualTo ("GET"), "method");
 					break;
 

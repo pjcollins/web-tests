@@ -62,6 +62,7 @@ namespace Xamarin.WebTests.TestFramework
 		ReuseCustomConnectionGroup,
 		CloseCustomConnectionGroup,
 		CloseRequestStream,
-		ReadTimeout
+		ReadTimeout,
+		AbortResponse
 	}
 }
