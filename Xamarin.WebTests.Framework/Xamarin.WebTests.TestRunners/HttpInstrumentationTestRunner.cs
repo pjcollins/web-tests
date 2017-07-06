@@ -704,6 +704,10 @@ namespace Xamarin.WebTests.TestRunners
 			var me = $"{Parameters.Identifier}:{serverInstrumentation == null}:{socket.RemoteEndPoint}";
 			var instrumentation = new StreamInstrumentation (ctx, me, socket, ownsSocket);
 			var old = Interlocked.CompareExchange (ref serverInstrumentation, instrumentation, null);
+
+			if (EffectiveType == HttpInstrumentationTestType.CloseCustomConnectionGroup)
+				instrumentation.IgnoreErrors = true;
+
 			InstallReadHandler (ctx, old == null, instrumentation);
 			return instrumentation;
 		}
