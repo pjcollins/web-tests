@@ -143,7 +143,7 @@ namespace Xamarin.WebTests.Server {
 			if (response.Body != null) {
 				cancellationToken.ThrowIfCancellationRequested ();
 				using (var writer = new StreamWriter (Context.Response.OutputStream))
-					await response.Body.WriteToAsync (writer);
+					await response.Body.WriteToAsync (ctx, writer);
 			}
 		}
 

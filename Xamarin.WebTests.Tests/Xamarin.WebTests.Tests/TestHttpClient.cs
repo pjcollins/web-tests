@@ -174,7 +174,7 @@ namespace Xamarin.WebTests
 				message.TransferEncoding = "chunked";
 				message.ContentType = "text/plain";
 			}
-			public override async Task WriteToAsync (StreamWriter writer)
+			public override async Task WriteToAsync (TestContext ctx, StreamWriter writer)
 			{
 				writer.AutoFlush = true;
 				await Task.Delay (500).ConfigureAwait (false);

@@ -89,7 +89,7 @@ namespace Xamarin.WebTests.HttpFramework
 			Body = await ReadBody (ctx, reader, cancellationToken);
 		}
 
-		public async Task Write (StreamWriter writer, CancellationToken cancellationToken)
+		public async Task Write (TestContext ctx, StreamWriter writer, CancellationToken cancellationToken)
 		{
 			cancellationToken.ThrowIfCancellationRequested ();
 
@@ -101,7 +101,7 @@ namespace Xamarin.WebTests.HttpFramework
 
 			if (Body != null) {
 				cancellationToken.ThrowIfCancellationRequested ();
-				await Body.WriteToAsync (writer);
+				await Body.WriteToAsync (ctx, writer);
 			}
 		}
 

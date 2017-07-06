@@ -95,7 +95,7 @@ namespace Xamarin.WebTests.TestRunners
 			ME = $"{GetType ().Name}({EffectiveType})";
 		}
 
-		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.CloseRequestStream;
+		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.ReadTimeout;
 
 		static readonly HttpInstrumentationTestType[] WorkingTests = {
 			HttpInstrumentationTestType.Simple,
@@ -124,7 +124,8 @@ namespace Xamarin.WebTests.TestRunners
 			HttpInstrumentationTestType.ReuseAfterPartialRead,
 			HttpInstrumentationTestType.CustomConnectionGroup,
 			HttpInstrumentationTestType.ReuseCustomConnectionGroup,
-			HttpInstrumentationTestType.CloseCustomConnectionGroup
+			HttpInstrumentationTestType.CloseCustomConnectionGroup,
+			HttpInstrumentationTestType.CloseRequestStream
 		};
 
 		static readonly HttpInstrumentationTestType[] UnstableTests = {
@@ -383,6 +384,7 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.CustomConnectionGroup:
 			case HttpInstrumentationTestType.ReuseCustomConnectionGroup:
 			case HttpInstrumentationTestType.CloseRequestStream:
+			case HttpInstrumentationTestType.ReadTimeout:
 				return new HttpInstrumentationHandler (this, null, null, !primary);
 			default:
 				return hello;
@@ -559,6 +561,7 @@ namespace Xamarin.WebTests.TestRunners
 				switch (Parent.EffectiveType) {
 				case HttpInstrumentationTestType.ReuseAfterPartialRead:
 				case HttpInstrumentationTestType.CloseRequestStream:
+				case HttpInstrumentationTestType.ReadTimeout:
 					return new HttpInstrumentationRequest (Parent, uri);
 				default:
 					return base.CreateRequest (ctx, uri);
@@ -685,7 +688,6 @@ namespace Xamarin.WebTests.TestRunners
 		Task<bool> IHttpServerDelegate.HandleConnection (TestContext ctx, HttpConnection connection, CancellationToken cancellationToken)
 		{
 			if (EffectiveType == HttpInstrumentationTestType.CloseRequestStream) {
-				ctx.LogMessage ("TEST!");
 				return Task.FromResult (false);
 			}
 
@@ -749,6 +751,7 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.LargeHeader2:
 			case HttpInstrumentationTestType.SendResponseAsBlob:
 			case HttpInstrumentationTestType.CloseRequestStream:
+			case HttpInstrumentationTestType.ReadTimeout:
 				ctx.Assert (primary, "Primary request");
 				break;
 
@@ -940,6 +943,48 @@ namespace Xamarin.WebTests.TestRunners
 			}
 		}
 
+		class HttpInstrumentationContent : HttpContent
+		{
+			public HttpInstrumentationTestRunner TestRunner {
+				get;
+			}
+
+			public HttpInstrumentationContent (HttpInstrumentationTestRunner runner)
+			{
+				TestRunner = runner;
+			}
+
+			public override bool HasLength => true;
+
+			public override int Length => 4096;
+
+			public override void AddHeadersTo (HttpMessage message)
+			{
+				message.ContentLength = Length;
+				message.ContentType = "text/plain";
+			}
+
+			public override byte[] AsByteArray ()
+			{
+				throw new NotImplementedException ();
+			}
+
+			public override string AsString ()
+			{
+				throw new NotImplementedException ();
+			}
+
+			public override async Task WriteToAsync (TestContext ctx, StreamWriter writer)
+			{
+				ctx.LogMessage ("TEST");
+				await writer.WriteAsync (ConnectionHandler.TheQuickBrownFox).ConfigureAwait (false);
+				await writer.FlushAsync ();
+				ctx.LogMessage ("TEST #1");
+				await Task.Delay (10000);
+				ctx.LogMessage ("TEST #2");
+			}
+		}
+
 		class HttpInstrumentationHandler : Handler
 		{
 			public HttpInstrumentationTestRunner TestRunner {
@@ -1029,6 +1074,10 @@ namespace Xamarin.WebTests.TestRunners
 				case HttpInstrumentationTestType.LargeHeader2:
 				case HttpInstrumentationTestType.SendResponseAsBlob:
 					break;
+
+				case HttpInstrumentationTestType.ReadTimeout:
+					((TraditionalRequest)request).RequestExt.ReadWriteTimeout = 100;
+					break;
 				}
 
 				base.ConfigureRequest (request, uri);
@@ -1074,6 +1123,7 @@ namespace Xamarin.WebTests.TestRunners
 				case HttpInstrumentationTestType.CustomConnectionGroup:
 				case HttpInstrumentationTestType.ReuseCustomConnectionGroup:
 				case HttpInstrumentationTestType.CloseRequestStream:
+				case HttpInstrumentationTestType.ReadTimeout:
 					ctx.Assert (request.Method, Is.EqualTo ("GET"), "method");
 					break;
 
@@ -1116,6 +1166,10 @@ namespace Xamarin.WebTests.TestRunners
 				case HttpInstrumentationTestType.ReuseAfterPartialRead:
 					response = new HttpResponse (HttpStatusCode.OK, Content);
 					response.WriteAsBlob = true;
+					break;
+
+				case HttpInstrumentationTestType.ReadTimeout:
+					response = new HttpResponse (HttpStatusCode.OK, new HttpInstrumentationContent (TestRunner));
 					break;
 
 				default:

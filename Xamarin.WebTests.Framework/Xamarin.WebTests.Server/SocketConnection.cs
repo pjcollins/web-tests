@@ -125,7 +125,7 @@ namespace Xamarin.WebTests.Server
 		{
 			using (var writer = new StreamWriter (Stream, new ASCIIEncoding (), 1024, true)) {
 				writer.AutoFlush = true;
-				await request.Write (writer, cancellationToken).ConfigureAwait (false);
+				await request.Write (ctx, writer, cancellationToken).ConfigureAwait (false);
 			}
 		}
 

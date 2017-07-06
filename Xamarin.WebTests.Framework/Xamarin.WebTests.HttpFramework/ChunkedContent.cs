@@ -118,7 +118,7 @@ namespace Xamarin.WebTests.HttpFramework
 			message.TransferEncoding = "chunked";
 		}
 
-		public override async Task WriteToAsync (StreamWriter writer)
+		public override async Task WriteToAsync (TestContext ctx, StreamWriter writer)
 		{
 			foreach (var chunk in chunks)
 				await writer.WriteAsync (string.Format ("{0:x}\r\n{1}\r\n", chunk.Length, chunk));

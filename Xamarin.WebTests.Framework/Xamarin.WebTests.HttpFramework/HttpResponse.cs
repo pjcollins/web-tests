@@ -209,7 +209,7 @@ namespace Xamarin.WebTests.HttpFramework
 						writer = new StreamWriter (stream, new ASCIIEncoding (), 1024, true);
 						writer.AutoFlush = true;
 					}
-					await Body.WriteToAsync (writer);
+					await Body.WriteToAsync (ctx, writer);
 				}
 				await stream.FlushAsync ();
 			} finally {

@@ -92,7 +92,7 @@ namespace Xamarin.WebTests.HttpFramework
 				message.ContentType = "text/plain";
 		}
 
-		public override async Task WriteToAsync (StreamWriter writer)
+		public override async Task WriteToAsync (TestContext ctx, StreamWriter writer)
 		{
 			if (!string.IsNullOrEmpty (content))
 				await writer.WriteAsync (content);

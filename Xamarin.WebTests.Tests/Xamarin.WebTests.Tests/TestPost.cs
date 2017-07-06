@@ -248,7 +248,7 @@ namespace Xamarin.WebTests.Tests
 				var stream = await client.OpenWriteTaskAsync (uri, "PUT");
 
 				using (var writer = new StreamWriter (stream)) {
-					await post.Content.WriteToAsync (writer);
+					await post.Content.WriteToAsync (ctx, writer);
 				}
 			}
 
