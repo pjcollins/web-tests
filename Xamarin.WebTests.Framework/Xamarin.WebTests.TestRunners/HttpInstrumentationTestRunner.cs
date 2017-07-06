@@ -892,10 +892,18 @@ namespace Xamarin.WebTests.TestRunners
 				get;
 			}
 
+			TaskCompletionSource<bool> finishedTcs;
+
+			public Task WaitForCompletion ()
+			{
+				return finishedTcs.Task;
+			}
+
 			public HttpInstrumentationRequest (HttpInstrumentationTestRunner runner, Uri uri)
 				: base (uri)
 			{
 				TestRunner = runner;
+				finishedTcs = new TaskCompletionSource<bool> (); 
 			}
 
 			public override async Task<Response> SendAsync (TestContext ctx, CancellationToken cancellationToken)
@@ -927,13 +935,31 @@ namespace Xamarin.WebTests.TestRunners
 					content = await ReadStringAsBuffer (1234).ConfigureAwait (false);
 					break;
 
+				case HttpInstrumentationTestType.ReadTimeout:
+					return await ReadWithTimeout (1500).ConfigureAwait (false);
+
 				default:
 					content = await ReadAsString ().ConfigureAwait (false);
 					break;
 				}
 
 				response.Dispose ();
+				finishedTcs.TrySetResult (true);
 				return new SimpleResponse (this, response.StatusCode, content, error);
+
+				async Task<Response> ReadWithTimeout (int timeout)
+				{
+					using (var reader = new StreamReader (response.GetResponseStream ())) {
+						var timeoutTask = Task.Delay (timeout);
+						var readTask = reader.ReadToEndAsync ();
+						var ret = await Task.WhenAny (timeoutTask, readTask).ConfigureAwait (false);
+						finishedTcs.TrySetResult (true);
+						if (ret == timeoutTask)
+							throw ctx.AssertFail ("Timeout expired.");
+						await ctx.AssertException<WebException> (() => readTask, "Expecting exception");
+						return new SimpleResponse (this, HttpStatusCode.OK, null, null);
+					}
+				}
 
 				async Task<HttpContent> ReadStringAsBuffer (int size)
 				{
@@ -963,9 +989,14 @@ namespace Xamarin.WebTests.TestRunners
 				get;
 			}
 
-			public HttpInstrumentationContent (HttpInstrumentationTestRunner runner)
+			public HttpInstrumentationRequest Request {
+				get;
+			}
+
+			public HttpInstrumentationContent (HttpInstrumentationTestRunner runner, HttpInstrumentationRequest request)
 			{
 				TestRunner = runner;
+				Request = request;
 			}
 
 			public override bool HasLength => true;
@@ -990,12 +1021,9 @@ namespace Xamarin.WebTests.TestRunners
 
 			public override async Task WriteToAsync (TestContext ctx, StreamWriter writer)
 			{
-				ctx.LogMessage ("TEST");
 				await writer.WriteAsync (ConnectionHandler.TheQuickBrownFox).ConfigureAwait (false);
 				await writer.FlushAsync ();
-				ctx.LogMessage ("TEST #1");
-				await Task.Delay (10000);
-				ctx.LogMessage ("TEST #2");
+				await Task.WhenAny (Request.WaitForCompletion (), Task.Delay (10000));
 			}
 		}
 
@@ -1059,6 +1087,8 @@ namespace Xamarin.WebTests.TestRunners
 				AuthManager = other.AuthManager;
 			}
 
+			HttpInstrumentationRequest currentRequest;
+
 			public override object Clone ()
 			{
 				return new HttpInstrumentationHandler (this);
@@ -1068,6 +1098,11 @@ namespace Xamarin.WebTests.TestRunners
 			{
 				if (AuthManager != null)
 					AuthManager.ConfigureRequest (request);
+
+				if (request is HttpInstrumentationRequest instrumentationRequest) {
+					if (Interlocked.CompareExchange (ref currentRequest, instrumentationRequest, null) != null)
+						throw new InvalidOperationException ();
+				}
 
 				switch (TestRunner.EffectiveType) {
 				case HttpInstrumentationTestType.ReuseConnection2:
@@ -1090,7 +1125,7 @@ namespace Xamarin.WebTests.TestRunners
 					break;
 
 				case HttpInstrumentationTestType.ReadTimeout:
-					((TraditionalRequest)request).RequestExt.ReadWriteTimeout = 100;
+					currentRequest.RequestExt.ReadWriteTimeout = 100;
 					break;
 				}
 
@@ -1159,6 +1194,7 @@ namespace Xamarin.WebTests.TestRunners
 					ctx, this, connection, request, AuthenticationState.None, cancellationToken).ConfigureAwait (false);
 
 				HttpResponse response;
+				HttpInstrumentationContent content;
 
 				switch (TestRunner.EffectiveType) {
 				case HttpInstrumentationTestType.LargeHeader:
@@ -1183,7 +1219,8 @@ namespace Xamarin.WebTests.TestRunners
 					break;
 
 				case HttpInstrumentationTestType.ReadTimeout:
-					response = new HttpResponse (HttpStatusCode.OK, new HttpInstrumentationContent (TestRunner));
+					content = new HttpInstrumentationContent (TestRunner, currentRequest);
+					response = new HttpResponse (HttpStatusCode.OK, content);
 					break;
 
 				default:
@@ -1198,6 +1235,9 @@ namespace Xamarin.WebTests.TestRunners
 			{
 				if (Target != null)
 					return Target.CheckResponse (ctx, response);
+
+				if (TestRunner.EffectiveType == HttpInstrumentationTestType.ReadTimeout)
+					return ctx.Expect (response.Status, Is.EqualTo (HttpStatusCode.OK), "response.StatusCode");
 
 				if (!ctx.Expect (response.Content, Is.Not.Null, "response.Content != null"))
 					return false;
