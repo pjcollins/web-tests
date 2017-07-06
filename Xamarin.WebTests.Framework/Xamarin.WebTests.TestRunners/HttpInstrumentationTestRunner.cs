@@ -95,7 +95,7 @@ namespace Xamarin.WebTests.TestRunners
 			ME = $"{GetType ().Name}({EffectiveType})";
 		}
 
-		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.CloseCustomConnectionGroup;
+		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.CloseRequestStream;
 
 		static readonly HttpInstrumentationTestType[] WorkingTests = {
 			HttpInstrumentationTestType.Simple,
@@ -376,6 +376,7 @@ namespace Xamarin.WebTests.TestRunners
 				return new HttpInstrumentationHandler (this, null, ConnectionHandler.TheQuickBrownFoxContent, true);
 			case HttpInstrumentationTestType.CustomConnectionGroup:
 			case HttpInstrumentationTestType.ReuseCustomConnectionGroup:
+			case HttpInstrumentationTestType.CloseRequestStream:
 				return new HttpInstrumentationHandler (this, null, null, !primary);
 			default:
 				return hello;
@@ -551,6 +552,7 @@ namespace Xamarin.WebTests.TestRunners
 			{
 				switch (Parent.EffectiveType) {
 				case HttpInstrumentationTestType.ReuseAfterPartialRead:
+				case HttpInstrumentationTestType.CloseRequestStream:
 					return new HttpInstrumentationRequest (Parent, uri);
 				default:
 					return base.CreateRequest (ctx, uri);
@@ -730,6 +732,7 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.LargeHeader:
 			case HttpInstrumentationTestType.LargeHeader2:
 			case HttpInstrumentationTestType.SendResponseAsBlob:
+			case HttpInstrumentationTestType.CloseRequestStream:
 				ctx.Assert (primary, "Primary request");
 				break;
 
@@ -876,6 +879,20 @@ namespace Xamarin.WebTests.TestRunners
 				TestRunner = runner;
 			}
 
+			public override Task<Response> SendAsync (TestContext ctx, CancellationToken cancellationToken)
+			{
+				var portable = DependencyInjector.Get<IPortableSupport> ();
+				if (TestRunner.EffectiveType == HttpInstrumentationTestType.CloseRequestStream) {
+					Request.Method = "POST";
+					RequestExt.SetContentLength (16384);
+					var stream = RequestExt.GetRequestStream ();
+					portable.Close (stream);
+					ctx.AssertFail ("TEST");
+				}
+
+				return base.SendAsync (ctx, cancellationToken);
+			}
+
 			protected override async Task<Response> GetResponseFromHttp (
 				TestContext ctx, HttpWebResponse response, WebException error, CancellationToken cancellationToken)
 			{
@@ -883,8 +900,8 @@ namespace Xamarin.WebTests.TestRunners
 				HttpContent content = null;
 
 				if (TestRunner.EffectiveType == HttpInstrumentationTestType.ReuseAfterPartialRead) {
-					var buffer = new byte[1234];
 					using (var stream = response.GetResponseStream ()) {
+						var buffer = new byte[1234];
 						var ret = await stream.ReadAsync (buffer, 0, buffer.Length).ConfigureAwait (false);
 						ctx.Assert (ret, Is.EqualTo (buffer.Length));
 						content = StringContent.CreateMaybeNull (new ASCIIEncoding ().GetString (buffer, 0, ret));
@@ -1036,6 +1053,7 @@ namespace Xamarin.WebTests.TestRunners
 				case HttpInstrumentationTestType.ReuseAfterPartialRead:
 				case HttpInstrumentationTestType.CustomConnectionGroup:
 				case HttpInstrumentationTestType.ReuseCustomConnectionGroup:
+				case HttpInstrumentationTestType.CloseRequestStream:
 					ctx.Assert (request.Method, Is.EqualTo ("GET"), "method");
 					break;
 
