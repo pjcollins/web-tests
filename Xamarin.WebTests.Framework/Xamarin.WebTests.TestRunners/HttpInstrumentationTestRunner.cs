@@ -896,6 +896,16 @@ namespace Xamarin.WebTests.TestRunners
 			return ret;
 		}
 
+		static bool ExpectWebException (TestContext ctx, Task task, WebExceptionStatus status, string message)
+		{
+			if (!ctx.Expect (task.Status, Is.EqualTo (TaskStatus.Faulted), message))
+				return false;
+			var error = TestContext.CleanupException (task.Exception);
+			if (!ctx.Expect (error, Is.InstanceOf<WebException> (), message))
+				return false;
+			return ctx.Expect (((WebException)error).Status, Is.EqualTo (status), message);
+		}
+
 		class HttpInstrumentationRequest : TraditionalRequest
 		{
 			public HttpInstrumentationTestRunner TestRunner {
@@ -956,8 +966,7 @@ namespace Xamarin.WebTests.TestRunners
 					return await ReadWithTimeout (1500).ConfigureAwait (false);
 
 				case HttpInstrumentationTestType.AbortResponse:
-					content = await ReadAsString ().ConfigureAwait (false);
-					break;
+					return await ReadWithTimeout (0).ConfigureAwait (false);
 
 				default:
 					content = await ReadAsString ().ConfigureAwait (false);
@@ -972,15 +981,23 @@ namespace Xamarin.WebTests.TestRunners
 
 				async Task<Response> ReadWithTimeout (int timeout)
 				{
-					using (var reader = new StreamReader (response.GetResponseStream ())) {
-						var timeoutTask = Task.Delay (timeout);
+					StreamReader reader = null;
+					try {
+						reader = new StreamReader (response.GetResponseStream ());
 						var readTask = reader.ReadToEndAsync ();
-						var ret = await Task.WhenAny (timeoutTask, readTask).ConfigureAwait (false);
-						finishedTcs.TrySetResult (true);
-						if (ret == timeoutTask)
-							throw ctx.AssertFail ("Timeout expired.");
-						await ctx.AssertException<WebException> (() => readTask, "Expecting exception");
+						if (timeout > 0) {
+							var timeoutTask = Task.Delay (timeout);
+							var ret = await Task.WhenAny (timeoutTask, readTask).ConfigureAwait (false);
+							if (ret == timeoutTask)
+								throw ctx.AssertFail ("Timeout expired.");
+						}
+						await readTask.ConfigureAwait (false);
+						throw ctx.AssertFail ("Expected exception.");
+					} catch (WebException wexc) {
+						ctx.Assert (wexc.Status, Is.EqualTo (WebExceptionStatus.Timeout));
 						return new SimpleResponse (this, HttpStatusCode.OK, null, null);
+					} finally {
+						finishedTcs.TrySetResult (true);
 					}
 				}
 
