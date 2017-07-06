@@ -964,9 +964,11 @@ namespace Xamarin.WebTests.TestRunners
 					break;
 				}
 
+				var status = response.StatusCode;
+
 				response.Dispose ();
 				finishedTcs.TrySetResult (true);
-				return new SimpleResponse (this, response.StatusCode, content, error);
+				return new SimpleResponse (this, status, content, error);
 
 				async Task<Response> ReadWithTimeout (int timeout)
 				{
