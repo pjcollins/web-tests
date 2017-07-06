@@ -95,7 +95,7 @@ namespace Xamarin.WebTests.TestRunners
 			ME = $"{GetType ().Name}({EffectiveType})";
 		}
 
-		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.ReadTimeout;
+		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.NtlmInstrumentation;
 
 		static readonly HttpInstrumentationTestType[] WorkingTests = {
 			HttpInstrumentationTestType.Simple,
@@ -125,7 +125,8 @@ namespace Xamarin.WebTests.TestRunners
 			HttpInstrumentationTestType.CustomConnectionGroup,
 			HttpInstrumentationTestType.ReuseCustomConnectionGroup,
 			HttpInstrumentationTestType.CloseCustomConnectionGroup,
-			HttpInstrumentationTestType.CloseRequestStream
+			HttpInstrumentationTestType.CloseRequestStream,
+			HttpInstrumentationTestType.ReadTimeout
 		};
 
 		static readonly HttpInstrumentationTestType[] UnstableTests = {
