@@ -616,9 +616,12 @@ namespace Xamarin.WebTests.TestRunners
 			return true;
 		}
 
-		Task<bool> IHttpServerDelegate.HandleConnection (TestContext ctx, HttpConnection connection, CancellationToken cancellationToken)
+		bool IHttpServerDelegate.HasConnectionHandler => false;
+
+		Task<bool> IHttpServerDelegate.HandleConnection (TestContext ctx, HttpServer server,
+		                                                 HttpConnection connection, CancellationToken cancellationToken)
 		{
-			return Task.FromResult (true);
+			throw new InternalErrorException ();
 		}
 
 		bool IHttpServerDelegate.HandleConnection (TestContext ctx, HttpConnection connection, HttpRequest request, Handler handler)

@@ -184,8 +184,9 @@ namespace Xamarin.WebTests.HttpFramework {
 		public async Task<bool> HandleConnection (TestContext ctx, HttpConnection connection,
 		                                          CancellationToken cancellationToken)
 		{
-			if (Delegate != null && !await Delegate.HandleConnection (ctx, connection, cancellationToken).ConfigureAwait (false))
-				return false;
+			if (Delegate != null && Delegate.HasConnectionHandler)
+				return await Delegate.HandleConnection (ctx, this, connection, cancellationToken).ConfigureAwait (false);
+
 			var request = await connection.ReadRequest (ctx, cancellationToken);
 			return await HandleConnection (ctx, connection, request, cancellationToken);
 		}
