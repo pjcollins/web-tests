@@ -95,7 +95,7 @@ namespace Xamarin.WebTests.TestRunners
 			ME = $"{GetType ().Name}({EffectiveType})";
 		}
 
-		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.AbortResponse;
+		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.ReuseConnection2;
 
 		static readonly HttpInstrumentationTestType[] WorkingTests = {
 			HttpInstrumentationTestType.Simple,
@@ -110,6 +110,7 @@ namespace Xamarin.WebTests.TestRunners
 			HttpInstrumentationTestType.CancelMainWhileQueued,
 			HttpInstrumentationTestType.SimpleNtlm,
 			HttpInstrumentationTestType.ReuseConnection,
+			HttpInstrumentationTestType.ReuseConnection2,
 			HttpInstrumentationTestType.SimplePost,
 			HttpInstrumentationTestType.SimpleRedirect,
 			HttpInstrumentationTestType.PostRedirect,
@@ -125,12 +126,13 @@ namespace Xamarin.WebTests.TestRunners
 			HttpInstrumentationTestType.ReuseCustomConnectionGroup,
 			HttpInstrumentationTestType.CloseCustomConnectionGroup,
 			HttpInstrumentationTestType.CloseRequestStream,
-			HttpInstrumentationTestType.ReadTimeout
+			HttpInstrumentationTestType.CloseIdleConnection,
+			HttpInstrumentationTestType.NtlmClosesConnection,
+			HttpInstrumentationTestType.ReadTimeout,
+			HttpInstrumentationTestType.AbortResponse
 		};
 
 		static readonly HttpInstrumentationTestType[] UnstableTests = {
-			HttpInstrumentationTestType.ReuseConnection2,
-			HttpInstrumentationTestType.CloseIdleConnection,
 			HttpInstrumentationTestType.NtlmClosesConnection,
 			HttpInstrumentationTestType.NtlmWhileQueued,
 			HttpInstrumentationTestType.ParallelNtlm
@@ -1285,36 +1287,35 @@ namespace Xamarin.WebTests.TestRunners
 				case HttpInstrumentationTestType.LargeHeader:
 					response = new HttpResponse (HttpStatusCode.OK, Content);
 					response.AddHeader ("LargeTest", ConnectionHandler.GetLargeTextBuffer (100));
-					break;
+					return response;
 
 				case HttpInstrumentationTestType.LargeHeader2:
 					response = new HttpResponse (HttpStatusCode.OK, Content);
 					response.AddHeader ("LargeTest", ConnectionHandler.GetLargeTextBuffer (100));
 					response.WriteAsBlob = true;
-					break;
+					return response;
 
 				case HttpInstrumentationTestType.SendResponseAsBlob:
-					response = new HttpResponse (HttpStatusCode.OK, Content);
-					response.WriteAsBlob = true;
-					break;
+					return new HttpResponse (HttpStatusCode.OK, Content) {
+						WriteAsBlob = true
+					};
 
 				case HttpInstrumentationTestType.ReuseAfterPartialRead:
-					response = new HttpResponse (HttpStatusCode.OK, Content);
-					response.WriteAsBlob = true;
-					break;
+					return new HttpResponse (HttpStatusCode.OK, Content) {
+						WriteAsBlob = true
+					};
 
 				case HttpInstrumentationTestType.ReadTimeout:
 				case HttpInstrumentationTestType.AbortResponse:
 					content = new HttpInstrumentationContent (TestRunner, currentRequest);
-					response = new HttpResponse (HttpStatusCode.OK, content);
-					break;
+					return new HttpResponse (HttpStatusCode.OK, content);
+
+				case HttpInstrumentationTestType.ReuseConnection2:
+					return new HttpResponse (HttpStatusCode.OK, Content);
 
 				default:
-					response = HttpResponse.CreateSuccess (Message);
-					break;
+					return HttpResponse.CreateSuccess (Message);
 				}
-
-				return response;
 			}
 
 			public override bool CheckResponse (TestContext ctx, Response response)
