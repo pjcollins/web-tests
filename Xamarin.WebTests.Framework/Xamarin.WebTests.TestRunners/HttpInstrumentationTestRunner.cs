@@ -240,6 +240,12 @@ namespace Xamarin.WebTests.TestRunners
 				expectedStatus = HttpStatusCode.NotFound;
 				expectedError = WebExceptionStatus.ProtocolError;
 				break;
+
+			case HttpInstrumentationTestType.CloseRequestStream:
+				expectedStatus = HttpStatusCode.InternalServerError;
+				expectedError = WebExceptionStatus.RequestCanceled;
+				break;
+
 			default:
 				expectedStatus = HttpStatusCode.OK;
 				expectedError = WebExceptionStatus.Success;
@@ -676,6 +682,16 @@ namespace Xamarin.WebTests.TestRunners
 			}
 		}
 
+		Task<bool> IHttpServerDelegate.HandleConnection (TestContext ctx, HttpConnection connection, CancellationToken cancellationToken)
+		{
+			if (EffectiveType == HttpInstrumentationTestType.CloseRequestStream) {
+				ctx.LogMessage ("TEST!");
+				return Task.FromResult (false);
+			}
+
+			return Task.FromResult (true);
+		}
+
 		bool IHttpServerDelegate.HandleConnection (TestContext ctx, HttpConnection connection, HttpRequest request, Handler handler)
 		{
 			return true;
@@ -879,18 +895,22 @@ namespace Xamarin.WebTests.TestRunners
 				TestRunner = runner;
 			}
 
-			public override Task<Response> SendAsync (TestContext ctx, CancellationToken cancellationToken)
+			public override async Task<Response> SendAsync (TestContext ctx, CancellationToken cancellationToken)
 			{
 				var portable = DependencyInjector.Get<IPortableSupport> ();
 				if (TestRunner.EffectiveType == HttpInstrumentationTestType.CloseRequestStream) {
 					Request.Method = "POST";
 					RequestExt.SetContentLength (16384);
-					var stream = RequestExt.GetRequestStream ();
-					portable.Close (stream);
-					ctx.AssertFail ("TEST");
+					var stream = await RequestExt.GetRequestStreamAsync ().ConfigureAwait (false);
+					try {
+						portable.Close (stream);
+						throw ctx.AssertFail ("Expected exception.");
+					} catch (Exception ex) {
+						return new SimpleResponse (this, HttpStatusCode.InternalServerError, null, ex);
+					}
 				}
 
-				return base.SendAsync (ctx, cancellationToken);
+				return await base.SendAsync (ctx, cancellationToken).ConfigureAwait (false);
 			}
 
 			protected override async Task<Response> GetResponseFromHttp (

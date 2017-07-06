@@ -616,6 +616,11 @@ namespace Xamarin.WebTests.TestRunners
 			return true;
 		}
 
+		Task<bool> IHttpServerDelegate.HandleConnection (TestContext ctx, HttpConnection connection, CancellationToken cancellationToken)
+		{
+			return Task.FromResult (true);
+		}
+
 		bool IHttpServerDelegate.HandleConnection (TestContext ctx, HttpConnection connection, HttpRequest request, Handler handler)
 		{
 			var streamConnection = (SocketConnection)connection;

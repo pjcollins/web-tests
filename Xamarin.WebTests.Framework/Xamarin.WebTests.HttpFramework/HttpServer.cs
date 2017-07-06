@@ -182,6 +182,15 @@ namespace Xamarin.WebTests.HttpFramework {
 		protected internal abstract Handler GetHandler (TestContext ctx, string path);
 
 		public async Task<bool> HandleConnection (TestContext ctx, HttpConnection connection,
+		                                          CancellationToken cancellationToken)
+		{
+			if (Delegate != null && !await Delegate.HandleConnection (ctx, connection, cancellationToken).ConfigureAwait (false))
+				return false;
+			var request = await connection.ReadRequest (ctx, cancellationToken);
+			return await HandleConnection (ctx, connection, request, cancellationToken);
+		}
+
+		public async Task<bool> HandleConnection (TestContext ctx, HttpConnection connection,
 		                                          HttpRequest request, CancellationToken cancellationToken)
 		{
 			var handler = GetHandler (ctx, request.Path);

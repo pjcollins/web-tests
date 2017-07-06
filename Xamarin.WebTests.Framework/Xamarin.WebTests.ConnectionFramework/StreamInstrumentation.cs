@@ -47,6 +47,10 @@ namespace Xamarin.WebTests.ConnectionFramework
 			get;
 		}
 
+		public bool IgnoreErrors {
+			get; set;
+		}
+
 		public StreamInstrumentation (TestContext ctx, string name, Socket socket, bool ownsSocket = true)
 			: base (socket, ownsSocket)
 		{
@@ -105,6 +109,8 @@ namespace Xamarin.WebTests.ConnectionFramework
 				await handler (buffer, offset, count, func, cancellationToken).ConfigureAwait (false);
 				Context.LogDebug (4, "{0} done", message);
 			} catch (Exception ex) {
+				if (IgnoreErrors)
+					return;
 				Context.LogDebug (4, "{0} failed: {1}", message, ex);
 				throw;
 			}
@@ -175,6 +181,8 @@ namespace Xamarin.WebTests.ConnectionFramework
 				func (buffer, offset, size);
 				Context.LogDebug (4, "{0} done", message);
 			} catch (Exception ex) {
+				if (IgnoreErrors)
+					return;
 				Context.LogDebug (4, "{0} failed: {1}", message, ex);
 				throw;
 			}
@@ -209,6 +217,8 @@ namespace Xamarin.WebTests.ConnectionFramework
 				Context.LogDebug (4, "{0} done: {1}", message, ret);
 				return ret;
 			} catch (Exception ex) {
+				if (IgnoreErrors)
+					return -1;
 				Context.LogDebug (4, "{0} failed: {1}", message, ex);
 				throw;
 			}
@@ -278,6 +288,8 @@ namespace Xamarin.WebTests.ConnectionFramework
 				Context.LogDebug (4, "{0} done: {1}", message, ret);
 				return ret;
 			} catch (Exception ex) {
+				if (IgnoreErrors)
+					return -1;
 				Context.LogDebug (4, "{0} failed: {1}", message, ex);
 				throw;
 			}
