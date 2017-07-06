@@ -922,24 +922,38 @@ namespace Xamarin.WebTests.TestRunners
 				cancellationToken.ThrowIfCancellationRequested ();
 				HttpContent content = null;
 
-				if (TestRunner.EffectiveType == HttpInstrumentationTestType.ReuseAfterPartialRead) {
-					using (var stream = response.GetResponseStream ()) {
-						var buffer = new byte[1234];
-						var ret = await stream.ReadAsync (buffer, 0, buffer.Length).ConfigureAwait (false);
-						ctx.Assert (ret, Is.EqualTo (buffer.Length));
-						content = StringContent.CreateMaybeNull (new ASCIIEncoding ().GetString (buffer, 0, ret));
-					}
-				} else {
-					using (var reader = new StreamReader (response.GetResponseStream ())) {
-						if (!reader.EndOfStream) {
-							var text = await reader.ReadToEndAsync ().ConfigureAwait (false);
-							content = StringContent.CreateMaybeNull (text);
-						}
-					}
+				switch (TestRunner.EffectiveType) {
+				case HttpInstrumentationTestType.ReuseAfterPartialRead:
+					content = await ReadStringAsBuffer (1234).ConfigureAwait (false);
+					break;
+
+				default:
+					content = await ReadAsString ().ConfigureAwait (false);
+					break;
 				}
 
 				response.Dispose ();
 				return new SimpleResponse (this, response.StatusCode, content, error);
+
+				async Task<HttpContent> ReadStringAsBuffer (int size)
+				{
+					using (var stream = response.GetResponseStream ()) {
+						var buffer = new byte[size];
+						var ret = await stream.ReadAsync (buffer, 0, buffer.Length).ConfigureAwait (false);
+						ctx.Assert (ret, Is.EqualTo (buffer.Length));
+						return StringContent.CreateMaybeNull (new ASCIIEncoding ().GetString (buffer, 0, ret));
+					}
+				}
+
+				async Task<HttpContent> ReadAsString ()
+				{
+					using (var reader = new StreamReader (response.GetResponseStream ())) {
+						string text = null;
+						if (!reader.EndOfStream)
+							text = await reader.ReadToEndAsync ().ConfigureAwait (false);
+						return StringContent.CreateMaybeNull (text);
+					}
+				}
 			}
 		}
 
