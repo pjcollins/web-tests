@@ -95,7 +95,7 @@ namespace Xamarin.WebTests.TestRunners
 			ME = $"{GetType ().Name}({EffectiveType})";
 		}
 
-		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.ReuseConnection2;
+		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.ParallelNtlm;
 
 		static readonly HttpInstrumentationTestType[] WorkingTests = {
 			HttpInstrumentationTestType.Simple,
@@ -129,13 +129,12 @@ namespace Xamarin.WebTests.TestRunners
 			HttpInstrumentationTestType.CloseIdleConnection,
 			HttpInstrumentationTestType.NtlmClosesConnection,
 			HttpInstrumentationTestType.ReadTimeout,
-			HttpInstrumentationTestType.AbortResponse
+			HttpInstrumentationTestType.AbortResponse,
+			HttpInstrumentationTestType.NtlmWhileQueued,
+			HttpInstrumentationTestType.ParallelNtlm
 		};
 
 		static readonly HttpInstrumentationTestType[] UnstableTests = {
-			HttpInstrumentationTestType.NtlmClosesConnection,
-			HttpInstrumentationTestType.NtlmWhileQueued,
-			HttpInstrumentationTestType.ParallelNtlm
 		};
 
 		static readonly HttpInstrumentationTestType[] StressTests = {
@@ -237,8 +236,13 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.AbortDuringHandshake:
 			case HttpInstrumentationTestType.CancelMainWhileQueued:
 			case HttpInstrumentationTestType.NtlmWhileQueued:
+			case HttpInstrumentationTestType.AbortResponse:
 				expectedStatus = HttpStatusCode.InternalServerError;
 				expectedError = WebExceptionStatus.RequestCanceled;
+				break;
+			case HttpInstrumentationTestType.ReadTimeout:
+				expectedStatus = HttpStatusCode.InternalServerError;
+				expectedError = WebExceptionStatus.Timeout;
 				break;
 			case HttpInstrumentationTestType.Get404:
 				expectedStatus = HttpStatusCode.NotFound;
@@ -569,9 +573,13 @@ namespace Xamarin.WebTests.TestRunners
 				case HttpInstrumentationTestType.ReuseAfterPartialRead:
 				case HttpInstrumentationTestType.CloseRequestStream:
 				case HttpInstrumentationTestType.ReadTimeout:
-				case HttpInstrumentationTestType.NtlmWhileQueued:
 				case HttpInstrumentationTestType.AbortResponse:
 					return new HttpInstrumentationRequest (Parent, uri);
+				case HttpInstrumentationTestType.NtlmWhileQueued:
+					if (IsParallelRequest)
+						return base.CreateRequest (ctx, uri);
+					return new HttpInstrumentationRequest (Parent, uri);
+
 				default:
 					return base.CreateRequest (ctx, uri);
 				}
@@ -697,23 +705,14 @@ namespace Xamarin.WebTests.TestRunners
 		bool IHttpServerDelegate.HasConnectionHandler => true;
 
 		async Task<bool> IHttpServerDelegate.HandleConnection (TestContext ctx, HttpServer server,
-		                                                       HttpConnection connection, CancellationToken cancellationToken)
+								       HttpConnection connection, CancellationToken cancellationToken)
 		{
 			if (EffectiveType == HttpInstrumentationTestType.CloseRequestStream) {
 				return false;
 			}
 
-			try {
-				ctx.LogDebug (4, $"{ME}: TEST {connection.RemoteEndPoint} {currentOperation} {queuedOperation} {readHandlerCalled}");
-				var request = await connection.ReadRequest (ctx, cancellationToken).ConfigureAwait (false);
-				return await server.HandleConnection (ctx, connection, request, cancellationToken);
-			} catch {
-				if (EffectiveType == HttpInstrumentationTestType.NtlmWhileQueued) {
-					ctx.LogMessage ("IGNORING ERROR!");
-					return false;
-				}
-				return true;
-			}
+			var request = await connection.ReadRequest (ctx, cancellationToken).ConfigureAwait (false);
+			return await server.HandleConnection (ctx, connection, request, cancellationToken);
 		}
 
 		bool IHttpServerDelegate.HandleConnection (TestContext ctx, HttpConnection connection, HttpRequest request, Handler handler)
@@ -867,7 +866,6 @@ namespace Xamarin.WebTests.TestRunners
 
 			case HttpInstrumentationTestType.NtlmWhileQueued:
 				ctx.Assert (currentOperation.HasRequest, "current request");
-				ctx.LogDebug (4, $"{ME} READ HANDLER!");
 				if (primary) {
 					var operation = await StartParallel (ctx, cancellationToken, HelloWorldHandler.GetSimple ()).ConfigureAwait (false);
 					if (Interlocked.CompareExchange (ref queuedOperation, operation, null) != null)
@@ -880,15 +878,7 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.ReuseAfterPartialRead:
 			case HttpInstrumentationTestType.CustomConnectionGroup:
 			case HttpInstrumentationTestType.ReuseCustomConnectionGroup:
-				break;
-
 			case HttpInstrumentationTestType.ParallelNtlm:
-				if (false && primary) {
-					var secondaryHandler = new HttpInstrumentationHandler (this, GetAuthenticationManager (), null, false);
-					var operation = await StartParallel (ctx, cancellationToken, secondaryHandler).ConfigureAwait (false);
-					if (Interlocked.CompareExchange (ref queuedOperation, operation, null) != null)
-						throw ctx.AssertFail ("Invalid nested call");
-				}
 				break;
 
 			default:
@@ -965,9 +955,10 @@ namespace Xamarin.WebTests.TestRunners
 					break;
 
 				case HttpInstrumentationTestType.ReadTimeout:
-					return await ReadWithTimeout (1500, WebExceptionStatus.Timeout).ConfigureAwait (false);
+					return await ReadWithTimeout (5000, WebExceptionStatus.Timeout).ConfigureAwait (false);
 
 				case HttpInstrumentationTestType.AbortResponse:
+				case HttpInstrumentationTestType.NtlmWhileQueued:
 					return await ReadWithTimeout (0, WebExceptionStatus.RequestCanceled).ConfigureAwait (false);
 
 				default:
@@ -989,15 +980,16 @@ namespace Xamarin.WebTests.TestRunners
 						var readTask = reader.ReadToEndAsync ();
 						if (timeout > 0) {
 							var timeoutTask = Task.Delay (timeout);
-							var ret = await Task.WhenAny (timeoutTask, readTask).ConfigureAwait (false);
-							if (ret == timeoutTask)
+							var task = await Task.WhenAny (timeoutTask, readTask).ConfigureAwait (false);
+							if (task == timeoutTask)
 								throw ctx.AssertFail ("Timeout expired.");
 						}
-						await readTask.ConfigureAwait (false);
+						var ret = await readTask.ConfigureAwait (false);
+						ctx.LogMessage ($"EXPECTED ERROR: {ret}");
 						throw ctx.AssertFail ("Expected exception.");
 					} catch (WebException wexc) {
 						ctx.Assert ((WebExceptionStatus)wexc.Status, Is.EqualTo (expectedStatus));
-						return new SimpleResponse (this, HttpStatusCode.OK, null, null);
+						return new SimpleResponse (this, HttpStatusCode.InternalServerError, null, wexc);
 					} finally {
 						finishedTcs.TrySetResult (true);
 					}
@@ -1085,7 +1077,9 @@ namespace Xamarin.WebTests.TestRunners
 					break;
 
 				case HttpInstrumentationTestType.AbortResponse:
-					await Task.Delay (500);
+					await writer.WriteAsync (ConnectionHandler.TheQuickBrownFox).ConfigureAwait (false);
+					await writer.FlushAsync ();
+					await Task.Delay (500).ConfigureAwait (false);
 					TestRunner.currentOperation.Request.Request.Abort ();
 					await Task.WhenAny (Request.WaitForCompletion (), Task.Delay (10000));
 					break;
