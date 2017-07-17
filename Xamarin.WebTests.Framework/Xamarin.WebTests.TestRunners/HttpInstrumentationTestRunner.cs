@@ -93,7 +93,7 @@ namespace Xamarin.WebTests.TestRunners
 			ME = $"{GetType ().Name}({EffectiveType})";
 		}
 
-		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.ManyParallelRequests;
+		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.PutChunked;
 
 		static readonly HttpInstrumentationTestType[] WorkingTests = {
 			HttpInstrumentationTestType.Simple,
@@ -282,6 +282,7 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.ParallelNtlm:
 			case HttpInstrumentationTestType.RedirectNoReuse:
 			case HttpInstrumentationTestType.RedirectNoLength:
+			case HttpInstrumentationTestType.PutChunked:
 				break;
 			default:
 				throw ctx.AssertFail (GetEffectiveType (type));
@@ -445,6 +446,8 @@ namespace Xamarin.WebTests.TestRunners
 				return (new RedirectHandler (hello, HttpStatusCode.Redirect), flags);
 			case HttpInstrumentationTestType.RedirectNoLength:
 				return (new HttpInstrumentationHandler (this, null, null, false), flags);
+			case HttpInstrumentationTestType.PutChunked:
+				return (new PostHandler (EffectiveType.ToString (), BinaryContent.CreateRandom (7000), TransferMode.Chunked), flags);
 			default:
 				return (hello, flags);
 			}

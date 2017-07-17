@@ -65,6 +65,7 @@ namespace Xamarin.WebTests.TestFramework
 		ReadTimeout,
 		AbortResponse,
 		RedirectNoReuse,
-		RedirectNoLength
+		RedirectNoLength,
+		PutChunked
 	}
 }
