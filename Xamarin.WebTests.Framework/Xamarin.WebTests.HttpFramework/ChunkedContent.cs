@@ -25,6 +25,7 @@
 // THE SOFTWARE.
 using System;
 using System.IO;
+using System.Text;
 using System.Linq;
 using System.Globalization;
 using System.Collections.Generic;
@@ -116,6 +117,23 @@ namespace Xamarin.WebTests.HttpFramework
 		public override void AddHeadersTo (HttpMessage message)
 		{
 			message.TransferEncoding = "chunked";
+		}
+
+		static byte[] GetBytes (string format, params object[] args)
+		{
+			var text = string.Format (format, args);
+			return new ASCIIEncoding ().GetBytes (text);
+		}
+
+		public override async Task WriteToAsync (TestContext ctx, Stream stream)
+		{
+			var encoding = new ASCIIEncoding ();
+			foreach (var chunk in chunks) {
+				var bytes = GetBytes ("{0:x}\r\n{1}\r\n", chunk.Length, chunk);
+				await stream.WriteAsync (bytes, 0, bytes.Length).ConfigureAwait (false);
+			}
+			var trailer = GetBytes ("0\r\n\r\n\r\n");
+			await stream.WriteAsync (trailer, 0, trailer.Length);
 		}
 
 		public override async Task WriteToAsync (TestContext ctx, StreamWriter writer)

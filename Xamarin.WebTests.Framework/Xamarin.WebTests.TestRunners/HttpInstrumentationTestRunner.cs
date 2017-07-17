@@ -882,9 +882,25 @@ namespace Xamarin.WebTests.TestRunners
 				ME = $"{GetType ().Name}({runner.EffectiveType})";
 			}
 
-			protected override Task WriteBody (TestContext ctx, CancellationToken cancellationToken)
+			protected override async Task WriteBody (TestContext ctx, CancellationToken cancellationToken)
 			{
-				return base.WriteBody (ctx, cancellationToken);
+				switch (TestRunner.EffectiveType) {
+				case HttpInstrumentationTestType.PutChunked:
+				case HttpInstrumentationTestType.PutChunkDontCloseRequest:
+					var stream = await RequestExt.GetRequestStreamAsync ().ConfigureAwait (false);
+					try {
+						await Content.WriteToAsync (ctx, stream).ConfigureAwait (false);
+						await stream.FlushAsync ();
+					} finally {
+						if (TestRunner.EffectiveType == HttpInstrumentationTestType.PutChunked)
+							stream.Dispose ();
+					}
+					break;
+
+				default:
+					await base.WriteBody (ctx, cancellationToken).ConfigureAwait (false);
+					break;
+				}
 			}
 
 			public override async Task<Response> SendAsync (TestContext ctx, CancellationToken cancellationToken)
