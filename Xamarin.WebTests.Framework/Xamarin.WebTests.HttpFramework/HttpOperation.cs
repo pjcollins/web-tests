@@ -386,7 +386,7 @@ namespace Xamarin.WebTests.HttpFramework
 			} catch (Exception ex) {
 				if (HasAnyFlags (HttpOperationFlags.ServerAbortsHandshake, HttpOperationFlags.ClientAbortsHandshake))
 					return false;
-				ctx.LogDebug (2, $"{me} FAILED: {ex.Message}");
+				ctx.LogDebug (2, $"{me} FAILED: {ex.Message}\n{ex}");
 				throw;
 			}
 
