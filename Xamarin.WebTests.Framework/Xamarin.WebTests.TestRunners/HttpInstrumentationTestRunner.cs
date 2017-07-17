@@ -585,7 +585,8 @@ namespace Xamarin.WebTests.TestRunners
 			public Operation (HttpInstrumentationTestRunner parent, Handler handler,
 					  bool parallel, HttpOperationFlags flags,
 			                  HttpStatusCode expectedStatus, WebExceptionStatus expectedError)
-				: base (parent.Server, $"{parent.ME}:{parallel}", handler, flags, expectedStatus, expectedError)
+				: base (parent.Server, $"{parent.EffectiveType}:{parallel}",
+				        handler, flags, expectedStatus, expectedError)
 			{
 				Parent = parent;
 				IsParallelRequest = parallel;
