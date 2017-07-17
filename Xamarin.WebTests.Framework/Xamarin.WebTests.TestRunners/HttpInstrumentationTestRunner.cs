@@ -447,7 +447,7 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.RedirectNoLength:
 				return (new HttpInstrumentationHandler (this, null, null, false), flags);
 			case HttpInstrumentationTestType.PutChunked:
-				return (new PostHandler (EffectiveType.ToString (), BinaryContent.CreateRandom (7000), TransferMode.Chunked), flags);
+				return (new HttpInstrumentationHandler (this, null, ConnectionHandler.GetLargeChunkedContent (50), true), flags);
 			default:
 				return (hello, flags);
 			}
@@ -1136,6 +1136,14 @@ namespace Xamarin.WebTests.TestRunners
 				case HttpInstrumentationTestType.ReadTimeout:
 					currentRequest.RequestExt.ReadWriteTimeout = 100;
 					break;
+
+				case HttpInstrumentationTestType.PutChunked:
+					request.Method = "PUT";
+					request.SendChunked ();
+					request.SetContentType ("application/octet-stream");
+					request.SetContentLength (Content.Length);
+					request.Content = Content.RemoveTransferEncoding ();
+					break;
 				}
 
 				base.ConfigureRequest (request, uri);
@@ -1212,6 +1220,7 @@ namespace Xamarin.WebTests.TestRunners
 						ctx, connection, request, effectiveFlags, cancellationToken).ConfigureAwait (false);
 
 				case HttpInstrumentationTestType.RedirectNoLength:
+				case HttpInstrumentationTestType.PutChunked:
 					break;
 
 				default:
@@ -1272,6 +1281,7 @@ namespace Xamarin.WebTests.TestRunners
 				if (Target != null)
 					return Target.CheckResponse (ctx, response);
 
+				HttpContent expectedContent = Content ?? new StringContent (ME);
 				switch (TestRunner.EffectiveType) {
 				case HttpInstrumentationTestType.ReadTimeout:
 				case HttpInstrumentationTestType.AbortResponse:
@@ -1282,12 +1292,15 @@ namespace Xamarin.WebTests.TestRunners
 						return false;
 
 					return ctx.Expect (response.Content.Length, Is.GreaterThan (0), "response.Content.Length");
+
+				case HttpInstrumentationTestType.PutChunked:
+					expectedContent = new StringContent (ME);
+					break;
 				}
 
 				if (!ctx.Expect (response.Content, Is.Not.Null, "response.Content != null"))
 					return false;
 
-				HttpContent expectedContent = Content ?? new StringContent (ME);
 				return HttpContent.Compare (ctx, response.Content, expectedContent, false, "response.Content");
 			}
 		}
