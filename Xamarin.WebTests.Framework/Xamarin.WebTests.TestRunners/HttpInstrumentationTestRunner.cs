@@ -93,7 +93,7 @@ namespace Xamarin.WebTests.TestRunners
 			ME = $"{GetType ().Name}({EffectiveType})";
 		}
 
-		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.PutChunked;
+		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.PutChunkDontCloseRequest;
 
 		static readonly HttpInstrumentationTestType[] WorkingTests = {
 			HttpInstrumentationTestType.Simple,
@@ -122,7 +122,8 @@ namespace Xamarin.WebTests.TestRunners
 			HttpInstrumentationTestType.CloseRequestStream,
 			HttpInstrumentationTestType.NtlmClosesConnection,
 			HttpInstrumentationTestType.AbortResponse,
-			HttpInstrumentationTestType.RedirectNoReuse
+			HttpInstrumentationTestType.RedirectNoReuse,
+			HttpInstrumentationTestType.PutChunked
 		};
 
 		static readonly HttpInstrumentationTestType[] NewWebStackTests = {
@@ -283,6 +284,7 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.RedirectNoReuse:
 			case HttpInstrumentationTestType.RedirectNoLength:
 			case HttpInstrumentationTestType.PutChunked:
+			case HttpInstrumentationTestType.PutChunkDontCloseRequest:
 				break;
 			default:
 				throw ctx.AssertFail (GetEffectiveType (type));
@@ -447,7 +449,8 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.RedirectNoLength:
 				return (new HttpInstrumentationHandler (this, null, null, false), flags);
 			case HttpInstrumentationTestType.PutChunked:
-				return (new HttpInstrumentationHandler (this, null, ConnectionHandler.GetLargeChunkedContent (50), true), flags);
+			case HttpInstrumentationTestType.PutChunkDontCloseRequest:
+				return (new HttpInstrumentationHandler (this, null, null, true), flags);
 			default:
 				return (hello, flags);
 			}
@@ -607,6 +610,12 @@ namespace Xamarin.WebTests.TestRunners
 					if (IsParallelRequest)
 						return new TraditionalRequest (uri);
 					return new HttpInstrumentationRequest (Parent, uri);
+
+				case HttpInstrumentationTestType.PutChunked:
+				case HttpInstrumentationTestType.PutChunkDontCloseRequest:
+					return new HttpInstrumentationRequest (Parent, uri) {
+						Content = ConnectionHandler.GetLargeChunkedContent (50)
+					};
 
 				default:
 					return new TraditionalRequest (uri);
@@ -871,6 +880,11 @@ namespace Xamarin.WebTests.TestRunners
 				TestRunner = runner;
 				finishedTcs = new TaskCompletionSource<bool> ();
 				ME = $"{GetType ().Name}({runner.EffectiveType})";
+			}
+
+			protected override Task WriteBody (TestContext ctx, CancellationToken cancellationToken)
+			{
+				return base.WriteBody (ctx, cancellationToken);
 			}
 
 			public override async Task<Response> SendAsync (TestContext ctx, CancellationToken cancellationToken)
@@ -1138,11 +1152,11 @@ namespace Xamarin.WebTests.TestRunners
 					break;
 
 				case HttpInstrumentationTestType.PutChunked:
+				case HttpInstrumentationTestType.PutChunkDontCloseRequest:
 					request.Method = "PUT";
-					request.SendChunked ();
 					request.SetContentType ("application/octet-stream");
-					request.SetContentLength (Content.Length);
-					request.Content = Content.RemoveTransferEncoding ();
+					request.SetContentLength (request.Content.Length);
+					request.SendChunked ();
 					break;
 				}
 
@@ -1221,6 +1235,7 @@ namespace Xamarin.WebTests.TestRunners
 
 				case HttpInstrumentationTestType.RedirectNoLength:
 				case HttpInstrumentationTestType.PutChunked:
+				case HttpInstrumentationTestType.PutChunkDontCloseRequest:
 					break;
 
 				default:
@@ -1281,7 +1296,6 @@ namespace Xamarin.WebTests.TestRunners
 				if (Target != null)
 					return Target.CheckResponse (ctx, response);
 
-				HttpContent expectedContent = Content ?? new StringContent (ME);
 				switch (TestRunner.EffectiveType) {
 				case HttpInstrumentationTestType.ReadTimeout:
 				case HttpInstrumentationTestType.AbortResponse:
@@ -1294,10 +1308,11 @@ namespace Xamarin.WebTests.TestRunners
 					return ctx.Expect (response.Content.Length, Is.GreaterThan (0), "response.Content.Length");
 
 				case HttpInstrumentationTestType.PutChunked:
-					expectedContent = new StringContent (ME);
+				case HttpInstrumentationTestType.PutChunkDontCloseRequest:
 					break;
 				}
 
+				HttpContent expectedContent = Content ?? new StringContent (ME);
 				if (!ctx.Expect (response.Content, Is.Not.Null, "response.Content != null"))
 					return false;
 
