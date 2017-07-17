@@ -374,7 +374,7 @@ namespace Xamarin.WebTests.TestFramework
 		{
 			var chunks = new List<string> ();
 			for (int i = 0; i < count; i++)
-				chunks.Add ($"The quick brown fox jumps over the lazy dog {count - i} times.");
+				chunks.Add ($"The quick brown fox jumps over the lazy dog {count - i, 2} times.");
 			return new ChunkedContent (chunks);
 		}
 

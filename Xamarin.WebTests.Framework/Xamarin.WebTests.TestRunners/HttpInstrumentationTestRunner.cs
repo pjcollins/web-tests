@@ -614,7 +614,7 @@ namespace Xamarin.WebTests.TestRunners
 				case HttpInstrumentationTestType.PutChunked:
 				case HttpInstrumentationTestType.PutChunkDontCloseRequest:
 					return new HttpInstrumentationRequest (Parent, uri) {
-						Content = ConnectionHandler.GetLargeChunkedContent (50)
+						Content = ConnectionHandler.GetLargeStringContent (50)
 					};
 
 				default:
