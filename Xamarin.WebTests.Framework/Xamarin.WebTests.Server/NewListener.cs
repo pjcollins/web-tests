@@ -92,7 +92,7 @@ namespace Xamarin.WebTests.Server
 			}
 		}
 
-		internal void Debug (string message)
+		void Debug (string message)
 		{
 			TestContext.LogDebug (5, $"{ME}: {message}");
 		}
@@ -106,7 +106,7 @@ namespace Xamarin.WebTests.Server
 				lock (this) {
 					taskList.Add (mainLoopEvent.WaitAsync ());
 					foreach (var connection in connections)
-						taskList.Add (connection.Run (cts.Token));
+						taskList.Add (connection.Run (TestContext, cts.Token));
 				}
 
 				var ret = await Task.WhenAny (taskList).ConfigureAwait (false);

@@ -26,14 +26,19 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Xamarin.AsyncTests;
 
 namespace Xamarin.WebTests.Server
 {
+	using HttpFramework;
+
 	abstract class NewListenerContext : IDisposable
 	{
 		public NewListener Listener {
 			get;
 		}
+
+		public HttpServer Server => Listener.Server;
 
 		public NewListenerContext (NewListener listener)
 		{
@@ -42,14 +47,14 @@ namespace Xamarin.WebTests.Server
 
 		TaskCompletionSource<object> initTask;
 
-		public Task Run (CancellationToken cancellationToken)
+		public Task Run (TestContext ctx, CancellationToken cancellationToken)
 		{
 			var tcs = new TaskCompletionSource<object> ();
 			var old = Interlocked.CompareExchange (ref initTask, tcs, null);
 			if (old != null)
 				return old.Task;
 
-			Accept (cancellationToken).ContinueWith (t => {
+			Accept (ctx, cancellationToken).ContinueWith (t => {
 				if (t.Status == TaskStatus.Canceled)
 					tcs.TrySetCanceled ();
 				else if (t.Status == TaskStatus.Faulted)
@@ -61,7 +66,7 @@ namespace Xamarin.WebTests.Server
 			return tcs.Task;
 		}
 
-		protected abstract Task Accept (CancellationToken cancellationToken);
+		protected abstract Task Accept (TestContext ctx, CancellationToken cancellationToken);
 
 		int disposed;
 

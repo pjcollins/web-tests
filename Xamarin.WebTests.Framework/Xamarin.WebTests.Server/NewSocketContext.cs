@@ -24,13 +24,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 using System;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Net.Security;
 using System.Threading;
 using System.Threading.Tasks;
+using Xamarin.AsyncTests;
 
 namespace Xamarin.WebTests.Server
 {
+	using HttpFramework;
+
 	class NewSocketContext : NewListenerContext
 	{
 		public Socket ListenSocket {
@@ -46,6 +51,11 @@ namespace Xamarin.WebTests.Server
 		}
 
 		Socket socket;
+		IPEndPoint remoteEndPoint;
+		NetworkStream networkStream;
+		SslStream sslStream;
+		Stream stream;
+		HttpStreamReader reader;
 
 		public NewSocketContext (NewSocketListener listener, Socket socket)
 			: base (listener)
@@ -54,12 +64,31 @@ namespace Xamarin.WebTests.Server
 			ME = $"[{GetType ().Name}({Listener.ME}:{socket.LocalEndPoint})]";
 		}
 
-		protected override async Task Accept (CancellationToken cancellationToken)
+		protected override async Task Accept (TestContext ctx, CancellationToken cancellationToken)
 		{
 			cancellationToken.ThrowIfCancellationRequested ();
-			Listener.Debug ($"{ME} ACCEPT ASYNC");
+			ctx.LogDebug (5, $"{ME} ACCEPT ASYNC");
 			socket = await ListenSocket.AcceptAsync (cancellationToken).ConfigureAwait (false);
-			Listener.Debug ($"{ME} ACCEPT ASYNC: {socket.RemoteEndPoint}");
+			ctx.LogDebug (5, $"{ME} ACCEPT ASYNC: {socket.RemoteEndPoint}");
+
+			remoteEndPoint = (IPEndPoint)socket.RemoteEndPoint;
+			networkStream = new NetworkStream (socket, true);
+
+			if (Server.SslStreamProvider != null) {
+				sslStream = Server.SslStreamProvider.CreateSslStream (ctx, networkStream, Server.Parameters, true);
+
+				var certificate = Server.Parameters.ServerCertificate;
+				var askForCert = Server.Parameters.AskForClientCertificate || Server.Parameters.RequireClientCertificate;
+				var protocol = Server.SslStreamProvider.GetProtocol (Server.Parameters, true);
+
+				await sslStream.AuthenticateAsServerAsync (certificate, askForCert, protocol, false).ConfigureAwait (false);
+				stream = sslStream;
+			} else {
+				stream = networkStream;
+			}
+
+			reader = new HttpStreamReader (stream);
+			ctx.LogDebug (5, $"{ME} INITIALIZE DONE: {ListenSocket?.LocalEndPoint} {remoteEndPoint}");
 		}
 
 		protected override void Close ()
