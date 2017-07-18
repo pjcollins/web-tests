@@ -89,7 +89,7 @@ namespace Xamarin.WebTests.HttpFramework {
 				var newSocketListener = new NewSocketListener (ctx, this);
 				if (Interlocked.CompareExchange (ref newListener, newSocketListener, null) != null)
 					throw new InternalErrorException ();
-				newSocketListener.Initialize (10);
+				newSocketListener.RequestParallelConnections = 10;
 				return Handler.CompletedTask;
 			}
 

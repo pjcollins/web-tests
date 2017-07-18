@@ -164,23 +164,18 @@ namespace Xamarin.WebTests.TestRunners
 			var me = $"{ME}.{nameof (Run)}()";
 			ctx.LogDebug (2, $"{me}");
 
-			var handler = HelloWorldHandler.GetSimple ();
-			// var uri = listener.RegisterHandler (ctx, handler);
-
-			var operation = new TraditionalOperation (Server, handler, true);
+			var operation = new TraditionalOperation (Server, HelloWorldHandler.GetSimple (), true);
 			await operation.Run (ctx, cancellationToken).ConfigureAwait (false);
 
-			// ctx.LogDebug (2, $"{me}: {uri}");
+			var secondOperation = new TraditionalOperation (Server, HelloWorldHandler.GetSimple (), true);
+			await secondOperation.Run (ctx, cancellationToken);
 
-			// var request = new TraditionalRequest (uri);
-			// await request.SendAsync (ctx, cancellationToken).ConfigureAwait (false);
+			for (int i = 0; i < 500; i++) {
+				var loopOperation = new TraditionalOperation (Server, HelloWorldHandler.GetSimple (), true);
+				await loopOperation.Run (ctx, cancellationToken);
+			}
 
-			// await Task.Delay (10000);
-			// listener.Dispose ();
-			// await Task.Delay (10000);
-
-			await Task.Yield ();
-			// throw new NotImplementedException ();
+			ctx.LogDebug (2, $"{me} DONE");
 		}
 
 		protected override async Task Initialize (TestContext ctx, CancellationToken cancellationToken)

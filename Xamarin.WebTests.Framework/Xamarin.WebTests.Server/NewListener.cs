@@ -59,6 +59,8 @@ namespace Xamarin.WebTests.Server
 		AsyncManualResetEvent mainLoopEvent;
 		Dictionary<string, HttpOperation> registry;
 
+		int requestParallelConnections;
+
 		static int nextID;
 		static long nextRequestID;
 		public readonly int ID = ++nextID;
@@ -73,6 +75,18 @@ namespace Xamarin.WebTests.Server
 
 		internal HttpServer Server {
 			get;
+		}
+
+		internal int RequestParallelConnections {
+			get { return requestParallelConnections; }
+			set {
+				lock (this) {
+					if (requestParallelConnections == value)
+						return;
+					requestParallelConnections = value;
+					Run (); 
+				}
+			}
 		}
 
 		internal string ME {
@@ -127,6 +141,8 @@ namespace Xamarin.WebTests.Server
 				var taskList = new List<Task> ();
 				var connectionArray = new List<Context> ();
 				lock (SyncRoot) {
+					RunScheduler ();
+
 					taskList.Add (mainLoopEvent.WaitAsync ());
 					foreach (var context in connections) {
 						Task task = null;
@@ -152,7 +168,7 @@ namespace Xamarin.WebTests.Server
 
 				lock (SyncRoot) {
 					if (ret == taskList[0]) {
-						RunScheduler ();
+						mainLoopEvent.Reset ();
 						continue;
 					}
 
@@ -186,7 +202,12 @@ namespace Xamarin.WebTests.Server
 
 		void RunScheduler ()
 		{
-			mainLoopEvent.Reset ();
+			while (connections.Count < requestParallelConnections) {
+				Debug ($"RUN SCHEDULER: {connections.Count}");
+				var connection = CreateConnection ();
+				connections.AddLast (new Context (this, connection));
+				Debug ($"RUN SCHEDULER #1: {connection.ME}");
+			}
 		}
 
 		bool GetOperation (Context context, Task<HttpRequest> task)
@@ -226,6 +247,7 @@ namespace Xamarin.WebTests.Server
 			return false;
 		}
 
+		[Obsolete ("KILL")]
 		public void Initialize (int numConnections)
 		{
 			lock (SyncRoot) {
@@ -237,6 +259,7 @@ namespace Xamarin.WebTests.Server
 			}
 		}
 
+		[Obsolete ("KILL")]
 		public void AddConnection ()
 		{
 			lock (SyncRoot) {
@@ -246,7 +269,7 @@ namespace Xamarin.WebTests.Server
 			}
 		}
 
-		public virtual void CloseAll ()
+		void CloseAll ()
 		{
 			lock (SyncRoot) {
 				if (closed)
@@ -269,11 +292,6 @@ namespace Xamarin.WebTests.Server
 
 		protected virtual void Shutdown ()
 		{
-		}
-
-		protected virtual void OnStop ()
-		{
-			cts.Cancel ();
 		}
 
 		protected abstract HttpConnection CreateConnection ();
