@@ -512,11 +512,6 @@ namespace Xamarin.WebTests.HttpFramework
 
 			ctx.LogDebug (2, $"{me} #1: {uri} {request}");
 
-			var serverTask = RunNewServer (ctx, cancellationToken);
-			// await serverStartTask.Task.ConfigureAwait (false);
-
-			ctx.LogDebug (2, $"{me} #2");
-
 			var clientTask = RunInner (ctx, request, cancellationToken);
 
 			bool initDone = false, serverDone = false, clientDone = false;
@@ -539,7 +534,7 @@ namespace Xamarin.WebTests.HttpFramework
 				if (!initDone)
 					tasks.Add (serverInitTask.Task);
 				if (!serverDone)
-					tasks.Add (serverTask);
+					tasks.Add (serverStartTask.Task);
 				if (!clientDone)
 					tasks.Add (clientTask);
 				var finished = await Task.WhenAny (tasks).ConfigureAwait (false);
@@ -548,7 +543,7 @@ namespace Xamarin.WebTests.HttpFramework
 				if (finished == serverInitTask.Task) {
 					which = "init";
 					initDone = true;
-				} else if (finished == serverTask) {
+				} else if (finished == serverStartTask.Task) {
 					which = "server";
 					serverDone = true;
 				} else if (finished == clientTask) {
@@ -561,7 +556,7 @@ namespace Xamarin.WebTests.HttpFramework
 				ctx.LogDebug (2, $"{me} #4: {which} exited - {finished.Status}");
 				if (finished.Status == TaskStatus.Faulted || finished.Status == TaskStatus.Canceled) {
 					if (HasAnyFlags (HttpOperationFlags.ExpectServerException) &&
-					    (finished == serverTask || finished == serverInitTask.Task))
+					    (finished == serverStartTask.Task || finished == serverInitTask.Task))
 						ctx.LogDebug (2, $"{me} #4 - EXPECTED EXCEPTION {finished.Exception.GetType ()}");
 					else {
 						ctx.LogDebug (2, $"{me} #4 FAILED: {finished.Exception.Message}");
@@ -579,24 +574,10 @@ namespace Xamarin.WebTests.HttpFramework
 			return response;
 		}
 
-		async Task RunNewServer (TestContext ctx, CancellationToken cancellationToken)
-		{
-			var me = $"{ME} NEW SERVER";
-			ctx.LogDebug (2, $"{me}");
-
-			await Task.Yield ();
-
-			cancellationToken.ThrowIfCancellationRequested ();
-
-			while (true) {
-				cancellationToken.ThrowIfCancellationRequested ();
-				await Task.Delay (10000).ConfigureAwait (false);
-			}
-		}
-
 		internal async Task HandleRequest (TestContext ctx, HttpConnection connection,
 		                                   HttpRequest request, CancellationToken cancellationToken)
 		{
+			serverInitTask.TrySetResult (false);
 			var me = $"{ME} HANDLE REQUEST";
 			ctx.LogDebug (2, $"{me} {connection.ME} {request}");
 
@@ -606,6 +587,8 @@ namespace Xamarin.WebTests.HttpFramework
 			ctx.LogDebug (2, $"{me} REQUEST FULLY READ");
 			var ret = await Handler.HandleRequest (ctx, this, connection, request, cancellationToken);
 			ctx.LogDebug (2, $"{me} HANDLE REQUEST DONE: {ret}");
+
+			serverStartTask.TrySetResult (null);
 		}
 
 		protected abstract void Destroy ();

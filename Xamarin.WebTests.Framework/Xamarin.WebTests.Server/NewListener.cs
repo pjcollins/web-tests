@@ -121,7 +121,7 @@ namespace Xamarin.WebTests.Server
 
 		async void MainLoop ()
 		{
-			while (true) {
+			while (!disposed) {
 				Debug ($"MAIN LOOP");
 
 				var taskList = new List<Task> ();
@@ -273,7 +273,6 @@ namespace Xamarin.WebTests.Server
 
 		protected virtual void OnStop ()
 		{
-			TestContext.LogDebug (5, "${ME} ON STOP");
 			cts.Cancel ();
 		}
 
@@ -284,11 +283,13 @@ namespace Xamarin.WebTests.Server
 			lock (SyncRoot) {
 				if (disposed)
 					return;
+				Debug ($"DISPOSE");
 				disposed = true;
 				cts.Cancel ();
 				CloseAll ();
 				Shutdown ();
 				cts.Dispose ();
+				mainLoopEvent.Set ();
 			}
 		}
 

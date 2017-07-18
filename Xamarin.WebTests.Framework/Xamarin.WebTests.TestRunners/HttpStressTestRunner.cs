@@ -175,12 +175,12 @@ namespace Xamarin.WebTests.TestRunners
 			// var request = new TraditionalRequest (uri);
 			// await request.SendAsync (ctx, cancellationToken).ConfigureAwait (false);
 
-			await Task.Delay (10000);
+			// await Task.Delay (10000);
 			// listener.Dispose ();
 			// await Task.Delay (10000);
 
 			await Task.Yield ();
-			throw new NotImplementedException ();
+			// throw new NotImplementedException ();
 		}
 
 		protected override async Task Initialize (TestContext ctx, CancellationToken cancellationToken)
