@@ -75,9 +75,11 @@ namespace Xamarin.WebTests.Server
 			ME = $"{GetType ().Name}({ID})";
 			connections = new LinkedList<NewListenerContext> ();
 			mainLoopEvent = new AsyncManualResetEvent (false);
+			cts = new CancellationTokenSource ();
 		}
 
 		int running;
+		CancellationTokenSource cts;
 		AsyncManualResetEvent mainLoopEvent;
 
 		public void Run ()
@@ -90,7 +92,7 @@ namespace Xamarin.WebTests.Server
 			}
 		}
 
-		void Debug (string message)
+		internal void Debug (string message)
 		{
 			TestContext.LogDebug (5, $"{ME}: {message}");
 		}
@@ -103,10 +105,12 @@ namespace Xamarin.WebTests.Server
 				var taskList = new List<Task> ();
 				lock (this) {
 					taskList.Add (mainLoopEvent.WaitAsync ());
+					foreach (var connection in connections)
+						taskList.Add (connection.Run (cts.Token));
 				}
 
 				var ret = await Task.WhenAny (taskList).ConfigureAwait (false);
-				Debug ($"MAIN LOOP #1");
+				Debug ($"MAIN LOOP #1: {ret} {ret == taskList[0]}");
 
 				lock (this) {
 					mainLoopEvent.Reset ();
@@ -159,6 +163,7 @@ namespace Xamarin.WebTests.Server
 
 		protected virtual void OnStop ()
 		{
+			cts.Cancel ();
 		}
 
 		protected abstract NewListenerContext CreateConnection ();
@@ -173,6 +178,7 @@ namespace Xamarin.WebTests.Server
 				disposed = true;
 				CloseAll ();
 				Shutdown ();
+				cts.Dispose ();
 			}
 		}
 	}

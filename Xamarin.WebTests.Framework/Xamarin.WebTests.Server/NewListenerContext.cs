@@ -25,6 +25,7 @@
 // THE SOFTWARE.
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Xamarin.WebTests.Server
 {
@@ -38,6 +39,29 @@ namespace Xamarin.WebTests.Server
 		{
 			Listener = listener;
 		}
+
+		TaskCompletionSource<object> initTask;
+
+		public Task Run (CancellationToken cancellationToken)
+		{
+			var tcs = new TaskCompletionSource<object> ();
+			var old = Interlocked.CompareExchange (ref initTask, tcs, null);
+			if (old != null)
+				return old.Task;
+
+			Accept (cancellationToken).ContinueWith (t => {
+				if (t.Status == TaskStatus.Canceled)
+					tcs.TrySetCanceled ();
+				else if (t.Status == TaskStatus.Faulted)
+					tcs.TrySetException (t.Exception);
+				else
+					tcs.TrySetResult (null);
+			});
+
+			return tcs.Task;
+		}
+
+		protected abstract Task Accept (CancellationToken cancellationToken);
 
 		int disposed;
 

@@ -33,11 +33,33 @@ namespace Xamarin.WebTests.Server
 {
 	class NewSocketContext : NewListenerContext
 	{
+		public Socket ListenSocket {
+			get;
+		}
+
+		new public NewSocketListener Listener {
+			get { return (NewSocketListener)base.Listener; }
+		}
+
+		public string ME {
+			get;
+		}
+
 		Socket socket;
 
-		public NewSocketContext (NewSocketListener listener)
+		public NewSocketContext (NewSocketListener listener, Socket socket)
 			: base (listener)
 		{
+			ListenSocket = socket;
+			ME = $"[{GetType ().Name}({Listener.ME}:{socket.LocalEndPoint})]";
+		}
+
+		protected override async Task Accept (CancellationToken cancellationToken)
+		{
+			cancellationToken.ThrowIfCancellationRequested ();
+			Listener.Debug ($"{ME} ACCEPT ASYNC");
+			socket = await ListenSocket.AcceptAsync (cancellationToken).ConfigureAwait (false);
+			Listener.Debug ($"{ME} ACCEPT ASYNC: {socket.RemoteEndPoint}");
 		}
 
 		protected override void Close ()

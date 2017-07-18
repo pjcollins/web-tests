@@ -77,7 +77,7 @@ namespace Xamarin.WebTests.Server
 
 		protected override NewListenerContext CreateConnection ()
 		{
-			return new NewSocketContext (this);
+			return new NewSocketContext (this, Socket);
 		}
 
 		protected override void Shutdown ()
