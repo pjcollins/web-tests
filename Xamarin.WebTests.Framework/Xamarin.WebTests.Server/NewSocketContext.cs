@@ -67,13 +67,14 @@ namespace Xamarin.WebTests.Server
 		protected override async Task Accept (TestContext ctx, CancellationToken cancellationToken)
 		{
 			cancellationToken.ThrowIfCancellationRequested ();
-			ctx.LogDebug (5, $"{ME} ACCEPT ASYNC");
+			ctx.LogDebug (5, $"{ME} ACCEPT");
 			socket = await ListenSocket.AcceptAsync (cancellationToken).ConfigureAwait (false);
-			ctx.LogDebug (5, $"{ME} ACCEPT ASYNC: {socket.RemoteEndPoint}");
+			ctx.LogDebug (5, $"{ME} ACCEPT #1: {socket.RemoteEndPoint}");
 
 			remoteEndPoint = (IPEndPoint)socket.RemoteEndPoint;
 			networkStream = new NetworkStream (socket, true);
 
+			cancellationToken.ThrowIfCancellationRequested ();
 			if (Server.SslStreamProvider != null) {
 				sslStream = Server.SslStreamProvider.CreateSslStream (ctx, networkStream, Server.Parameters, true);
 
@@ -81,14 +82,18 @@ namespace Xamarin.WebTests.Server
 				var askForCert = Server.Parameters.AskForClientCertificate || Server.Parameters.RequireClientCertificate;
 				var protocol = Server.SslStreamProvider.GetProtocol (Server.Parameters, true);
 
-				await sslStream.AuthenticateAsServerAsync (certificate, askForCert, protocol, false).ConfigureAwait (false);
+				await sslStream.AuthenticateAsServerAsync (certificate, askForCert, protocol, false);
 				stream = sslStream;
 			} else {
 				stream = networkStream;
 			}
 
 			reader = new HttpStreamReader (stream);
-			ctx.LogDebug (5, $"{ME} INITIALIZE DONE: {ListenSocket?.LocalEndPoint} {remoteEndPoint}");
+			ctx.LogDebug (5, $"{ME} ACCEPT #2");
+
+			cancellationToken.ThrowIfCancellationRequested ();
+			var header = await reader.ReadLineAsync (cancellationToken);
+			ctx.LogDebug (5, $"{ME} ACCEPT #3: {header}");
 		}
 
 		protected override void Close ()

@@ -68,13 +68,6 @@ namespace Xamarin.WebTests.Server
 			connections = new List<SocketConnection> ();
 		}
 
-		public override async Task<HttpConnection> AcceptAsync (CancellationToken cancellationToken)
-		{
-			TestContext.LogDebug (5, $"{ME} ACCEPT ASYNC: {NetworkEndPoint}");
-
-			throw new NotImplementedException ();
-		}
-
 		protected override NewListenerContext CreateConnection ()
 		{
 			return new NewSocketContext (this, Socket);
