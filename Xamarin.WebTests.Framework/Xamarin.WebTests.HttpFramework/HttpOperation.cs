@@ -600,6 +600,10 @@ namespace Xamarin.WebTests.HttpFramework
 			ctx.LogDebug (2, $"{me} {request}");
 
 			cancellationToken.ThrowIfCancellationRequested ();
+			await request.Read (ctx, cancellationToken).ConfigureAwait (false);
+
+			ctx.LogDebug (2, $"{me} REQUEST FULLY READ");
+			Handler.HandleRequest (ctx, this, null, request, cancellationToken);
 		}
 
 		protected abstract void Destroy ();

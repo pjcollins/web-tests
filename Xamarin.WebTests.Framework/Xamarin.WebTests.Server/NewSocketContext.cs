@@ -97,7 +97,7 @@ namespace Xamarin.WebTests.Server
 			var (method, protocol, path) = HttpMessage.ReadHttpHeader (header);
 			ctx.LogDebug (5, $"{ME} ACCEPT #3: {method} {protocol} {path}");
 
-			request = new HttpRequest (protocol, method, path);
+			request = new HttpRequest (protocol, method, path, reader);
 			return request;
 		}
 
