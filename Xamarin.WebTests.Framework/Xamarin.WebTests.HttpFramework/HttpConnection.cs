@@ -104,7 +104,6 @@ namespace Xamarin.WebTests.HttpFramework
 		{
 			if (Interlocked.CompareExchange (ref disposed, 1, 0) == 0)
 				Close ();
-			GC.SuppressFinalize (this);
 		}
 	}
 }

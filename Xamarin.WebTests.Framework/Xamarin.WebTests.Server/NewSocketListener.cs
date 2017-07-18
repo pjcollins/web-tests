@@ -75,9 +75,9 @@ namespace Xamarin.WebTests.Server
 			throw new NotImplementedException ();
 		}
 
-		protected override HttpConnection CreateConnection ()
+		protected override NewListenerContext CreateConnection ()
 		{
-			throw new NotImplementedException ();
+			return new NewSocketContext (this);
 		}
 
 		protected override void Shutdown ()

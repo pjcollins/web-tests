@@ -49,7 +49,7 @@ namespace Xamarin.WebTests.Server
 
 	abstract class NewListener : IDisposable
 	{
-		LinkedList<HttpConnection> connections;
+		LinkedList<NewListenerContext> connections;
 		volatile bool disposed;
 		volatile bool closed;
 
@@ -73,7 +73,65 @@ namespace Xamarin.WebTests.Server
 			TestContext = ctx;
 			Server = server;
 			ME = $"{GetType ().Name}({ID})";
-			connections = new LinkedList<HttpConnection> ();
+			connections = new LinkedList<NewListenerContext> ();
+			mainLoopEvent = new AsyncManualResetEvent (false);
+		}
+
+		int running;
+		AsyncManualResetEvent mainLoopEvent;
+
+		public void Run ()
+		{
+			lock (this) {
+				if (Interlocked.CompareExchange (ref running, 1, 0) == 0)
+					MainLoop ();
+
+				mainLoopEvent.Set ();
+			}
+		}
+
+		void Debug (string message)
+		{
+			TestContext.LogDebug (5, $"{ME}: {message}");
+		}
+
+		async void MainLoop ()
+		{
+			while (true) {
+				Debug ($"MAIN LOOP");
+
+				var taskList = new List<Task> ();
+				lock (this) {
+					taskList.Add (mainLoopEvent.WaitAsync ());
+				}
+
+				var ret = await Task.WhenAny (taskList).ConfigureAwait (false);
+				Debug ($"MAIN LOOP #1");
+
+				lock (this) {
+					mainLoopEvent.Reset ();
+				}
+			}
+		}
+
+		public void Initialize (int numConnections)
+		{
+			lock (this) {
+				for (int i = 0; i < numConnections; i++) {
+					var connection = CreateConnection ();
+					connections.AddLast (connection);
+				}
+				Run ();
+			}
+		}
+
+		public void AddConnection ()
+		{
+			lock (this) {
+				var connection = CreateConnection ();
+				connections.AddLast (connection);
+				Run ();
+			}
 		}
 
 		public virtual void CloseAll ()
@@ -103,7 +161,7 @@ namespace Xamarin.WebTests.Server
 		{
 		}
 
-		protected abstract HttpConnection CreateConnection ();
+		protected abstract NewListenerContext CreateConnection ();
 
 		public abstract Task<HttpConnection> AcceptAsync (CancellationToken cancellationToken);
 

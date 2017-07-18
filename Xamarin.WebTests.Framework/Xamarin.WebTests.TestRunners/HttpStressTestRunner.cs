@@ -163,6 +163,9 @@ namespace Xamarin.WebTests.TestRunners
 			var me = $"{ME}.{nameof (Run)}()";
 			ctx.LogDebug (2, $"{me}");
 
+			var request = new TraditionalRequest (Server.Uri);
+			await request.SendAsync (ctx, cancellationToken).ConfigureAwait (false);
+
 			await Task.Yield ();
 			throw new NotImplementedException ();
 		}
@@ -172,6 +175,7 @@ namespace Xamarin.WebTests.TestRunners
 		protected override async Task Initialize (TestContext ctx, CancellationToken cancellationToken)
 		{
 			listener = new NewSocketListener (ctx, Server);
+			listener.Initialize (5);
 			// await Server.Initialize (ctx, cancellationToken).ConfigureAwait (false);
 		}
 
