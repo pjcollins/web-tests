@@ -112,6 +112,7 @@ namespace Xamarin.WebTests.HttpFramework
 		Request currentRequest;
 		ServicePoint servicePoint;
 		Listener listener;
+		NewListener newListener;
 		TaskCompletionSource<bool> serverInitTask;
 		TaskCompletionSource<object> serverStartTask;
 		TaskCompletionSource<Request> requestTask;
@@ -147,12 +148,15 @@ namespace Xamarin.WebTests.HttpFramework
 			var linkedCts = CancellationTokenSource.CreateLinkedTokenSource (cts.Token, cancellationToken);
 			try {
 				Response response;
-				if (true)
+				if ((Server.Flags & HttpServerFlags.NewListener) != 0)
 					response = await RunNewListener (ctx, linkedCts.Token).ConfigureAwait (false);
+				else
+					response = await RunListener (ctx, linkedCts.Token).ConfigureAwait (false);
 				requestDoneTask.TrySetResult (response);
 			} catch (OperationCanceledException) {
 				requestDoneTask.TrySetCanceled ();
 			} catch (Exception ex) {
+				ctx.LogDebug (5, $"{ME} FAILED: {ex.Message}");
 				requestDoneTask.TrySetException (ex);
 			} finally {
 				linkedCts.Dispose ();
@@ -169,7 +173,7 @@ namespace Xamarin.WebTests.HttpFramework
 			return requestDoneTask.Task;
 		}
 
-		async Task<Response> RunNewListener (TestContext ctx, CancellationToken cancellationToken)
+		async Task<Response> RunListener (TestContext ctx, CancellationToken cancellationToken)
 		{
 			var me = $"{ME} RUN";
 			ctx.LogDebug (1, me);
@@ -486,6 +490,103 @@ namespace Xamarin.WebTests.HttpFramework
 
 			if (response.Content != null)
 				Debug (ctx, 5, "GOT RESPONSE BODY", response.Content);
+		}
+
+		async Task<Response> RunNewListener (TestContext ctx, CancellationToken cancellationToken)
+		{
+			var me = $"{ME} RUN";
+			ctx.LogDebug (1, me);
+
+			newListener = ((BuiltinHttpServer)Server).NewListener;
+
+			var uri = newListener.RegisterHandler (ctx, Handler);
+			var request = CreateRequest (ctx, uri);
+			currentRequest = request;
+
+			if (request is TraditionalRequest traditionalRequest)
+				servicePoint = traditionalRequest.RequestExt.ServicePoint;
+
+			ConfigureRequest (ctx, uri, request);
+
+			requestTask.SetResult (request);
+
+			ctx.LogDebug (2, $"{me} #1: {uri} {request}");
+
+			var serverTask = RunNewServer (ctx, cancellationToken);
+			await serverStartTask.Task.ConfigureAwait (false);
+
+			ctx.LogDebug (2, $"{me} #2");
+
+			var clientTask = RunInner (ctx, request, cancellationToken);
+
+			bool initDone = false, serverDone = false, clientDone = false;
+			while (!initDone || !serverDone || !clientDone) {
+				ctx.LogDebug (2, $"{me} #3: init={initDone} server={serverDone} client={clientDone}");
+
+				if (clientDone) {
+					if (HasAnyFlags (HttpOperationFlags.AbortAfterClientExits, HttpOperationFlags.ServerAbortsHandshake,
+							 HttpOperationFlags.ClientAbortsHandshake)) {
+						ctx.LogDebug (2, $"{me} #3 - ABORTING");
+						break;
+					}
+					if (!initDone) {
+						ctx.LogDebug (2, $"{me} #3 - ERROR: {clientTask.Result}");
+						throw new ConnectionException ($"{ME} client exited before server accepted connection.");
+					}
+				}
+
+				var tasks = new List<Task> ();
+				if (!initDone)
+					tasks.Add (serverInitTask.Task);
+				if (!serverDone)
+					tasks.Add (serverTask);
+				if (!clientDone)
+					tasks.Add (clientTask);
+				var finished = await Task.WhenAny (tasks).ConfigureAwait (false);
+
+				string which;
+				if (finished == serverInitTask.Task) {
+					which = "init";
+					initDone = true;
+				} else if (finished == serverTask) {
+					which = "server";
+					serverDone = true;
+				} else if (finished == clientTask) {
+					which = "client";
+					clientDone = true;
+				} else {
+					throw new InvalidOperationException ();
+				}
+
+				ctx.LogDebug (2, $"{me} #4: {which} exited - {finished.Status}");
+				if (finished.Status == TaskStatus.Faulted || finished.Status == TaskStatus.Canceled) {
+					if (HasAnyFlags (HttpOperationFlags.ExpectServerException) &&
+					    (finished == serverTask || finished == serverInitTask.Task))
+						ctx.LogDebug (2, $"{me} #4 - EXPECTED EXCEPTION {finished.Exception.GetType ()}");
+					else {
+						ctx.LogDebug (2, $"{me} #4 FAILED: {finished.Exception.Message}");
+						throw finished.Exception;
+					}
+				}
+			}
+
+			var response = clientTask.Result;
+
+			ctx.LogDebug (2, $"{me} DONE: {response}");
+
+			CheckResponse (ctx, Handler, response, cancellationToken, ExpectedStatus, ExpectedError);
+
+			return response;
+		}
+
+		async Task RunNewServer (TestContext ctx, CancellationToken cancellationToken)
+		{
+			var me = $"{ME} RUN NEW SERVER";
+			ctx.LogDebug (2, $"{me}");
+
+			cancellationToken.ThrowIfCancellationRequested ();
+
+			throw new NotImplementedException ();
 		}
 
 		protected abstract void Destroy ();

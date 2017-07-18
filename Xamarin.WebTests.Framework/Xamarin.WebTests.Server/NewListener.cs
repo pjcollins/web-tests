@@ -185,6 +185,8 @@ namespace Xamarin.WebTests.Server
 			}
 
 			Debug ($"{me} {handler}");
+
+			
 		}
 
 		public void Initialize (int numConnections)

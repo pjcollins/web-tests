@@ -41,6 +41,7 @@ namespace Xamarin.WebTests.TestRunners
 	using ConnectionFramework;
 	using HttpFramework;
 	using HttpHandlers;
+	using HttpOperations;
 	using TestFramework;
 	using Resources;
 	using Server;
@@ -86,7 +87,7 @@ namespace Xamarin.WebTests.TestRunners
 			: base (endpoint, parameters)
 		{
 			Provider = provider;
-			ServerFlags = flags;
+			ServerFlags = flags | HttpServerFlags.NewListener;
 			Uri = uri;
 
 			Server = new BuiltinHttpServer (uri, endpoint, ServerFlags, parameters, null);
@@ -164,48 +165,46 @@ namespace Xamarin.WebTests.TestRunners
 			ctx.LogDebug (2, $"{me}");
 
 			var handler = HelloWorldHandler.GetSimple ();
-			var uri = listener.RegisterHandler (ctx, handler);
+			// var uri = listener.RegisterHandler (ctx, handler);
 
-			ctx.LogDebug (2, $"{me}: {uri}");
+			var operation = new TraditionalOperation (Server, handler, true);
+			await operation.Run (ctx, cancellationToken).ConfigureAwait (false);
 
-			var request = new TraditionalRequest (uri);
-			await request.SendAsync (ctx, cancellationToken).ConfigureAwait (false);
+			// ctx.LogDebug (2, $"{me}: {uri}");
+
+			// var request = new TraditionalRequest (uri);
+			// await request.SendAsync (ctx, cancellationToken).ConfigureAwait (false);
 
 			await Task.Delay (10000);
-			listener.Dispose ();
-			await Task.Delay (10000);
+			// listener.Dispose ();
+			// await Task.Delay (10000);
 
 			await Task.Yield ();
 			throw new NotImplementedException ();
 		}
 
-		NewListener listener;
-
 		protected override async Task Initialize (TestContext ctx, CancellationToken cancellationToken)
 		{
-			listener = new NewSocketListener (ctx, Server);
-			listener.Initialize (5);
-			// await Server.Initialize (ctx, cancellationToken).ConfigureAwait (false);
+			await Server.Initialize (ctx, cancellationToken).ConfigureAwait (false);
 		}
 
 		protected override async Task Destroy (TestContext ctx, CancellationToken cancellationToken)
 		{
-			// await Server.Destroy (ctx, cancellationToken).ConfigureAwait (false);
+			await Server.Destroy (ctx, cancellationToken).ConfigureAwait (false);
 		}
 
 		protected override async Task PreRun (TestContext ctx, CancellationToken cancellationToken)
 		{
-			// await Server.PreRun (ctx, cancellationToken).ConfigureAwait (false);
+			await Server.PreRun (ctx, cancellationToken).ConfigureAwait (false);
 		}
 
 		protected override async Task PostRun (TestContext ctx, CancellationToken cancellationToken)
 		{
-			// await Server.PostRun (ctx, cancellationToken).ConfigureAwait (false);
+			await Server.PostRun (ctx, cancellationToken).ConfigureAwait (false);
 		}
 
 		protected override void Stop ()
 		{
-			listener.Dispose ();
 		}
 	}
 }
