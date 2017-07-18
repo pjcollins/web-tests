@@ -50,7 +50,7 @@ namespace Xamarin.WebTests.Server
 
 	abstract class NewListener : IDisposable
 	{
-		LinkedList<NewListenerContext> connections;
+		LinkedList<Context> connections;
 		volatile bool disposed;
 		volatile bool closed;
 
@@ -85,7 +85,7 @@ namespace Xamarin.WebTests.Server
 			Server = server;
 			SyncRoot = new object ();
 			ME = $"[{GetType ().Name}({ID})]";
-			connections = new LinkedList<NewListenerContext> ();
+			connections = new LinkedList<Context> ();
 			registry = new Dictionary<string, HttpOperation> ();
 			mainLoopEvent = new AsyncManualResetEvent (false);
 			cts = new CancellationTokenSource ();
@@ -117,20 +117,43 @@ namespace Xamarin.WebTests.Server
 			}
 		}
 
+		static Task GetTask (Func<Task> func)
+		{
+			try {
+				return func ();
+			} catch (Exception ex) {
+				var tcs = new TaskCompletionSource<object> ();
+				if (ex is OperationCanceledException)
+					tcs.SetCanceled ();
+				else
+					tcs.SetException (ex);
+				return tcs.Task;
+			}
+		}
+
 		async void MainLoop ()
 		{
 			while (true) {
 				Debug ($"MAIN LOOP");
 
 				var taskList = new List<Task> ();
-				var connectionArray = new List<NewListenerContext> ();
+				var connectionArray = new List<Context> ();
 				lock (SyncRoot) {
 					taskList.Add (mainLoopEvent.WaitAsync ());
-					foreach (var connection in connections) {
-						if (connection.HasConnection)
-							continue;
-						connectionArray.Add (connection);
-						taskList.Add (connection.Run (TestContext, cts.Token));
+					foreach (var context in connections) {
+						Task task = null;
+						switch (context.State) {
+						case State.None:
+							task = GetTask (() => context.Connection.Run (TestContext, cts.Token));
+							break;
+						case State.HasRequest:
+							task = GetTask (() => context.Operation.HandleRequest (TestContext, context.Request, cts.Token));
+							break;
+						}
+						if (task != null) {
+							connectionArray.Add (context);
+							taskList.Add (task);
+						}
 					}
 				}
 
@@ -139,12 +162,9 @@ namespace Xamarin.WebTests.Server
 				var ret = await Task.WhenAny (taskList).ConfigureAwait (false);
 				Debug ($"MAIN LOOP #1: {ret.Status} {ret == taskList[0]}");
 
-				HttpOperation operation;
-				HttpRequest request;
-
 				lock (SyncRoot) {
 					if (ret == taskList[0]) {
-						RunScheduler ();;
+						RunScheduler ();
 						continue;
 					}
 
@@ -156,16 +176,22 @@ namespace Xamarin.WebTests.Server
 						}
 					}
 
-					var connection = connectionArray[idx];
-					(operation, request) = GetOperation (connection, (Task<HttpRequest>)ret);
-					if (operation == null) {
-						connections.Remove (connection);
-						connection.Dispose ();
-						continue;
+					bool reuse = false;
+					var context = connectionArray[idx];
+					switch (context.State) {
+					case State.None:
+						reuse = GetOperation (context, (Task<HttpRequest>)ret);
+						break;
+					case State.HasRequest:
+						reuse = RequestComplete (context, ret);
+						break;
+					}
+
+					if (!reuse) {
+						connections.Remove (context);
+						context.Connection.Dispose ();
 					}
 				}
-
-				operation.HandleRequest (TestContext, request, cts.Token);
 			}
 		}
 
@@ -174,12 +200,12 @@ namespace Xamarin.WebTests.Server
 			mainLoopEvent.Reset ();
 		}
 
-		(HttpOperation operation, HttpRequest request) GetOperation (NewListenerContext connection, Task<HttpRequest> task)
+		bool GetOperation (Context context, Task<HttpRequest> task)
 		{
-			var me = $"{nameof (GetOperation)}({connection.ME})";
+			var me = $"{nameof (GetOperation)}({context.Connection.ME})";
 			if (task.Status == TaskStatus.Canceled || task.Status == TaskStatus.Faulted) {
 				Debug ($"{me} FAILED: {task.Status} {task.Exception?.Message}");
-				return (null, null);
+				return false;
 			}
 
 			var request = task.Result;
@@ -188,11 +214,27 @@ namespace Xamarin.WebTests.Server
 			var operation = registry[request.Path];
 			if (operation == null) {
 				Debug ($"{me} INVALID PATH: {request.Path}!");
-				return (null, null);
+				return false;
 			}
 
 			registry.Remove (request.Path);
-			return (operation, request);
+			context.Operation = operation;
+			context.Request = request;
+			context.State = State.HasRequest;
+			return true;
+		}
+
+		bool RequestComplete (Context context, Task task)
+		{
+			var me = $"{nameof (RequestComplete)}({context.Connection.ME})";
+			if (task.Status == TaskStatus.Canceled || task.Status == TaskStatus.Faulted) {
+				Debug ($"{me} FAILED: {task.Status} {task.Exception?.Message}");
+				return false;
+			}
+
+			Debug ($"{me}");
+
+			return false;
 		}
 
 		public void Initialize (int numConnections)
@@ -200,7 +242,7 @@ namespace Xamarin.WebTests.Server
 			lock (SyncRoot) {
 				for (int i = 0; i < numConnections; i++) {
 					var connection = CreateConnection ();
-					connections.AddLast (connection);
+					connections.AddLast (new Context (this, connection));
 				}
 				Run ();
 			}
@@ -210,7 +252,7 @@ namespace Xamarin.WebTests.Server
 		{
 			lock (SyncRoot) {
 				var connection = CreateConnection ();
-				connections.AddLast (connection);
+				connections.AddLast (new Context (this, connection));
 				Run ();
 			}
 		}
@@ -228,7 +270,7 @@ namespace Xamarin.WebTests.Server
 					var node = iter.Value;
 					iter = iter.Next;
 
-					node.Dispose ();
+					node.Connection.Dispose ();
 					connections.Remove (node);
 				}
 
@@ -259,6 +301,39 @@ namespace Xamarin.WebTests.Server
 				Shutdown ();
 				cts.Dispose ();
 			}
+		}
+
+		enum State {
+			None,
+			Accepted,
+			HasRequest,
+			Closed
+		}
+
+		class Context
+		{
+			public NewListener Listener {
+				get;
+			}
+			public NewListenerContext Connection {
+				get; set;
+			}
+			public HttpRequest Request {
+				get; set;
+			}
+			public HttpOperation Operation {
+				get; set;
+			}
+			public State State {
+				get; set;
+			}
+
+			public Context (NewListener listener, NewListenerContext connection)
+			{
+				Listener = listener;
+				Connection = connection;
+				State = State.None;
+			}	
 		}
 	}
 }
