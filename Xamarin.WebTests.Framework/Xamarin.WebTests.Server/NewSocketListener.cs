@@ -75,7 +75,7 @@ namespace Xamarin.WebTests.Server
 
 		protected override void Shutdown ()
 		{
-			TestContext.LogDebug (5, "SHUTDOWN: {0}", Socket.Connected);
+			TestContext.LogDebug (5, $"{ME} SHUTDOWN: {Socket.Connected}");
 			if (Socket.Connected)
 				Socket.Shutdown (SocketShutdown.Both);
 			Socket.Close ();

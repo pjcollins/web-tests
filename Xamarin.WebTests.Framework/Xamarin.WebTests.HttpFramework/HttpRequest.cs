@@ -48,6 +48,13 @@ namespace Xamarin.WebTests.HttpFramework
 			Path = path;
 		}
 
+		internal HttpRequest (HttpProtocol protocol, string method, string path)
+			: base (protocol)
+		{
+			Method = method;
+			Path = path;
+		}
+
 		public static async Task<HttpRequest> Read (TestContext ctx, HttpStreamReader reader, CancellationToken cancellationToken)
 		{
 			cancellationToken.ThrowIfCancellationRequested ();

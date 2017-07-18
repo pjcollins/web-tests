@@ -46,6 +46,7 @@ namespace Xamarin.WebTests.Server
 	using ConnectionFramework;
 	using HttpFramework;
 	using TestFramework;
+	using HttpHandlers;
 
 	abstract class NewListener : IDisposable
 	{
@@ -53,8 +54,18 @@ namespace Xamarin.WebTests.Server
 		volatile bool disposed;
 		volatile bool closed;
 
+		int running;
+		CancellationTokenSource cts;
+		AsyncManualResetEvent mainLoopEvent;
+		Dictionary<string, Handler> handlerRegistration;
+
 		static int nextID;
+		static long nextRequestID;
 		public readonly int ID = ++nextID;
+
+		internal object SyncRoot {
+			get;
+		}
 
 		internal TestContext TestContext {
 			get;
@@ -72,19 +83,17 @@ namespace Xamarin.WebTests.Server
 		{
 			TestContext = ctx;
 			Server = server;
-			ME = $"{GetType ().Name}({ID})";
+			SyncRoot = new object ();
+			ME = $"[{GetType ().Name}({ID})]";
 			connections = new LinkedList<NewListenerContext> ();
+			handlerRegistration = new Dictionary<string, Handler> ();
 			mainLoopEvent = new AsyncManualResetEvent (false);
 			cts = new CancellationTokenSource ();
 		}
 
-		int running;
-		CancellationTokenSource cts;
-		AsyncManualResetEvent mainLoopEvent;
-
 		public void Run ()
 		{
-			lock (this) {
+			lock (SyncRoot) {
 				if (Interlocked.CompareExchange (ref running, 1, 0) == 0)
 					MainLoop ();
 
@@ -97,30 +106,67 @@ namespace Xamarin.WebTests.Server
 			TestContext.LogDebug (5, $"{ME}: {message}");
 		}
 
+		public Uri RegisterHandler (TestContext ctx, Handler handler)
+		{
+			lock (SyncRoot) {
+				var id = Interlocked.Increment (ref nextRequestID);
+				var path = $"/id/{handler.GetType ().Name}/";
+				var uri = new Uri (Server.TargetUri, path);
+				handlerRegistration.Add (path, handler);
+				return uri;
+			}
+		}
+
 		async void MainLoop ()
 		{
 			while (true) {
 				Debug ($"MAIN LOOP");
 
 				var taskList = new List<Task> ();
-				lock (this) {
+				var connectionArray = new List<NewListenerContext> ();
+				lock (SyncRoot) {
 					taskList.Add (mainLoopEvent.WaitAsync ());
-					foreach (var connection in connections)
+					foreach (var connection in connections) {
+						if (connection.HasConnection)
+							continue;
+						connectionArray.Add (connection);
 						taskList.Add (connection.Run (TestContext, cts.Token));
+					}
 				}
 
-				var ret = await Task.WhenAny (taskList).ConfigureAwait (false);
-				Debug ($"MAIN LOOP #1: {ret} {ret == taskList[0]}");
+				Debug ($"MAIN LOOP #0: {connectionArray.Count}");
 
-				lock (this) {
-					mainLoopEvent.Reset ();
+				var ret = await Task.WhenAny (taskList).ConfigureAwait (false);
+				Debug ($"MAIN LOOP #1: {ret.Status} {ret == taskList[0]}");
+
+				lock (SyncRoot) {
+					if (ret == taskList[0]) {
+						RunScheduler ();;
+						continue;
+					}
+
+					int idx = -1;
+					for (int i = 0; i < connectionArray.Count; i++) {
+						if (ret == taskList[i + 1]) {
+							idx = i;
+							break;
+						}
+					}
+
+					var connection = connectionArray[idx];
+					Debug ($"MAIN LOOP #2: {connection.ME} {connection.HasConnection}");
 				}
 			}
 		}
 
+		void RunScheduler ()
+		{
+			mainLoopEvent.Reset ();
+		}
+
 		public void Initialize (int numConnections)
 		{
-			lock (this) {
+			lock (SyncRoot) {
 				for (int i = 0; i < numConnections; i++) {
 					var connection = CreateConnection ();
 					connections.AddLast (connection);
@@ -131,7 +177,7 @@ namespace Xamarin.WebTests.Server
 
 		public void AddConnection ()
 		{
-			lock (this) {
+			lock (SyncRoot) {
 				var connection = CreateConnection ();
 				connections.AddLast (connection);
 				Run ();
@@ -140,7 +186,7 @@ namespace Xamarin.WebTests.Server
 
 		public virtual void CloseAll ()
 		{
-			lock (this) {
+			lock (SyncRoot) {
 				if (closed)
 					return;
 				closed = true;
@@ -154,6 +200,8 @@ namespace Xamarin.WebTests.Server
 					node.Dispose ();
 					connections.Remove (node);
 				}
+
+				TestContext.LogDebug (5, $"{ME}: CLOSE ALL DONE");
 			}
 		}
 
@@ -163,6 +211,7 @@ namespace Xamarin.WebTests.Server
 
 		protected virtual void OnStop ()
 		{
+			TestContext.LogDebug (5, "${ME} ON STOP");
 			cts.Cancel ();
 		}
 
@@ -170,10 +219,11 @@ namespace Xamarin.WebTests.Server
 
 		public void Dispose ()
 		{
-			lock (this) {
+			lock (SyncRoot) {
 				if (disposed)
 					return;
 				disposed = true;
+				cts.Cancel ();
 				CloseAll ();
 				Shutdown ();
 				cts.Dispose ();

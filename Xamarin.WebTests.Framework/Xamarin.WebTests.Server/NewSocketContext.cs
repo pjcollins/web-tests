@@ -36,7 +36,7 @@ namespace Xamarin.WebTests.Server
 {
 	using HttpFramework;
 
-	class NewSocketContext : NewListenerContext
+	sealed class NewSocketContext : NewListenerContext
 	{
 		public Socket ListenSocket {
 			get;
@@ -46,7 +46,7 @@ namespace Xamarin.WebTests.Server
 			get { return (NewSocketListener)base.Listener; }
 		}
 
-		public string ME {
+		internal override string ME {
 			get;
 		}
 
@@ -56,6 +56,7 @@ namespace Xamarin.WebTests.Server
 		SslStream sslStream;
 		Stream stream;
 		HttpStreamReader reader;
+		HttpRequest request;
 
 		public NewSocketContext (NewSocketListener listener, Socket socket)
 			: base (listener)
@@ -64,7 +65,7 @@ namespace Xamarin.WebTests.Server
 			ME = $"[{GetType ().Name}({Listener.ME}:{socket.LocalEndPoint})]";
 		}
 
-		protected override async Task Accept (TestContext ctx, CancellationToken cancellationToken)
+		protected override async Task<HttpRequest> Accept (TestContext ctx, CancellationToken cancellationToken)
 		{
 			cancellationToken.ThrowIfCancellationRequested ();
 			ctx.LogDebug (5, $"{ME} ACCEPT");
@@ -80,9 +81,9 @@ namespace Xamarin.WebTests.Server
 
 				var certificate = Server.Parameters.ServerCertificate;
 				var askForCert = Server.Parameters.AskForClientCertificate || Server.Parameters.RequireClientCertificate;
-				var protocol = Server.SslStreamProvider.GetProtocol (Server.Parameters, true);
+				var sslProtocol = Server.SslStreamProvider.GetProtocol (Server.Parameters, true);
 
-				await sslStream.AuthenticateAsServerAsync (certificate, askForCert, protocol, false);
+				await sslStream.AuthenticateAsServerAsync (certificate, askForCert, sslProtocol, false);
 				stream = sslStream;
 			} else {
 				stream = networkStream;
@@ -93,12 +94,16 @@ namespace Xamarin.WebTests.Server
 
 			cancellationToken.ThrowIfCancellationRequested ();
 			var header = await reader.ReadLineAsync (cancellationToken);
-			ctx.LogDebug (5, $"{ME} ACCEPT #3: {header}");
+			var (method, protocol, path) = HttpMessage.ReadHttpHeader (header);
+			ctx.LogDebug (5, $"{ME} ACCEPT #3: {method} {protocol} {path}");
+
+			request = new HttpRequest (protocol, method, path);
+			return request;
 		}
 
 		protected override void Close ()
 		{
-			throw new NotImplementedException ();
+			// throw new NotImplementedException ();
 		}
 	}
 }

@@ -163,8 +163,17 @@ namespace Xamarin.WebTests.TestRunners
 			var me = $"{ME}.{nameof (Run)}()";
 			ctx.LogDebug (2, $"{me}");
 
-			var request = new TraditionalRequest (Server.Uri);
+			var handler = HelloWorldHandler.GetSimple ();
+			var uri = listener.RegisterHandler (ctx, handler);
+
+			ctx.LogDebug (2, $"{me}: {uri}");
+
+			var request = new TraditionalRequest (uri);
 			await request.SendAsync (ctx, cancellationToken).ConfigureAwait (false);
+
+			await Task.Delay (10000);
+			listener.Dispose ();
+			await Task.Delay (10000);
 
 			await Task.Yield ();
 			throw new NotImplementedException ();

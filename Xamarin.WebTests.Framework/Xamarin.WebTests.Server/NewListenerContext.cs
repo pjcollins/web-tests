@@ -40,33 +40,43 @@ namespace Xamarin.WebTests.Server
 
 		public HttpServer Server => Listener.Server;
 
+		internal abstract string ME {
+			get;
+		}
+
 		public NewListenerContext (NewListener listener)
 		{
 			Listener = listener;
 		}
 
-		TaskCompletionSource<object> initTask;
+		internal bool HasConnection {
+			get;
+			private set;
+		}
 
-		public Task Run (TestContext ctx, CancellationToken cancellationToken)
+		TaskCompletionSource<HttpRequest> initTask;
+
+		public Task<HttpRequest> Run (TestContext ctx, CancellationToken cancellationToken)
 		{
-			var tcs = new TaskCompletionSource<object> ();
+			var tcs = new TaskCompletionSource<HttpRequest> ();
 			var old = Interlocked.CompareExchange (ref initTask, tcs, null);
 			if (old != null)
 				return old.Task;
 
 			Accept (ctx, cancellationToken).ContinueWith (t => {
+				HasConnection = true;
 				if (t.Status == TaskStatus.Canceled)
 					tcs.TrySetCanceled ();
 				else if (t.Status == TaskStatus.Faulted)
 					tcs.TrySetException (t.Exception);
 				else
-					tcs.TrySetResult (null);
+					tcs.TrySetResult (t.Result);
 			});
 
 			return tcs.Task;
 		}
 
-		protected abstract Task Accept (TestContext ctx, CancellationToken cancellationToken);
+		protected abstract Task<HttpRequest> Accept (TestContext ctx, CancellationToken cancellationToken);
 
 		int disposed;
 
@@ -74,8 +84,9 @@ namespace Xamarin.WebTests.Server
 
 		public void Dispose ()
 		{
-			if (Interlocked.CompareExchange (ref disposed, 1, 0) == 0)
-				Close ();
+			if (Interlocked.CompareExchange (ref disposed, 1, 0) != 0)
+				return;
+			Close ();
 		}
 	}
 }
