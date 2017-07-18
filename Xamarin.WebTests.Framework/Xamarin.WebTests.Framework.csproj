@@ -205,6 +205,11 @@
     <Compile Include="Xamarin.WebTests.HttpOperations\HttpClientOperationType.cs" />
     <Compile Include="Xamarin.WebTests.HttpOperations\HttpListenerOperation.cs" />
     <Compile Include="Xamarin.WebTests.Server\ProxyConnection.cs" />
+    <Compile Include="Xamarin.WebTests.TestRunners\HttpStressTestRunner.cs" />
+    <Compile Include="Xamarin.WebTests.TestFramework\HttpStressTestRunnerAttribute.cs" />
+    <Compile Include="Xamarin.WebTests.TestFramework\HttpStressTestParameters.cs" />
+    <Compile Include="Xamarin.WebTests.TestFramework\HttpStressTestType.cs" />
+    <Compile Include="Xamarin.WebTests.TestFramework\HttpStressTestParametersAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="..\CA\invalid-server-cert.pfx">

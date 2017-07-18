@@ -1,5 +1,5 @@
 ﻿//
-// TestHttpInstrumentation.cs
+// TestHttpStress.cs
 //
 // Author:
 //       Martin Baulig <mabaul@microsoft.com>
@@ -38,42 +38,17 @@ using Xamarin.WebTests.TestRunners;
 namespace Xamarin.WebTests.Tests
 {
 	[AsyncTestFixture]
-	public class TestHttpInstrumentation
+	public class TestHttpStress
 	{
 		[Work]
 		[AsyncTest]
-		[ConnectionTestFlags (ConnectionTestFlags.RequireDotNet)]
-		[ConnectionTestCategory (ConnectionTestCategory.HttpInstrumentation)]
-		public Task Run (TestContext ctx, CancellationToken cancellationToken,
-				 ConnectionTestProvider provider,
-				 HttpInstrumentationTestParameters parameters,
-				 HttpInstrumentationTestRunner runner)
-		{
-			return runner.Run (ctx, cancellationToken);
-		}
-
-		[Stress]
-		[AsyncTest]
-		[ConnectionTestFlags (ConnectionTestFlags.RequireDotNet)]
-		[ConnectionTestCategory (ConnectionTestCategory.HttpInstrumentationStress)]
-		public Task RunStress (TestContext ctx, CancellationToken cancellationToken,
-		                       ConnectionTestProvider provider,
-				       [Repeat (50)] int repeat,
-				       HttpInstrumentationTestParameters parameters,
-		                       HttpInstrumentationTestRunner runner)
-		{
-			ctx.LogDebug (1, $"RunStress: {repeat}");
-			return runner.Run (ctx, cancellationToken);
-		}
-
-		[AsyncTest]
 		[NewWebStack]
 		[ConnectionTestFlags (ConnectionTestFlags.RequireDotNet)]
-		[ConnectionTestCategory (ConnectionTestCategory.HttpInstrumentationNewWebStack)]
-		public Task RunNewWebStack (TestContext ctx, CancellationToken cancellationToken,
-					    ConnectionTestProvider provider,
-					    HttpInstrumentationTestParameters parameters,
-					    HttpInstrumentationTestRunner runner)
+		[ConnectionTestCategory (ConnectionTestCategory.HttpStress)]
+		public Task Run (TestContext ctx, CancellationToken cancellationToken,
+				 ConnectionTestProvider provider,
+		                 HttpStressTestParameters parameters,
+		                 HttpStressTestRunner runner)
 		{
 			return runner.Run (ctx, cancellationToken);
 		}
@@ -82,11 +57,11 @@ namespace Xamarin.WebTests.Tests
 		[AsyncTest]
 		[Experimental]
 		[ConnectionTestFlags (ConnectionTestFlags.RequireDotNet)]
-		[ConnectionTestCategory (ConnectionTestCategory.HttpInstrumentationExperimental)]
+		[ConnectionTestCategory (ConnectionTestCategory.HttpStressExperimental)]
 		public Task RunExperimental (TestContext ctx, CancellationToken cancellationToken,
-		                             ConnectionTestProvider provider,
-		                             HttpInstrumentationTestParameters parameters,
-		                             HttpInstrumentationTestRunner runner)
+					     ConnectionTestProvider provider,
+		                             HttpStressTestParameters parameters,
+		                             HttpStressTestRunner runner)
 		{
 			return runner.Run (ctx, cancellationToken);
 		}
@@ -94,11 +69,11 @@ namespace Xamarin.WebTests.Tests
 		[Martin]
 		[ConnectionTestFlags (ConnectionTestFlags.RequireDotNet)]
 		[ConnectionTestCategory (ConnectionTestCategory.MartinTest)]
-		// [AsyncTest (ParameterFilter = "martin", Unstable = true)]
+		[AsyncTest (ParameterFilter = "martin", Unstable = true)]
 		public Task MartinTest (TestContext ctx, CancellationToken cancellationToken,
-		                        ConnectionTestProvider provider,
-		                        HttpInstrumentationTestParameters parameters,
-		                        HttpInstrumentationTestRunner runner)
+					ConnectionTestProvider provider,
+					HttpStressTestParameters parameters,
+		                        HttpStressTestRunner runner)
 		{
 			return runner.Run (ctx, cancellationToken);
 		}
