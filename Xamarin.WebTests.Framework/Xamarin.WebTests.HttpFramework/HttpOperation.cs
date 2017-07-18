@@ -594,16 +594,18 @@ namespace Xamarin.WebTests.HttpFramework
 			}
 		}
 
-		internal async Task HandleRequest (TestContext ctx, HttpRequest request, CancellationToken cancellationToken)
+		internal async Task HandleRequest (TestContext ctx, HttpConnection connection,
+		                                   HttpRequest request, CancellationToken cancellationToken)
 		{
 			var me = $"{ME} HANDLE REQUEST";
-			ctx.LogDebug (2, $"{me} {request}");
+			ctx.LogDebug (2, $"{me} {connection.ME} {request}");
 
 			cancellationToken.ThrowIfCancellationRequested ();
 			await request.Read (ctx, cancellationToken).ConfigureAwait (false);
 
 			ctx.LogDebug (2, $"{me} REQUEST FULLY READ");
-			Handler.HandleRequest (ctx, this, null, request, cancellationToken);
+			var ret = await Handler.HandleRequest (ctx, this, connection, request, cancellationToken);
+			ctx.LogDebug (2, $"{me} HANDLE REQUEST DONE: {ret}");
 		}
 
 		protected abstract void Destroy ();

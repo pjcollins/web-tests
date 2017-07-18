@@ -89,6 +89,8 @@ namespace Xamarin.WebTests.Server
 			registry = new Dictionary<string, HttpOperation> ();
 			mainLoopEvent = new AsyncManualResetEvent (false);
 			cts = new CancellationTokenSource ();
+
+			ctx.LogDebug (5, $"{ME} TEST: {ctx.Result}");
 		}
 
 		public void Run ()
@@ -117,20 +119,6 @@ namespace Xamarin.WebTests.Server
 			}
 		}
 
-		static Task GetTask (Func<Task> func)
-		{
-			try {
-				return func ();
-			} catch (Exception ex) {
-				var tcs = new TaskCompletionSource<object> ();
-				if (ex is OperationCanceledException)
-					tcs.SetCanceled ();
-				else
-					tcs.SetException (ex);
-				return tcs.Task;
-			}
-		}
-
 		async void MainLoop ()
 		{
 			while (true) {
@@ -144,10 +132,10 @@ namespace Xamarin.WebTests.Server
 						Task task = null;
 						switch (context.State) {
 						case State.None:
-							task = GetTask (() => context.Run (TestContext, cts.Token));
+							task = context.Run (TestContext, cts.Token);
 							break;
 						case State.HasRequest:
-							task = GetTask (() => context.Operation.HandleRequest (TestContext, context.Request, cts.Token));
+							task = context.HandleRequest (TestContext, cts.Token);
 							break;
 						}
 						if (task != null) {
@@ -178,8 +166,9 @@ namespace Xamarin.WebTests.Server
 
 					bool reuse = false;
 					var context = connectionArray[idx];
+					Debug ($"MAIN LOOP #2: {context.State} {context.Connection.ME}");
 					switch (context.State) {
-					case State.None:
+					case State.Accepted:
 						reuse = GetOperation (context, (Task<HttpRequest>)ret);
 						break;
 					case State.HasRequest:
@@ -378,6 +367,11 @@ namespace Xamarin.WebTests.Server
 					var request = new HttpRequest (protocol, method, path, reader);
 					return request;
 				}
+			}
+
+			public Task HandleRequest (TestContext ctx, CancellationToken cancellationToken)
+			{
+				return Operation.HandleRequest (ctx, Connection, Request, cancellationToken);
 			}
 		}
 	}
