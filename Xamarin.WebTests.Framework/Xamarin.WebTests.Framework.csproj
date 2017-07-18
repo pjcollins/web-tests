@@ -210,6 +210,8 @@
     <Compile Include="Xamarin.WebTests.TestFramework\HttpStressTestParameters.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\HttpStressTestType.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\HttpStressTestParametersAttribute.cs" />
+    <Compile Include="Xamarin.WebTests.Server\NewListener.cs" />
+    <Compile Include="Xamarin.WebTests.Server\NewSocketListener.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="..\CA\invalid-server-cert.pfx">

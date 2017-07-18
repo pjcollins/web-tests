@@ -1,10 +1,10 @@
 ﻿//
-// Listener.cs
+// NewListener.cs
 //
 // Author:
-//       Martin Baulig <martin.baulig@xamarin.com>
+//       Martin Baulig <mabaul@microsoft.com>
 //
-// Copyright (c) 2014 Xamarin Inc. (http://www.xamarin.com)
+// Copyright (c) 2017 Xamarin Inc. (http://www.xamarin.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -47,7 +47,7 @@ namespace Xamarin.WebTests.Server
 	using HttpFramework;
 	using TestFramework;
 
-	abstract class Listener : IDisposable
+	abstract class NewListener : IDisposable
 	{
 		LinkedList<HttpConnection> connections;
 		volatile bool disposed;
@@ -68,7 +68,7 @@ namespace Xamarin.WebTests.Server
 			get;
 		}
 
-		public Listener (TestContext ctx, HttpServer server)
+		public NewListener (TestContext ctx, HttpServer server)
 		{
 			TestContext = ctx;
 			Server = server;
@@ -101,48 +101,6 @@ namespace Xamarin.WebTests.Server
 
 		protected virtual void OnStop ()
 		{
-		}
-
-		HttpConnection FindIdleConnection (TestContext ctx, HttpOperation operation)
-		{
-			var iter = connections.First;
-			while (iter != null) {
-				var node = iter.Value;
-				iter = iter.Next;
-
-				if (node.StartOperation (ctx, operation))
-					return node;
-			}
-
-			return null;
-		}
-
-		public (HttpConnection connection, bool reused) CreateConnection (
-			TestContext ctx, HttpOperation operation, bool reuse)
-		{
-			lock (this) {
-				HttpConnection connection = null;
-				if (reuse)
-					connection = FindIdleConnection (ctx, operation);
-
-				if (connection != null) {
-					ctx.LogDebug (5, $"{ME} REUSING CONNECTION: {connection} {connections.Count}");
-					return (connection, true);
-				}
-
-				connection = CreateConnection ();
-				ctx.LogDebug (5, $"{ME} CREATE CONNECTION: {connection} {connections.Count}");
-				connections.AddLast (connection);
-				connection.ClosedEvent += (sender, e) => {
-					lock (this) {
-						if (!e)
-							connections.Remove (connection);
-					}
-				};
-				if (!connection.StartOperation (ctx, operation))
-					throw new InvalidOperationException ();
-				return (connection, false);
-			}
 		}
 
 		protected abstract HttpConnection CreateConnection ();

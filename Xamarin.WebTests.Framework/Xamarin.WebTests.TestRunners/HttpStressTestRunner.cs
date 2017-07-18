@@ -43,6 +43,7 @@ namespace Xamarin.WebTests.TestRunners
 	using HttpHandlers;
 	using TestFramework;
 	using Resources;
+	using Server;
 
 	[HttpStressTestRunner]
 	public class HttpStressTestRunner : AbstractConnection
@@ -166,28 +167,32 @@ namespace Xamarin.WebTests.TestRunners
 			throw new NotImplementedException ();
 		}
 
+		NewListener listener;
+
 		protected override async Task Initialize (TestContext ctx, CancellationToken cancellationToken)
 		{
-			await Server.Initialize (ctx, cancellationToken).ConfigureAwait (false);
+			listener = new NewSocketListener (ctx, Server);
+			// await Server.Initialize (ctx, cancellationToken).ConfigureAwait (false);
 		}
 
 		protected override async Task Destroy (TestContext ctx, CancellationToken cancellationToken)
 		{
-			await Server.Destroy (ctx, cancellationToken).ConfigureAwait (false);
+			// await Server.Destroy (ctx, cancellationToken).ConfigureAwait (false);
 		}
 
 		protected override async Task PreRun (TestContext ctx, CancellationToken cancellationToken)
 		{
-			await Server.PreRun (ctx, cancellationToken).ConfigureAwait (false);
+			// await Server.PreRun (ctx, cancellationToken).ConfigureAwait (false);
 		}
 
 		protected override async Task PostRun (TestContext ctx, CancellationToken cancellationToken)
 		{
-			await Server.PostRun (ctx, cancellationToken).ConfigureAwait (false);
+			// await Server.PostRun (ctx, cancellationToken).ConfigureAwait (false);
 		}
 
 		protected override void Stop ()
 		{
+			listener.Dispose ();
 		}
 	}
 }
