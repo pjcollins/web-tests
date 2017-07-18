@@ -57,7 +57,7 @@ namespace Xamarin.WebTests.Server
 		int running;
 		CancellationTokenSource cts;
 		AsyncManualResetEvent mainLoopEvent;
-		Dictionary<string, Handler> handlerRegistration;
+		Dictionary<string, HttpOperation> registry;
 
 		static int nextID;
 		static long nextRequestID;
@@ -86,7 +86,7 @@ namespace Xamarin.WebTests.Server
 			SyncRoot = new object ();
 			ME = $"[{GetType ().Name}({ID})]";
 			connections = new LinkedList<NewListenerContext> ();
-			handlerRegistration = new Dictionary<string, Handler> ();
+			registry = new Dictionary<string, HttpOperation> ();
 			mainLoopEvent = new AsyncManualResetEvent (false);
 			cts = new CancellationTokenSource ();
 		}
@@ -106,13 +106,13 @@ namespace Xamarin.WebTests.Server
 			TestContext.LogDebug (5, $"{ME}: {message}");
 		}
 
-		public Uri RegisterHandler (TestContext ctx, Handler handler)
+		public Uri RegisterOperation (TestContext ctx, HttpOperation operation)
 		{
 			lock (SyncRoot) {
 				var id = Interlocked.Increment (ref nextRequestID);
-				var path = $"/id/{handler.GetType ().Name}/";
+				var path = $"/id/{operation.ID}/{operation.Handler.GetType ().Name}/";
 				var uri = new Uri (Server.TargetUri, path);
-				handlerRegistration.Add (path, handler);
+				registry.Add (path, operation);
 				return uri;
 			}
 		}
@@ -139,6 +139,9 @@ namespace Xamarin.WebTests.Server
 				var ret = await Task.WhenAny (taskList).ConfigureAwait (false);
 				Debug ($"MAIN LOOP #1: {ret.Status} {ret == taskList[0]}");
 
+				HttpOperation operation;
+				HttpRequest request;
+
 				lock (SyncRoot) {
 					if (ret == taskList[0]) {
 						RunScheduler ();;
@@ -153,8 +156,16 @@ namespace Xamarin.WebTests.Server
 						}
 					}
 
-					HandleConnection (connectionArray[idx], (Task<HttpRequest>)ret);
+					var connection = connectionArray[idx];
+					(operation, request) = GetOperation (connection, (Task<HttpRequest>)ret);
+					if (operation == null) {
+						connections.Remove (connection);
+						connection.Dispose ();
+						continue;
+					}
 				}
+
+				operation.HandleRequest (TestContext, request, cts.Token);
 			}
 		}
 
@@ -163,30 +174,25 @@ namespace Xamarin.WebTests.Server
 			mainLoopEvent.Reset ();
 		}
 
-		void HandleConnection (NewListenerContext connection, Task<HttpRequest> task)
+		(HttpOperation operation, HttpRequest request) GetOperation (NewListenerContext connection, Task<HttpRequest> task)
 		{
-			var me = $"{nameof (HandleConnection)}({connection.ME})";
+			var me = $"{nameof (GetOperation)}({connection.ME})";
 			if (task.Status == TaskStatus.Canceled || task.Status == TaskStatus.Faulted) {
 				Debug ($"{me} FAILED: {task.Status} {task.Exception?.Message}");
-				connections.Remove (connection);
-				connection.Dispose ();
-				return;
+				return (null, null);
 			}
 
 			var request = task.Result;
 			Debug ($"{me} {request.Method} {request.Path} {request.Protocol}");
 
-			var handler = handlerRegistration[request.Path];
-			if (handler == null) {
+			var operation = registry[request.Path];
+			if (operation == null) {
 				Debug ($"{me} INVALID PATH: {request.Path}!");
-				connections.Remove (connection);
-				connection.Dispose ();
-				return;
+				return (null, null);
 			}
 
-			Debug ($"{me} {handler}");
-
-			
+			registry.Remove (request.Path);
+			return (operation, request);
 		}
 
 		public void Initialize (int numConnections)

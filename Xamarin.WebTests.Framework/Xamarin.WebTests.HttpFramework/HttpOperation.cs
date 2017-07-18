@@ -494,12 +494,12 @@ namespace Xamarin.WebTests.HttpFramework
 
 		async Task<Response> RunNewListener (TestContext ctx, CancellationToken cancellationToken)
 		{
-			var me = $"{ME} RUN";
+			var me = $"{ME} NEW LISTENER";
 			ctx.LogDebug (1, me);
 
 			newListener = ((BuiltinHttpServer)Server).NewListener;
 
-			var uri = newListener.RegisterHandler (ctx, Handler);
+			var uri = newListener.RegisterOperation (ctx, this);
 			var request = CreateRequest (ctx, uri);
 			currentRequest = request;
 
@@ -513,7 +513,7 @@ namespace Xamarin.WebTests.HttpFramework
 			ctx.LogDebug (2, $"{me} #1: {uri} {request}");
 
 			var serverTask = RunNewServer (ctx, cancellationToken);
-			await serverStartTask.Task.ConfigureAwait (false);
+			// await serverStartTask.Task.ConfigureAwait (false);
 
 			ctx.LogDebug (2, $"{me} #2");
 
@@ -581,12 +581,23 @@ namespace Xamarin.WebTests.HttpFramework
 
 		async Task RunNewServer (TestContext ctx, CancellationToken cancellationToken)
 		{
-			var me = $"{ME} RUN NEW SERVER";
+			var me = $"{ME} NEW SERVER";
 			ctx.LogDebug (2, $"{me}");
+
+			await Task.Yield ();
 
 			cancellationToken.ThrowIfCancellationRequested ();
 
-			throw new NotImplementedException ();
+			while (true) {
+				cancellationToken.ThrowIfCancellationRequested ();
+				await Task.Delay (10000).ConfigureAwait (false);
+			}
+		}
+
+		internal void HandleRequest (TestContext ctx, HttpRequest request, CancellationToken cancellationToken)
+		{
+			var me = $"{ME} HANDLE REQUEST";
+			ctx.LogDebug (2, $"{me} {request}");
 		}
 
 		protected abstract void Destroy ();
