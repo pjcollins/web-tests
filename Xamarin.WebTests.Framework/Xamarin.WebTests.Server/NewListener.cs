@@ -153,8 +153,7 @@ namespace Xamarin.WebTests.Server
 						}
 					}
 
-					var connection = connectionArray[idx];
-					Debug ($"MAIN LOOP #2: {connection.ME} {connection.HasConnection}");
+					HandleConnection (connectionArray[idx], (Task<HttpRequest>)ret);
 				}
 			}
 		}
@@ -162,6 +161,30 @@ namespace Xamarin.WebTests.Server
 		void RunScheduler ()
 		{
 			mainLoopEvent.Reset ();
+		}
+
+		void HandleConnection (NewListenerContext connection, Task<HttpRequest> task)
+		{
+			var me = $"{nameof (HandleConnection)}({connection.ME})";
+			if (task.Status == TaskStatus.Canceled || task.Status == TaskStatus.Faulted) {
+				Debug ($"{me} FAILED: {task.Status} {task.Exception?.Message}");
+				connections.Remove (connection);
+				connection.Dispose ();
+				return;
+			}
+
+			var request = task.Result;
+			Debug ($"{me} {request.Method} {request.Path} {request.Protocol}");
+
+			var handler = handlerRegistration[request.Path];
+			if (handler == null) {
+				Debug ($"{me} INVALID PATH: {request.Path}!");
+				connections.Remove (connection);
+				connection.Dispose ();
+				return;
+			}
+
+			Debug ($"{me} {handler}");
 		}
 
 		public void Initialize (int numConnections)
