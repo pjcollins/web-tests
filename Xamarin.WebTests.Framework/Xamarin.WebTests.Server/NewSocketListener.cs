@@ -68,9 +68,9 @@ namespace Xamarin.WebTests.Server
 			connections = new List<SocketConnection> ();
 		}
 
-		protected override NewListenerContext CreateConnection ()
+		protected override HttpConnection CreateConnection ()
 		{
-			return new NewSocketContext (this, Socket);
+			return new SocketConnection (this, Server, Socket);
 		}
 
 		protected override void Shutdown ()

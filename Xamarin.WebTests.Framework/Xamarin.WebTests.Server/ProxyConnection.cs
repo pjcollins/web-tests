@@ -37,8 +37,6 @@ namespace Xamarin.WebTests.Server
 
 	class ProxyConnection : SocketConnection
 	{
-		new public ProxyListener Listener => (ProxyListener)base.Listener;
-
 		public Listener TargetListener {
 			get;
 		}

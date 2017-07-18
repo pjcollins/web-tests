@@ -144,7 +144,7 @@ namespace Xamarin.WebTests.Server
 						Task task = null;
 						switch (context.State) {
 						case State.None:
-							task = GetTask (() => context.Connection.Run (TestContext, cts.Token));
+							task = GetTask (() => context.Run (TestContext, cts.Token));
 							break;
 						case State.HasRequest:
 							task = GetTask (() => context.Operation.HandleRequest (TestContext, context.Request, cts.Token));
@@ -288,7 +288,7 @@ namespace Xamarin.WebTests.Server
 			cts.Cancel ();
 		}
 
-		protected abstract NewListenerContext CreateConnection ();
+		protected abstract HttpConnection CreateConnection ();
 
 		public void Dispose ()
 		{
@@ -315,7 +315,7 @@ namespace Xamarin.WebTests.Server
 			public NewListener Listener {
 				get;
 			}
-			public NewListenerContext Connection {
+			public HttpConnection Connection {
 				get; set;
 			}
 			public HttpRequest Request {
@@ -328,12 +328,57 @@ namespace Xamarin.WebTests.Server
 				get; set;
 			}
 
-			public Context (NewListener listener, NewListenerContext connection)
+			public Context (NewListener listener, HttpConnection connection)
 			{
 				Listener = listener;
 				Connection = connection;
 				State = State.None;
-			}	
+			}
+
+			TaskCompletionSource<HttpRequest> initTask;
+
+			public Task<HttpRequest> Run (TestContext ctx, CancellationToken cancellationToken)
+			{
+				var tcs = new TaskCompletionSource<HttpRequest> ();
+				var old = Interlocked.CompareExchange (ref initTask, tcs, null);
+				if (old != null)
+					return old.Task;
+
+				Run_inner ().ContinueWith (t => {
+					State = State.Accepted;
+					if (t.Status == TaskStatus.Canceled)
+						tcs.TrySetCanceled ();
+					else if (t.Status == TaskStatus.Faulted)
+						tcs.TrySetException (t.Exception);
+					else
+						tcs.TrySetResult (t.Result);
+				});
+
+				return tcs.Task;
+
+				async Task<HttpRequest> Run_inner ()
+				{
+					var me = $"{Listener.ME}({Connection.ME}) RUN";
+					cancellationToken.ThrowIfCancellationRequested ();
+					await Connection.AcceptAsync (ctx, cancellationToken).ConfigureAwait (false);
+
+					ctx.LogDebug (5, $"{me} #1");
+
+					cancellationToken.ThrowIfCancellationRequested ();
+					await Connection.Initialize (ctx, cancellationToken);
+
+					ctx.LogDebug (5, $"{me} #2");
+
+					var reader = new HttpStreamReader (Connection.SslStream);
+					cancellationToken.ThrowIfCancellationRequested ();
+					var header = await reader.ReadLineAsync (cancellationToken);
+					var (method, protocol, path) = HttpMessage.ReadHttpHeader (header);
+					ctx.LogDebug (5, $"{me} #3: {method} {protocol} {path}");
+
+					var request = new HttpRequest (protocol, method, path, reader);
+					return request;
+				}
+			}
 		}
 	}
 }

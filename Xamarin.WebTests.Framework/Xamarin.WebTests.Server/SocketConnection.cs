@@ -41,10 +41,6 @@ namespace Xamarin.WebTests.Server
 {
 	class SocketConnection : HttpConnection
 	{
-		public SocketListener Listener {
-			get;
-		}
-
 		public Socket ListenSocket {
 			get;
 			private set;
@@ -58,6 +54,10 @@ namespace Xamarin.WebTests.Server
 		public Stream Stream {
 			get;
 			private set;
+		}
+
+		internal object SyncRoot {
+			get;
 		}
 
 		public override SslStream SslStream => sslStream;
@@ -74,8 +74,15 @@ namespace Xamarin.WebTests.Server
 		public SocketConnection (SocketListener listener, HttpServer server, Socket socket)
 			: base (server)
 		{
-			Listener = listener;
 			ListenSocket = socket;
+			SyncRoot = listener;
+		}
+
+		public SocketConnection (NewSocketListener listener, HttpServer server, Socket socket)
+			: base (server)
+		{
+			ListenSocket = socket;
+			SyncRoot = listener.SyncRoot;
 		}
 
 		public SocketConnection (HttpServer server)
@@ -86,7 +93,7 @@ namespace Xamarin.WebTests.Server
 		public override async Task AcceptAsync (TestContext ctx, CancellationToken cancellationToken)
 		{
 			ctx.LogDebug (5, $"{ME} ACCEPT: {ListenSocket.LocalEndPoint}");
-			lock (Listener) {
+			lock (SyncRoot) {
 				if (!idle)
 					throw new NotSupportedException ();
 				if (Socket != null)
@@ -198,7 +205,7 @@ namespace Xamarin.WebTests.Server
 
 		public override bool StartOperation (TestContext ctx, HttpOperation operation)
 		{
-			lock (Listener) {
+			lock (SyncRoot) {
 				if (Interlocked.CompareExchange (ref currentOperation, operation, null) != null)
 					return false;
 				ctx.LogDebug (5, $"{ME} START OPERATION: {operation.ME}");
@@ -214,7 +221,7 @@ namespace Xamarin.WebTests.Server
 
 		public override void Continue (TestContext ctx, bool keepAlive)
 		{
-			lock (Listener) {
+			lock (SyncRoot) {
 				ctx.LogDebug (5, $"{ME} CONTINUE: {keepAlive}");
 				if (!keepAlive) {
 					Close ();
