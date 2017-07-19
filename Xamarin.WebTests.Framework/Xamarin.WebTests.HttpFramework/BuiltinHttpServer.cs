@@ -103,7 +103,7 @@ namespace Xamarin.WebTests.HttpFramework {
 				backend = new SocketBackend (ctx, this);
 			if (Interlocked.CompareExchange (ref currentBackend, backend, null) != null)
 				throw new InternalErrorException ();
-			currentListener = new Listener (ctx, this, backend);
+			currentListener = new InstrumentationListener (ctx, this, backend);
 			return Handler.CompletedTask;
 		}
 

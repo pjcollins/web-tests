@@ -34,11 +34,9 @@ namespace Xamarin.WebTests.Server
 	using HttpFramework;
 	using TestFramework;
 
-	class Listener : IDisposable
+	abstract class Listener : IDisposable
 	{
-		LinkedList<ListenerContext> connections;
 		volatile bool disposed;
-		volatile bool closed;
 
 		static int nextID;
 		public readonly int ID = ++nextID;
@@ -65,112 +63,9 @@ namespace Xamarin.WebTests.Server
 			Server = server;
 			Backend = backend;
 			ME = $"{GetType ().Name}({ID})";
-			connections = new LinkedList<ListenerContext> ();
 		}
 
-		protected virtual void Close ()
-		{
-			lock (this) {
-				if (closed)
-					return;
-				closed = true;
-				TestContext.LogDebug (5, $"{ME}: CLOSE ALL");
-
-				var iter = connections.First;
-				while (iter != null) {
-					var node = iter.Value;
-					iter = iter.Next;
-
-					node.Dispose ();
-					connections.Remove (node);
-				}
-			}
-		}
-
-		ListenerContext FindIdleConnection (TestContext ctx, HttpOperation operation)
-		{
-			var iter = connections.First;
-			while (iter != null) {
-				var node = iter.Value;
-				iter = iter.Next;
-
-				if (node.StartOperation (ctx, operation))
-					return node;
-			}
-
-			return null;
-		}
-
-		ListenerContext FindConnection (HttpConnection connection)
-		{
-			var iter = connections.First;
-			while (iter != null) {
-				var node = iter.Value;
-				iter = iter.Next;
-				if (node.Connection == connection)
-					return node;
-			}
-
-			throw new InvalidOperationException ();
-		}
-
-		void CheckConnections (TestContext ctx)
-		{
-			int count = 0;
-			var iter = connections.First;
-			while (iter != null) {
-				var node = iter.Value;
-				iter = iter.Next;
-
-				if (node.Operation == null)
-					++count;
-			}
-			ctx.LogDebug (5, $"{ME} CHECK CONNECTIONS: {connections.Count} {count}");
-		}
-
-		public (HttpConnection connection, bool reused) CreateConnection (
-			TestContext ctx, HttpOperation operation, bool reuse)
-		{
-			lock (this) {
-				ListenerContext context = null;
-				CheckConnections (ctx);
-				if (reuse)
-					context = FindIdleConnection (ctx, operation);
-
-				if (context != null) {
-					ctx.LogDebug (5, $"{ME} REUSING CONNECTION: {context.Connection} {connections.Count}");
-					return (context.Connection, true);
-				}
-
-				var connection = Backend.CreateConnection ();
-				ctx.LogDebug (5, $"{ME} CREATE CONNECTION: {connection} {connections.Count}");
-
-				context = new ListenerContext (this, connection);
-				connections.AddLast (context);
-				connection.ClosedEvent += (sender, e) => {
-					lock (this) {
-						connections.Remove (context);
-					}
-				};
-				if (!context.StartOperation (ctx, operation))
-					throw new InvalidOperationException ();
-				return (connection, false);
-			}
-		}
-
-		public void Continue (TestContext ctx, HttpConnection connection, bool keepAlive)
-		{
-			lock (this) {
-				ctx.LogDebug (5, $"{ME} CONTINUE: {connection.ME} {keepAlive}");
-				var context = FindConnection (connection);
-				if (keepAlive) {
-					context.Continue ();
-					return;
-				}
-				connections.Remove (context);
-				context.Dispose ();
-			}
-		}
+		protected abstract void Close ();
 
 		public void Dispose ()
 		{

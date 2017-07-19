@@ -36,8 +36,6 @@ namespace Xamarin.WebTests.Server
 	class InstrumentationListener : Listener
 	{
 		LinkedList<ListenerContext> connections;
-		volatile bool disposed;
-		volatile bool closed;
 
 		public InstrumentationListener (TestContext ctx, HttpServer server, ListenerBackend backend)
 			: base (ctx, server, backend)
@@ -45,12 +43,9 @@ namespace Xamarin.WebTests.Server
 			connections = new LinkedList<ListenerContext> ();
 		}
 
-		public virtual void CloseAll ()
+		protected override void Close ()
 		{
 			lock (this) {
-				if (closed)
-					return;
-				closed = true;
 				TestContext.LogDebug (5, $"{ME}: CLOSE ALL");
 
 				var iter = connections.First;
@@ -146,17 +141,6 @@ namespace Xamarin.WebTests.Server
 				}
 				connections.Remove (context);
 				context.Dispose ();
-			}
-		}
-
-		public void Dispose ()
-		{
-			lock (this) {
-				if (disposed)
-					return;
-				disposed = true;
-				CloseAll ();
-				Backend.Dispose ();
 			}
 		}
 	}

@@ -111,7 +111,7 @@ namespace Xamarin.WebTests.HttpFramework
 
 		Request currentRequest;
 		ServicePoint servicePoint;
-		Listener listener;
+		InstrumentationListener listener;
 		NewListener newListener;
 		TaskCompletionSource<bool> serverInitTask;
 		TaskCompletionSource<object> serverStartTask;
@@ -178,7 +178,7 @@ namespace Xamarin.WebTests.HttpFramework
 			var me = $"{ME} RUN";
 			ctx.LogDebug (1, me);
 
-			listener = Server.Listener;
+			listener = (InstrumentationListener)Server.Listener;
 
 			var uri = Handler.RegisterRequest (ctx, Server);
 			var request = CreateRequest (ctx, uri);

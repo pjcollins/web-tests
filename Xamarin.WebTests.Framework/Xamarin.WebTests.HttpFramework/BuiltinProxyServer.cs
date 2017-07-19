@@ -101,7 +101,7 @@ namespace Xamarin.WebTests.HttpFramework {
 			var backend = new ProxyBackend (ctx, this);
 			if (Interlocked.CompareExchange (ref currentBackend, backend, null) != null)
 				throw new InternalErrorException ();
-			currentListener = new Listener (ctx, this, backend);
+			currentListener = new InstrumentationListener (ctx, this, backend);
 			if (AuthenticationType != AuthenticationType.None)
 				AuthenticationManager = new AuthenticationManager (AuthenticationType, true);
 			await Target.Start (ctx, cancellationToken).ConfigureAwait (false);
