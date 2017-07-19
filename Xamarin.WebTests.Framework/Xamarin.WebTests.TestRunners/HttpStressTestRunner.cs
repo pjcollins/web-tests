@@ -98,10 +98,10 @@ namespace Xamarin.WebTests.TestRunners
 		const HttpStressTestType MartinTest = HttpStressTestType.Simple;
 
 		static readonly HttpStressTestType[] WorkingTests = {
-			HttpStressTestType.Simple
 		};
 
 		static readonly HttpStressTestType[] UnstableTests = {
+			HttpStressTestType.Simple
 		};
 
 		static readonly HttpStressTestType[] MartinTests = {
