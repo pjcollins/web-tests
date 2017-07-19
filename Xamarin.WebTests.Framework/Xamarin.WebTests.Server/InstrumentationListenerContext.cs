@@ -112,6 +112,10 @@ namespace Xamarin.WebTests.Server
 						continue;
 					}
 					serverInitTask.TrySetResult (success);
+					if (!success) {
+						connection.Dispose ();
+						return;
+					}
 				} catch (OperationCanceledException) {
 					connection.Dispose ();
 					serverInitTask.TrySetCanceled ();
