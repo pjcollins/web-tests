@@ -38,6 +38,8 @@ namespace Xamarin.WebTests.Server
 			get;
 		}
 
+		public HttpServer Server => Listener.Server;
+
 		public abstract HttpConnection Connection {
 			get;
 		}

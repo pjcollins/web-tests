@@ -99,6 +99,7 @@ namespace Xamarin.WebTests.Server
 				}
 
 				var context = new InstrumentationListenerContext (this);
+				context.StartOperation (operation);
 				connections.AddLast (context);
 				return (context, false);
 			}
@@ -147,7 +148,27 @@ namespace Xamarin.WebTests.Server
 			}
 		}
 
-		async Task Run (TestContext ctx, HttpOperation operation, CancellationToken cancellationToken)
+		internal void Continue (TestContext ctx, InstrumentationListenerContext context, bool keepAlive)
+		{
+			lock (this) {
+				ctx.LogDebug (5, $"{ME} CONTINUE: {keepAlive}");
+				if (keepAlive) {
+					context.Continue ();
+					return;
+				}
+				connections.Remove (context);
+				context.Dispose ();
+			}
+		}
+
+		public ListenerContext CreateContext (TestContext ctx, HttpOperation operation, bool reusing)
+		{
+			var (context, _) = FindOrCreateConnection (ctx, operation, reusing);
+			return context;
+		}
+
+		public async Task<InstrumentationListenerContext> CreateContext (
+			TestContext ctx, HttpOperation operation, CancellationToken cancellationToken)
 		{
 			var reusing = !operation.HasAnyFlags (HttpOperationFlags.DontReuseConnection);
 			var (context, reused) = FindOrCreateConnection (ctx, operation, reusing);
@@ -165,7 +186,7 @@ namespace Xamarin.WebTests.Server
 				(context, reused) = FindOrCreateConnection (ctx, operation, false);
 			}
 
-			await context.StartOperation (ctx, operation, cancellationToken).ConfigureAwait (false);
+			return context;
 		}
 	}
 }

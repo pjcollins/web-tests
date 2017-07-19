@@ -34,6 +34,8 @@ namespace Xamarin.WebTests.Server
 
 	class InstrumentationListenerContext : ListenerContext
 	{
+		new public InstrumentationListener Listener => (InstrumentationListener)base.Listener;
+
 		public InstrumentationListenerContext (Listener listener)
 			: base (listener)
 		{
@@ -55,6 +57,7 @@ namespace Xamarin.WebTests.Server
 			get { return currentOperation; }
 		}
 
+		HttpConnection redirectRequested;
 		HttpOperation currentOperation;
 		HttpConnection currentConnection;
 		TaskCompletionSource<object> serverInitTask;
@@ -70,14 +73,23 @@ namespace Xamarin.WebTests.Server
 			currentOperation = null;
 		}
 
-		public async Task StartOperation (TestContext ctx, HttpOperation operation, CancellationToken cancellationToken)
+		public Task ServerInitTask => serverInitTask.Task;
+
+		public Task ServerStartTask => serverStartTask.Task;
+
+		public async Task Run (TestContext ctx, CancellationToken cancellationToken)
 		{
 			cancellationToken.ThrowIfCancellationRequested ();
 
 			bool reused;
 			HttpConnection connection;
+			HttpOperation operation;
 
 			lock (Listener) {
+				operation = currentOperation;
+				if (operation == null)
+					throw new InvalidOperationException ();
+
 				connection = currentConnection;
 				if (connection == null) {
 					connection = Listener.Backend.CreateConnection ();
@@ -100,7 +112,6 @@ namespace Xamarin.WebTests.Server
 						continue;
 					}
 					serverInitTask.TrySetResult (success);
-					return;
 				} catch (OperationCanceledException) {
 					connection.Dispose ();
 					serverInitTask.TrySetCanceled ();
@@ -109,6 +120,39 @@ namespace Xamarin.WebTests.Server
 					connection.Dispose ();
 					serverInitTask.TrySetException (ex);
 					throw;
+				}
+
+				ctx.LogDebug (2, $"{cncMe} LOOP #1: {reused}");
+
+				bool keepAlive;
+				try {
+					keepAlive = await Server.HandleConnection (
+						ctx, operation, connection, cancellationToken).ConfigureAwait (false);
+				} catch (Exception ex) {
+					ctx.LogDebug (2, $"{cncMe} - ERROR {ex.Message}");
+					connection.Dispose ();
+					throw;
+				}
+
+				lock (Listener) {
+					var redirect = Interlocked.Exchange (ref redirectRequested, null);
+					ctx.LogDebug (2, $"{cncMe} SERVER LOOP #2: {keepAlive} {redirect?.ME}");
+
+					if (redirect == null) {
+						Listener.Continue (ctx, this, keepAlive);
+						return;
+					}
+
+					if (operation.HasAnyFlags (HttpOperationFlags.ClientDoesNotSendRedirect)) {
+						connection.Dispose ();
+						return;
+					}
+
+					reused = redirect == connection;
+					if (!reused) {
+						connection.Dispose ();
+						connection = redirect;
+					}
 				}
 			}
 
@@ -198,6 +242,22 @@ namespace Xamarin.WebTests.Server
 
 			ctx.LogDebug (2, $"{me} DONE");
 			return true;
+		}
+
+		internal void PrepareRedirect (TestContext ctx, HttpConnection connection, bool keepAlive)
+		{
+			lock (Listener) {
+				var me = $"{FormatConnection (connection)} PREPARE REDIRECT";
+				ctx.LogDebug (5, $"{me}: {keepAlive}");
+				HttpConnection next;
+				if (keepAlive)
+					next = connection;
+				else
+					next = Listener.Backend.CreateConnection ();
+
+				if (Interlocked.CompareExchange (ref redirectRequested, next, null) != null)
+					throw new InvalidOperationException ();
+			}
 		}
 
 		protected override void Close ()

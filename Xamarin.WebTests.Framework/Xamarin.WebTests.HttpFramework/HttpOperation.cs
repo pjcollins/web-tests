@@ -111,6 +111,7 @@ namespace Xamarin.WebTests.HttpFramework
 
 		Request currentRequest;
 		ServicePoint servicePoint;
+		InstrumentationListenerContext listenerContext;
 		InstrumentationListener instrumentationListener;
 		ParallelListener parallelListener;
 		TaskCompletionSource<bool> serverInitTask;
@@ -193,8 +194,13 @@ namespace Xamarin.WebTests.HttpFramework
 
 			ctx.LogDebug (2, $"{me} #1: {uri} {request}");
 
-			var serverTask = RunServer (ctx, cancellationToken);
-			await serverStartTask.Task.ConfigureAwait (false);
+			listenerContext = await instrumentationListener.CreateContext (ctx, this, cancellationToken).ConfigureAwait (false);
+			var serverTask = listenerContext.Run (ctx, cancellationToken);
+			var serverInitTask = listenerContext.ServerInitTask;
+			var serverStartTask = listenerContext.ServerStartTask;
+
+			// var serverTask = RunServer (ctx, cancellationToken);
+			await serverStartTask.ConfigureAwait (false);
 
 			ctx.LogDebug (2, $"{me} #2");
 
@@ -218,7 +224,7 @@ namespace Xamarin.WebTests.HttpFramework
 
 				var tasks = new List<Task> ();
 				if (!initDone)
-					tasks.Add (serverInitTask.Task);
+					tasks.Add (serverInitTask);
 				if (!serverDone)
 					tasks.Add (serverTask);
 				if (!clientDone)
@@ -226,7 +232,7 @@ namespace Xamarin.WebTests.HttpFramework
 				var finished = await Task.WhenAny (tasks).ConfigureAwait (false);
 
 				string which;
-				if (finished == serverInitTask.Task) {
+				if (finished == serverInitTask) {
 					which = "init";
 					initDone = true;
 				} else if (finished == serverTask) {
@@ -242,7 +248,7 @@ namespace Xamarin.WebTests.HttpFramework
 				ctx.LogDebug (2, $"{me} #4: {which} exited - {finished.Status}");
 				if (finished.Status == TaskStatus.Faulted || finished.Status == TaskStatus.Canceled) {
 					if (HasAnyFlags (HttpOperationFlags.ExpectServerException) &&
-					    (finished == serverTask || finished == serverInitTask.Task))
+					    (finished == serverTask || finished == serverInitTask))
 						ctx.LogDebug (2, $"{me} #4 - EXPECTED EXCEPTION {finished.Exception.GetType ()}");
 					else {
 						ctx.LogDebug (2, $"{me} #4 FAILED: {finished.Exception.Message}");
