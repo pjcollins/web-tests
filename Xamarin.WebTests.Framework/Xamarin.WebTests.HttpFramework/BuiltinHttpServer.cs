@@ -36,7 +36,8 @@ using Xamarin.WebTests.Server;
 using Xamarin.WebTests.HttpHandlers;
 
 namespace Xamarin.WebTests.HttpFramework {
-	public sealed class BuiltinHttpServer : HttpServer {
+	public sealed class BuiltinHttpServer : HttpServer
+	{
 		public BuiltinHttpServer (IPortableEndPoint clientEndPoint, IPortableEndPoint listenAddress, HttpServerFlags flags,
 					  ConnectionParameters parameters, ISslStreamProvider sslStreamProvider)
 			: base (listenAddress, flags, parameters, sslStreamProvider)
@@ -141,7 +142,7 @@ namespace Xamarin.WebTests.HttpFramework {
 
 		public override void CloseAll ()
 		{
-			currentListener.CloseAll ();
+			currentListener.Dispose ();
 		}
 	}
 }

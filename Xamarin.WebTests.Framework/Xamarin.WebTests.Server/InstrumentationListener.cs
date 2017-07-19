@@ -33,37 +33,15 @@ namespace Xamarin.WebTests.Server
 {
 	using HttpFramework;
 
-	class InstrumentationListener
+	class InstrumentationListener : Listener
 	{
 		LinkedList<ListenerContext> connections;
 		volatile bool disposed;
 		volatile bool closed;
 
-		static int nextID;
-		public readonly int ID = ++nextID;
-
-		internal TestContext TestContext {
-			get;
-		}
-
-		internal ListenerBackend Backend {
-			get;
-		}
-
-		internal HttpServer Server {
-			get;
-		}
-
-		internal string ME {
-			get;
-		}
-
 		public InstrumentationListener (TestContext ctx, HttpServer server, ListenerBackend backend)
+			: base (ctx, server, backend)
 		{
-			TestContext = ctx;
-			Server = server;
-			Backend = backend;
-			ME = $"{GetType ().Name}({ID})";
 			connections = new LinkedList<ListenerContext> ();
 		}
 
@@ -179,54 +157,6 @@ namespace Xamarin.WebTests.Server
 				disposed = true;
 				CloseAll ();
 				Backend.Dispose ();
-			}
-		}
-
-		class ListenerContext : IDisposable
-		{
-			public InstrumentationListener Listener {
-				get;
-			}
-
-			public HttpConnection Connection {
-				get;
-				private set;
-			}
-
-			public HttpOperation Operation {
-				get { return currentOperation; }
-			}
-
-			HttpOperation currentOperation;
-
-			public ListenerContext (InstrumentationListener listener, HttpConnection connection)
-			{
-				Listener = listener;
-				Connection = connection;
-			}
-
-			public bool StartOperation (TestContext ctx, HttpOperation operation)
-			{
-				return Interlocked.CompareExchange (ref currentOperation, operation, null) == null;
-			}
-
-			public void Continue ()
-			{
-				currentOperation = null;
-			}
-
-			bool disposed;
-
-			public void Dispose ()
-			{
-				if (disposed)
-					return;
-				disposed = true;
-
-				if (Connection != null) {
-					Connection.Dispose ();
-					Connection = null;
-				}
 			}
 		}
 	}

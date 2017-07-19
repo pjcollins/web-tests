@@ -68,7 +68,7 @@ namespace Xamarin.WebTests.Server
 			connections = new LinkedList<ListenerContext> ();
 		}
 
-		public virtual void CloseAll ()
+		protected virtual void Close ()
 		{
 			lock (this) {
 				if (closed)
@@ -178,7 +178,7 @@ namespace Xamarin.WebTests.Server
 				if (disposed)
 					return;
 				disposed = true;
-				CloseAll ();
+				Close ();
 				Backend.Dispose ();
 			}
 		}
