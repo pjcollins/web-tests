@@ -65,10 +65,6 @@ namespace Xamarin.WebTests.Server
 		static long nextRequestID;
 		public readonly int ID = ++nextID;
 
-		internal object SyncRoot {
-			get;
-		}
-
 		internal TestContext TestContext {
 			get;
 		}
@@ -102,7 +98,6 @@ namespace Xamarin.WebTests.Server
 			TestContext = ctx;
 			Server = server;
 			Backend = backend;
-			SyncRoot = new object ();
 			ME = $"[{GetType ().Name}({ID})]";
 			connections = new LinkedList<Context> ();
 			registry = new Dictionary<string, HttpOperation> ();
@@ -114,7 +109,7 @@ namespace Xamarin.WebTests.Server
 
 		public void Run ()
 		{
-			lock (SyncRoot) {
+			lock (this) {
 				if (Interlocked.CompareExchange (ref running, 1, 0) == 0)
 					MainLoop ();
 
@@ -129,7 +124,7 @@ namespace Xamarin.WebTests.Server
 
 		public Uri RegisterOperation (TestContext ctx, HttpOperation operation)
 		{
-			lock (SyncRoot) {
+			lock (this) {
 				var id = Interlocked.Increment (ref nextRequestID);
 				var path = $"/id/{operation.ID}/{operation.Handler.GetType ().Name}/";
 				var uri = new Uri (Server.TargetUri, path);
@@ -145,7 +140,7 @@ namespace Xamarin.WebTests.Server
 
 				var taskList = new List<Task> ();
 				var connectionArray = new List<Context> ();
-				lock (SyncRoot) {
+				lock (this) {
 					RunScheduler ();
 
 					taskList.Add (mainLoopEvent.WaitAsync ());
@@ -171,7 +166,7 @@ namespace Xamarin.WebTests.Server
 				var ret = await Task.WhenAny (taskList).ConfigureAwait (false);
 				Debug ($"MAIN LOOP #1: {ret.Status} {ret == taskList[0]}");
 
-				lock (SyncRoot) {
+				lock (this) {
 					if (ret == taskList[0]) {
 						mainLoopEvent.Reset ();
 						continue;
@@ -254,7 +249,7 @@ namespace Xamarin.WebTests.Server
 
 		void CloseAll ()
 		{
-			lock (SyncRoot) {
+			lock (this) {
 				if (closed)
 					return;
 				closed = true;
@@ -275,7 +270,7 @@ namespace Xamarin.WebTests.Server
 
 		public void Dispose ()
 		{
-			lock (SyncRoot) {
+			lock (this) {
 				if (disposed)
 					return;
 				Debug ($"DISPOSE");
