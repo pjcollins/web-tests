@@ -47,7 +47,7 @@ namespace Xamarin.WebTests.Server
 	using HttpFramework;
 	using TestFramework;
 
-	abstract class Listener : IDisposable
+	class Listener : IDisposable
 	{
 		LinkedList<ListenerContext> connections;
 		volatile bool disposed;
@@ -163,7 +163,7 @@ namespace Xamarin.WebTests.Server
 					return (context.Connection, true);
 				}
 
-				var connection = CreateConnection ();
+				var connection = Backend.CreateConnection ();
 				ctx.LogDebug (5, $"{ME} CREATE CONNECTION: {connection} {connections.Count}");
 
 				context = new ListenerContext (this, connection);
@@ -192,8 +192,6 @@ namespace Xamarin.WebTests.Server
 				context.Dispose ();
 			}
 		}
-
-		protected abstract HttpConnection CreateConnection ();
 
 		public void Dispose ()
 		{
