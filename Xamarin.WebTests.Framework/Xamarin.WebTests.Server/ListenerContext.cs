@@ -57,6 +57,11 @@ namespace Xamarin.WebTests.Server
 
 		protected abstract void Close ();
 
+		protected string FormatConnection (HttpConnection connection)
+		{
+			return $"[{Listener.ME}:{connection.ME}]";
+		}
+
 		bool disposed;
 
 		public void Dispose ()
