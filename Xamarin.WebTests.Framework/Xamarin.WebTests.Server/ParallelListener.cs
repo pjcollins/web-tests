@@ -34,11 +34,10 @@ namespace Xamarin.WebTests.Server
 	using ConnectionFramework;
 	using HttpFramework;
 
-	class ParallelListener
+	class ParallelListener : Listener
 	{
 		LinkedList<Context> connections;
-		volatile bool disposed;
-		volatile bool closed;
+		bool closed;
 
 		int running;
 		CancellationTokenSource cts;
@@ -47,21 +46,7 @@ namespace Xamarin.WebTests.Server
 
 		int requestParallelConnections;
 
-		static int nextID;
 		static long nextRequestID;
-		public readonly int ID = ++nextID;
-
-		internal TestContext TestContext {
-			get;
-		}
-
-		internal ListenerBackend Backend {
-			get;
-		}
-
-		internal HttpServer Server {
-			get;
-		}
 
 		internal int RequestParallelConnections {
 			get { return requestParallelConnections; }
@@ -75,16 +60,9 @@ namespace Xamarin.WebTests.Server
 			}
 		}
 
-		internal string ME {
-			get;
-		}
-
 		public ParallelListener (TestContext ctx, HttpServer server, ListenerBackend backend)
+			: base (ctx, server, backend)
 		{
-			TestContext = ctx;
-			Server = server;
-			Backend = backend;
-			ME = $"[{GetType ().Name}({ID})]";
 			connections = new LinkedList<Context> ();
 			registry = new Dictionary<string, HttpOperation> ();
 			mainLoopEvent = new AsyncManualResetEvent (false);
@@ -121,7 +99,7 @@ namespace Xamarin.WebTests.Server
 
 		async void MainLoop ()
 		{
-			while (!disposed) {
+			while (!closed) {
 				Debug ($"MAIN LOOP");
 
 				var taskList = new List<Task> ();
@@ -233,40 +211,22 @@ namespace Xamarin.WebTests.Server
 			return false;
 		}
 
-		void CloseAll ()
+		protected override void Close ()
 		{
-			lock (this) {
-				if (closed)
-					return;
-				closed = true;
-				TestContext.LogDebug (5, $"{ME}: CLOSE ALL");
+			closed = true;
+			cts.Cancel ();
 
-				var iter = connections.First;
-				while (iter != null) {
-					var node = iter.Value;
-					iter = iter.Next;
+			var iter = connections.First;
+			while (iter != null) {
+				var node = iter.Value;
+				iter = iter.Next;
 
-					node.Connection.Dispose ();
-					connections.Remove (node);
-				}
-
-				TestContext.LogDebug (5, $"{ME}: CLOSE ALL DONE");
+				node.Connection.Dispose ();
+				connections.Remove (node);
 			}
-		}
 
-		public void Dispose ()
-		{
-			lock (this) {
-				if (disposed)
-					return;
-				Debug ($"DISPOSE");
-				disposed = true;
-				cts.Cancel ();
-				CloseAll ();
-				Backend.Dispose ();
-				cts.Dispose ();
-				mainLoopEvent.Set ();
-			}
+			cts.Dispose ();
+			mainLoopEvent.Set ();
 		}
 
 		enum State
