@@ -35,12 +35,12 @@ namespace Xamarin.WebTests.Server
 
 	class InstrumentationListener : Listener
 	{
-		LinkedList<ListenerContext> connections;
+		LinkedList<InstrumentationListenerContext> connections;
 
 		public InstrumentationListener (TestContext ctx, HttpServer server, ListenerBackend backend)
 			: base (ctx, server, backend)
 		{
-			connections = new LinkedList<ListenerContext> ();
+			connections = new LinkedList<InstrumentationListenerContext> ();
 		}
 
 		protected override void Close ()
@@ -59,7 +59,7 @@ namespace Xamarin.WebTests.Server
 			}
 		}
 
-		ListenerContext FindIdleConnection (TestContext ctx, HttpOperation operation)
+		InstrumentationListenerContext FindIdleConnection (TestContext ctx, HttpOperation operation)
 		{
 			var iter = connections.First;
 			while (iter != null) {
@@ -73,7 +73,7 @@ namespace Xamarin.WebTests.Server
 			return null;
 		}
 
-		ListenerContext FindConnection (HttpConnection connection)
+		InstrumentationListenerContext FindConnection (HttpConnection connection)
 		{
 			var iter = connections.First;
 			while (iter != null) {
@@ -86,26 +86,29 @@ namespace Xamarin.WebTests.Server
 			throw new InvalidOperationException ();
 		}
 
-		void CheckConnections (TestContext ctx)
+		(InstrumentationListenerContext, bool) FindOrCreateConnection (TestContext ctx, HttpOperation operation, bool reuse)
 		{
-			int count = 0;
-			var iter = connections.First;
-			while (iter != null) {
-				var node = iter.Value;
-				iter = iter.Next;
+			lock (this) {
+				var iter = connections.First;
+				while (reuse && iter != null) {
+					var node = iter.Value;
+					iter = iter.Next;
 
-				if (node.Operation == null)
-					++count;
+					if (node.StartOperation (operation))
+						return (node, true);
+				}
+
+				var context = new InstrumentationListenerContext (this);
+				connections.AddLast (context);
+				return (context, false);
 			}
-			ctx.LogDebug (5, $"{ME} CHECK CONNECTIONS: {connections.Count} {count}");
 		}
 
 		public (HttpConnection connection, bool reused) CreateConnection (
 			TestContext ctx, HttpOperation operation, bool reuse)
 		{
 			lock (this) {
-				ListenerContext context = null;
-				CheckConnections (ctx);
+				InstrumentationListenerContext context = null;
 				if (reuse)
 					context = FindIdleConnection (ctx, operation);
 
@@ -142,6 +145,27 @@ namespace Xamarin.WebTests.Server
 				connections.Remove (context);
 				context.Dispose ();
 			}
+		}
+
+		async Task Run (TestContext ctx, HttpOperation operation, CancellationToken cancellationToken)
+		{
+			var reusing = !operation.HasAnyFlags (HttpOperationFlags.DontReuseConnection);
+			var (context, reused) = FindOrCreateConnection (ctx, operation, reusing);
+
+			if (reused && operation.HasAnyFlags (HttpOperationFlags.ClientUsesNewConnection)) {
+				try {
+					await context.Connection.ReadRequest (ctx, cancellationToken).ConfigureAwait (false);
+					throw ctx.AssertFail ("Expected client to use a new connection.");
+				} catch (OperationCanceledException) {
+					throw;
+				} catch (Exception ex) {
+					ctx.LogDebug (2, $"{ME} EXPECTED EXCEPTION: {ex.GetType ()} {ex.Message}");
+				}
+				context.Dispose ();
+				(context, reused) = FindOrCreateConnection (ctx, operation, false);
+			}
+
+			await context.StartOperation (ctx, operation, cancellationToken).ConfigureAwait (false);
 		}
 	}
 }

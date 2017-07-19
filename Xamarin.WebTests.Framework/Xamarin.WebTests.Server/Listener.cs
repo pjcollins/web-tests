@@ -65,6 +65,11 @@ namespace Xamarin.WebTests.Server
 			ME = $"{GetType ().Name}({ID})";
 		}
 
+		protected internal string FormatConnection (HttpConnection connection)
+		{
+			return $"[{ME}:{connection.ME}]";
+		}
+
 		protected abstract void Close ();
 
 		public void Dispose ()

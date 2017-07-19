@@ -34,11 +34,17 @@ namespace Xamarin.WebTests.Server
 
 	class InstrumentationListenerContext : ListenerContext
 	{
-		public InstrumentationListenerContext (Listener listener, HttpConnection connection)
+		public InstrumentationListenerContext (Listener listener)
 			: base (listener)
 		{
+			serverInitTask = new TaskCompletionSource<object> ();
+			serverStartTask = new TaskCompletionSource<object> ();
+		}
+
+		public InstrumentationListenerContext (Listener listener, HttpConnection connection)
+			: this (listener)
+		{
 			this.currentConnection = connection;
-			serverStartTask = new TaskCompletionSource<object> (); 
 		}
 
 		public override HttpConnection Connection {
@@ -51,6 +57,7 @@ namespace Xamarin.WebTests.Server
 
 		HttpOperation currentOperation;
 		HttpConnection currentConnection;
+		TaskCompletionSource<object> serverInitTask;
 		TaskCompletionSource<object> serverStartTask;
 
 		public override bool StartOperation (HttpOperation operation)
@@ -61,6 +68,62 @@ namespace Xamarin.WebTests.Server
 		public override void Continue ()
 		{
 			currentOperation = null;
+		}
+
+		public async Task StartOperation (TestContext ctx, HttpOperation operation, CancellationToken cancellationToken)
+		{
+			cancellationToken.ThrowIfCancellationRequested ();
+
+			bool reused;
+			HttpConnection connection;
+
+			lock (Listener) {
+				connection = currentConnection;
+				if (connection == null) {
+					connection = Listener.Backend.CreateConnection ();
+					reused = false;
+				} else {
+					reused = true;
+				}
+			}
+
+			var cncMe = Listener.FormatConnection (connection);
+			ctx.LogDebug (2, $"{cncMe} LOOP: {reused}");
+
+			while (true) {
+				try {
+					var (complete, success) = await Initialize ();
+					if (!complete) {
+						connection.Dispose ();
+						connection = Listener.Backend.CreateConnection ();
+						reused = false;
+						continue;
+					}
+					serverInitTask.TrySetResult (success);
+					return;
+				} catch (OperationCanceledException) {
+					connection.Dispose ();
+					serverInitTask.TrySetCanceled ();
+					throw;
+				} catch (Exception ex) {
+					connection.Dispose ();
+					serverInitTask.TrySetException (ex);
+					throw;
+				}
+			}
+
+			async Task<(bool complete, bool success)> Initialize ()
+			{
+				if (reused) {
+					if (!await ReuseConnection (ctx, connection, cancellationToken).ConfigureAwait (false))
+						return (false, false);
+					return (true, true);
+				}
+
+				if (!await InitConnection (ctx, operation, connection, cancellationToken).ConfigureAwait (false))
+					return (true, false);
+				return (true, true);
+			}
 		}
 
 		async Task<bool> ReuseConnection (TestContext ctx, HttpConnection connection, CancellationToken cancellationToken)
