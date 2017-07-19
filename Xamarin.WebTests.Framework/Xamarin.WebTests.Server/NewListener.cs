@@ -24,22 +24,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 using System;
-using System.IO;
-using System.Net;
-using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Reflection;
-using System.Net.Sockets;
-using System.Collections.Generic;
 using System.Threading.Tasks;
-using System.Net.Security;
-using System.Security.Authentication;
-using System.Security.Cryptography.X509Certificates;
-using SD = System.Diagnostics;
-
+using System.Collections.Generic;
 using Xamarin.AsyncTests;
-using Xamarin.AsyncTests.Portable;
 
 namespace Xamarin.WebTests.Server
 {
