@@ -208,7 +208,6 @@
     <Compile Include="Xamarin.WebTests.TestFramework\HttpStressTestType.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\HttpStressTestParametersAttribute.cs" />
     <Compile Include="Xamarin.WebTests.Server\NewListener.cs" />
-    <Compile Include="Xamarin.WebTests.Server\NewSocketListener.cs" />
     <Compile Include="Xamarin.WebTests.ConnectionFramework\AsyncManualResetEvent.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\Martin2Attribute.cs" />
     <Compile Include="Xamarin.WebTests.Server\ListenerBackend.cs" />

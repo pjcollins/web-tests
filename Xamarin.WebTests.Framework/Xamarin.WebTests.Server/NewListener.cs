@@ -48,7 +48,7 @@ namespace Xamarin.WebTests.Server
 	using TestFramework;
 	using HttpHandlers;
 
-	abstract class NewListener : IDisposable
+	class NewListener : IDisposable
 	{
 		LinkedList<Context> connections;
 		volatile bool disposed;
@@ -73,6 +73,10 @@ namespace Xamarin.WebTests.Server
 			get;
 		}
 
+		internal ListenerBackend Backend {
+			get;
+		}
+
 		internal HttpServer Server {
 			get;
 		}
@@ -93,10 +97,11 @@ namespace Xamarin.WebTests.Server
 			get;
 		}
 
-		public NewListener (TestContext ctx, HttpServer server)
+		public NewListener (TestContext ctx, HttpServer server, ListenerBackend backend)
 		{
 			TestContext = ctx;
 			Server = server;
+			Backend = backend;
 			SyncRoot = new object ();
 			ME = $"[{GetType ().Name}({ID})]";
 			connections = new LinkedList<Context> ();
@@ -204,7 +209,7 @@ namespace Xamarin.WebTests.Server
 		{
 			while (connections.Count < requestParallelConnections) {
 				Debug ($"RUN SCHEDULER: {connections.Count}");
-				var connection = CreateConnection ();
+				var connection = Backend.CreateConnection ();
 				connections.AddLast (new Context (this, connection));
 				Debug ($"RUN SCHEDULER #1: {connection.ME}");
 			}
@@ -247,28 +252,6 @@ namespace Xamarin.WebTests.Server
 			return false;
 		}
 
-		[Obsolete ("KILL")]
-		public void Initialize (int numConnections)
-		{
-			lock (SyncRoot) {
-				for (int i = 0; i < numConnections; i++) {
-					var connection = CreateConnection ();
-					connections.AddLast (new Context (this, connection));
-				}
-				Run ();
-			}
-		}
-
-		[Obsolete ("KILL")]
-		public void AddConnection ()
-		{
-			lock (SyncRoot) {
-				var connection = CreateConnection ();
-				connections.AddLast (new Context (this, connection));
-				Run ();
-			}
-		}
-
 		void CloseAll ()
 		{
 			lock (SyncRoot) {
@@ -294,8 +277,6 @@ namespace Xamarin.WebTests.Server
 		{
 		}
 
-		protected abstract HttpConnection CreateConnection ();
-
 		public void Dispose ()
 		{
 			lock (SyncRoot) {
@@ -306,6 +287,7 @@ namespace Xamarin.WebTests.Server
 				cts.Cancel ();
 				CloseAll ();
 				Shutdown ();
+				Backend.Dispose ();
 				cts.Dispose ();
 				mainLoopEvent.Set ();
 			}

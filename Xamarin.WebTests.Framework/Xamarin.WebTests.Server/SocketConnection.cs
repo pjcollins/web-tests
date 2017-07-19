@@ -71,12 +71,6 @@ namespace Xamarin.WebTests.Server
 			ListenSocket = socket;
 		}
 
-		public SocketConnection (NewSocketListener listener, HttpServer server, Socket socket)
-			: base (server)
-		{
-			ListenSocket = socket;
-		}
-
 		public SocketConnection (HttpServer server)
 			: base (server)
 		{

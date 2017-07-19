@@ -86,15 +86,16 @@ namespace Xamarin.WebTests.HttpFramework {
 
 		public override Task Start (TestContext ctx, CancellationToken cancellationToken)
 		{
+			ListenerBackend backend;
 			if ((Flags & HttpServerFlags.NewListener) != 0) {
-				var newSocketListener = new NewSocketListener (ctx, this);
+				backend = new SocketBackend (ctx, this);			
+				var newSocketListener = new NewListener (ctx, this, backend);
 				if (Interlocked.CompareExchange (ref newListener, newSocketListener, null) != null)
 					throw new InternalErrorException ();
 				newSocketListener.RequestParallelConnections = 10;
 				return Handler.CompletedTask;
 			}
 
-			ListenerBackend backend;
 			if ((Flags & HttpServerFlags.HttpListener) != 0)
 				backend = new HttpListenerBackend (ctx, this);
 			else
