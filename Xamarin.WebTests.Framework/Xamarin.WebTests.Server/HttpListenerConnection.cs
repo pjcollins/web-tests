@@ -197,7 +197,6 @@ namespace Xamarin.WebTests.Server {
 
 		protected override void Close ()
 		{
-			OnClosed (false);
 			Context?.Response?.Close ();
 		}
 	}

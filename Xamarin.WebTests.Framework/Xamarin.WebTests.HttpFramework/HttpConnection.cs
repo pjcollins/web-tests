@@ -63,7 +63,7 @@ namespace Xamarin.WebTests.HttpFramework
 			ME = $"[{GetType ().Name}({ID}:{server.ME})]";
 		}
 
-		public event EventHandler<bool> ClosedEvent;
+		public event EventHandler ClosedEvent;
 
 		internal abstract IPEndPoint RemoteEndPoint {
 			get;
@@ -89,18 +89,15 @@ namespace Xamarin.WebTests.HttpFramework
 
 		int disposed;
 
-		protected void OnClosed (bool keepAlive)
-		{
-			ClosedEvent?.Invoke (this, keepAlive);
-		}
-
 		protected abstract void Close ();
 
 		public void Dispose ()
 		{
-			if (Interlocked.CompareExchange (ref disposed, 1, 0) == 0)
-				Close ();
+			if (Interlocked.CompareExchange (ref disposed, 1, 0) != 0)
+				return;
+
+			ClosedEvent?.Invoke (this, EventArgs.Empty);
+			Close ();
 		}
 	}
 }
-

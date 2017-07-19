@@ -68,7 +68,6 @@ namespace Xamarin.WebTests.Server
 		SslStream sslStream;
 		HttpStreamReader reader;
 		IPEndPoint remoteEndPoint;
-		HttpOperation currentOperation;
 
 		public SocketConnection (SocketListener listener, HttpServer server, Socket socket)
 			: base (server)
@@ -200,8 +199,6 @@ namespace Xamarin.WebTests.Server
 
 		protected override void Close ()
 		{
-			OnClosed (false);
-
 			if (reader != null) {
 				reader.Dispose ();
 				reader = null;

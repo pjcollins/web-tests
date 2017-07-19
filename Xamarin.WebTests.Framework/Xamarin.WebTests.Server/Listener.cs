@@ -150,8 +150,7 @@ namespace Xamarin.WebTests.Server
 				connections.AddLast (context);
 				connection.ClosedEvent += (sender, e) => {
 					lock (this) {
-						if (!e)
-							connections.Remove (context);
+						connections.Remove (context);
 					}
 				};
 				if (!context.StartOperation (ctx, operation))
