@@ -111,7 +111,6 @@ namespace Xamarin.WebTests.Server
 		public override async Task Initialize (TestContext ctx, HttpOperation operation, CancellationToken cancellationToken)
 		{
 			remoteEndPoint = (IPEndPoint)Socket.RemoteEndPoint;
-			// var operation = currentOperation;
 			ctx.LogDebug (5, $"{ME} INITIALIZE: {ListenSocket?.LocalEndPoint} {remoteEndPoint} {operation?.ME}");
 			if (operation != null)
 				networkStream = operation.CreateNetworkStream (ctx, Socket, true);
@@ -205,14 +204,8 @@ namespace Xamarin.WebTests.Server
 				if (Interlocked.CompareExchange (ref currentOperation, operation, null) != null)
 					return false;
 				ctx.LogDebug (5, $"{ME} START OPERATION: {operation.ME}");
-				StartOperation_internal (ctx, operation);
 				return true;
 			}
-		}
-
-		protected virtual void StartOperation_internal (TestContext ctx, HttpOperation operation)
-		{
-			
 		}
 
 		public override void Continue (TestContext ctx, bool keepAlive)

@@ -44,7 +44,6 @@ namespace Xamarin.WebTests.Server
 		public Listener TargetListener => Listener.Target.Listener;
 
 		HttpConnection targetConnection;
-		HttpOperation currentOperation;
 
 		public ProxyConnection (ProxyListener listener, BuiltinProxyServer server, Socket socket)
 			: base (listener, server, socket)
@@ -59,16 +58,9 @@ namespace Xamarin.WebTests.Server
 
 		public override Task Initialize (TestContext ctx, HttpOperation operation, CancellationToken cancellationToken)
 		{
-			(targetConnection, _) = TargetListener.CreateConnection (ctx, currentOperation, false);
+			(targetConnection, _) = TargetListener.CreateConnection (ctx, operation, false);
 			ctx.LogDebug (5, $"{ME} CREATE TARGET CONNECTION: {targetConnection.ME}");
 			return base.Initialize (ctx, operation, cancellationToken);
-		}
-
-		protected override void StartOperation_internal (TestContext ctx, HttpOperation operation)
-		{
-			currentOperation = operation;
-
-			base.StartOperation_internal (ctx, operation);
 		}
 
 		internal async Task RunTarget (TestContext ctx, HttpOperation operation, CancellationToken cancellationToken)
