@@ -183,52 +183,5 @@ namespace Xamarin.WebTests.Server
 			}
 		}
 
-		class ListenerContext : IDisposable
-		{
-			public Listener Listener {
-				get;
-			}
-
-			public HttpConnection Connection {
-				get;
-				private set;
-			}
-
-			public HttpOperation Operation {
-				get { return currentOperation; }
-			}
-
-			HttpOperation currentOperation;
-
-			public ListenerContext (Listener listener, HttpConnection connection)
-			{
-				Listener = listener;
-				Connection = connection;
-			}
-
-			public bool StartOperation (TestContext ctx, HttpOperation operation)
-			{
-				return Interlocked.CompareExchange (ref currentOperation, operation, null) == null;
-			}
-
-			public void Continue ()
-			{
-				currentOperation = null;
-			}
-
-			bool disposed;
-
-			public void Dispose ()
-			{
-				if (disposed)
-					return;
-				disposed = true;
-
-				if (Connection != null) {
-					Connection.Dispose ();
-					Connection = null;
-				}
-			}
-		}
 	}
 }

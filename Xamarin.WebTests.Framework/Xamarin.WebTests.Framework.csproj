@@ -216,6 +216,7 @@
     <Compile Include="Xamarin.WebTests.Server\ProxyBackend.cs" />
     <Compile Include="Xamarin.WebTests.Server\InstrumentationListener.cs" />
     <Compile Include="Xamarin.WebTests.Server\ParallelListener.cs" />
+    <Compile Include="Xamarin.WebTests.Server\ListenerContext.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="..\CA\invalid-server-cert.pfx">
