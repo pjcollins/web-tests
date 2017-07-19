@@ -147,6 +147,11 @@ namespace Xamarin.WebTests.Server
 			}
 		}
 
+		protected virtual void StartOperation (TestContext ctx, HttpConnection connection, HttpOperation operation)
+		{
+			
+		}
+
 		protected abstract HttpConnection CreateConnection ();
 
 		public void Dispose ()

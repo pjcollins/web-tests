@@ -211,7 +211,7 @@ namespace Xamarin.WebTests.HttpFramework {
 				ctx.LogDebug (5, $"{ME} HANDLE CONNECTION #2");
 
 				cancellationToken.ThrowIfCancellationRequested ();
-				await targetConnection.Initialize (ctx, cancellationToken);
+				await targetConnection.Initialize (ctx, operation, cancellationToken);
 
 				ctx.LogDebug (5, $"{ME} HANDLE CONNECTION #3");
 

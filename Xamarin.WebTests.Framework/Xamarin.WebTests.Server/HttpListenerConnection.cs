@@ -68,7 +68,7 @@ namespace Xamarin.WebTests.Server {
 			remoteEndPoint = Context.Request.RemoteEndPoint;
 		}
 
-		public override Task Initialize (TestContext ctx, CancellationToken cancellationToken)
+		public override Task Initialize (TestContext ctx, HttpOperation operation, CancellationToken cancellationToken)
 		{
 			if (Server.SslStreamProvider?.SupportsHttpListenerContext ?? false)
 				sslStream = Server.SslStreamProvider.GetSslStream (Context);

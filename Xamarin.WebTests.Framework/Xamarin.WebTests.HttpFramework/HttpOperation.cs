@@ -374,7 +374,7 @@ namespace Xamarin.WebTests.HttpFramework
 
 			cancellationToken.ThrowIfCancellationRequested ();
 			try {
-				await connection.Initialize (ctx, cancellationToken);
+				await connection.Initialize (ctx, this, cancellationToken);
 				ctx.LogDebug (2, $"{me} #1 {connection.RemoteEndPoint}");
 
 				if (HasAnyFlags (HttpOperationFlags.ServerAbortsHandshake))

@@ -73,7 +73,7 @@ namespace Xamarin.WebTests.HttpFramework
 
 		public abstract Task AcceptAsync (TestContext ctx, CancellationToken cancellationToken);
 
-		public abstract Task Initialize (TestContext ctx, CancellationToken cancellationToken);
+		public abstract Task Initialize (TestContext ctx, HttpOperation operation, CancellationToken cancellationToken);
 
 		public abstract Task<bool> ReuseConnection (TestContext ctx, CancellationToken cancellationToken);
 

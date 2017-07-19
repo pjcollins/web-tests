@@ -46,6 +46,8 @@ namespace Xamarin.WebTests.Server
 
 		public HttpServer Target => Server.Target;
 
+		public Listener TargetListener => Target.Listener;
+
 		public ProxyListener (TestContext ctx, BuiltinProxyServer server)
 			: base (ctx, server)
 		{

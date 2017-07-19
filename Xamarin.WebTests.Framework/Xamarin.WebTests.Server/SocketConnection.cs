@@ -108,10 +108,10 @@ namespace Xamarin.WebTests.Server
 			remoteEndPoint = (IPEndPoint)Socket.RemoteEndPoint;
 		}
 
-		public override async Task Initialize (TestContext ctx, CancellationToken cancellationToken)
+		public override async Task Initialize (TestContext ctx, HttpOperation operation, CancellationToken cancellationToken)
 		{
 			remoteEndPoint = (IPEndPoint)Socket.RemoteEndPoint;
-			var operation = currentOperation;
+			// var operation = currentOperation;
 			ctx.LogDebug (5, $"{ME} INITIALIZE: {ListenSocket?.LocalEndPoint} {remoteEndPoint} {operation?.ME}");
 			if (operation != null)
 				networkStream = operation.CreateNetworkStream (ctx, Socket, true);

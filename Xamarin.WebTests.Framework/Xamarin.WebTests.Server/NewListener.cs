@@ -373,7 +373,7 @@ namespace Xamarin.WebTests.Server
 					ctx.LogDebug (5, $"{me} #1");
 
 					cancellationToken.ThrowIfCancellationRequested ();
-					await Connection.Initialize (ctx, cancellationToken);
+					await Connection.Initialize (ctx, Operation, cancellationToken);
 
 					ctx.LogDebug (5, $"{me} #2");
 
