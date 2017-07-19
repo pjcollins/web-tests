@@ -273,10 +273,6 @@ namespace Xamarin.WebTests.Server
 			}
 		}
 
-		protected virtual void Shutdown ()
-		{
-		}
-
 		public void Dispose ()
 		{
 			lock (SyncRoot) {
@@ -286,7 +282,6 @@ namespace Xamarin.WebTests.Server
 				disposed = true;
 				cts.Cancel ();
 				CloseAll ();
-				Shutdown ();
 				Backend.Dispose ();
 				cts.Dispose ();
 				mainLoopEvent.Set ();

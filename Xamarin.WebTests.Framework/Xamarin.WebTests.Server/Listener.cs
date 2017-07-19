@@ -100,14 +100,6 @@ namespace Xamarin.WebTests.Server
 			}
 		}
 
-		protected virtual void Shutdown ()
-		{
-		}
-
-		protected virtual void OnStop ()
-		{
-		}
-
 		ListenerContext FindIdleConnection (TestContext ctx, HttpOperation operation)
 		{
 			var iter = connections.First;
@@ -201,7 +193,6 @@ namespace Xamarin.WebTests.Server
 				disposed = true;
 				CloseAll ();
 				Backend.Dispose ();
-				Shutdown ();
 			}
 		}
 
