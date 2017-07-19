@@ -71,7 +71,7 @@ namespace Xamarin.WebTests.HttpFramework
 		public readonly int ID = Interlocked.Increment (ref nextID);
 
 		public HttpOperation (HttpServer server, string me, Handler handler, HttpOperationFlags flags,
-		                      HttpStatusCode expectedStatus, WebExceptionStatus expectedError)
+				      HttpStatusCode expectedStatus, WebExceptionStatus expectedError)
 		{
 			Server = server;
 			Handler = handler;
@@ -85,7 +85,7 @@ namespace Xamarin.WebTests.HttpFramework
 			serverStartTask = new TaskCompletionSource<object> ();
 			requestTask = new TaskCompletionSource<Request> ();
 			requestDoneTask = new TaskCompletionSource<Response> ();
-			cts = new CancellationTokenSource (); 
+			cts = new CancellationTokenSource ();
 		}
 
 		public Request Request {
@@ -195,19 +195,9 @@ namespace Xamarin.WebTests.HttpFramework
 			ctx.LogDebug (2, $"{me} #1: {uri} {request}");
 
 			listenerContext = await instrumentationListener.CreateContext (ctx, this, cancellationToken).ConfigureAwait (false);
-			Task serverTask, serverInitTask, serverStartTask;
 
-			if (listenerContext != null) {
-				serverTask = listenerContext.Run (ctx, cancellationToken);
-				serverInitTask = listenerContext.ServerInitTask;
-				serverStartTask = listenerContext.ServerStartTask;
-			} else {
-				serverInitTask = this.serverInitTask.Task;
-				serverStartTask = this.serverStartTask.Task;
-				serverTask = RunServer (ctx, cancellationToken);
-			}
-
-			await serverStartTask.ConfigureAwait (false);
+			var serverTask = listenerContext.Run (ctx, cancellationToken);
+			await listenerContext.ServerStartTask.ConfigureAwait (false);
 
 			ctx.LogDebug (2, $"{me} #2");
 
@@ -231,7 +221,7 @@ namespace Xamarin.WebTests.HttpFramework
 
 				var tasks = new List<Task> ();
 				if (!initDone)
-					tasks.Add (serverInitTask);
+					tasks.Add (listenerContext.ServerInitTask);
 				if (!serverDone)
 					tasks.Add (serverTask);
 				if (!clientDone)
@@ -239,7 +229,7 @@ namespace Xamarin.WebTests.HttpFramework
 				var finished = await Task.WhenAny (tasks).ConfigureAwait (false);
 
 				string which;
-				if (finished == serverInitTask) {
+				if (finished == listenerContext.ServerInitTask) {
 					which = "init";
 					initDone = true;
 				} else if (finished == serverTask) {
@@ -255,7 +245,7 @@ namespace Xamarin.WebTests.HttpFramework
 				ctx.LogDebug (2, $"{me} #4: {which} exited - {finished.Status}");
 				if (finished.Status == TaskStatus.Faulted || finished.Status == TaskStatus.Canceled) {
 					if (HasAnyFlags (HttpOperationFlags.ExpectServerException) &&
-					    (finished == serverTask || finished == serverInitTask))
+					    (finished == serverTask || finished == listenerContext.ServerInitTask))
 						ctx.LogDebug (2, $"{me} #4 - EXPECTED EXCEPTION {finished.Exception.GetType ()}");
 					else {
 						ctx.LogDebug (2, $"{me} #4 FAILED: {finished.Exception.Message}");
@@ -273,180 +263,9 @@ namespace Xamarin.WebTests.HttpFramework
 			return response;
 		}
 
-		async Task RunServer (TestContext ctx, CancellationToken cancellationToken)
-		{
-			var me = $"{ME} RUN SERVER";
-			ctx.LogDebug (2, $"{me}");
-
-			cancellationToken.ThrowIfCancellationRequested ();
-
-			var reusing = !HasAnyFlags (HttpOperationFlags.DontReuseConnection);
-			var (connection, reused) = instrumentationListener.CreateConnection (ctx, this, reusing);
-
-			if (reused && HasAnyFlags (HttpOperationFlags.ClientUsesNewConnection)) {
-				try {
-					await connection.ReadRequest (ctx, cancellationToken).ConfigureAwait (false);
-					throw ctx.AssertFail ("Expected client to use a new connection.");
-				} catch (OperationCanceledException) {
-					throw;
-				} catch (Exception ex) {
-					ctx.LogDebug (2, $"{me} EXPECTED EXCEPTION: {ex.GetType ()} {ex.Message}");
-				}
-				connection.Dispose ();
-				(connection, reused) = instrumentationListener.CreateConnection (ctx, this, false);
-			}
-
-			while (true) {
-				var cncMe = FormatConnection (connection);
-				ctx.LogDebug (2, $"{cncMe} LOOP: {reused}");
-				try {
-					if (!reused && !await InitConnection (ctx, connection, cancellationToken).ConfigureAwait (false)) {
-						serverInitTask.TrySetResult (false);
-						connection.Dispose ();
-						return;
-					}
-					if (reused && !await ReuseConnection (ctx, connection, cancellationToken).ConfigureAwait (false)) {
-						connection.Dispose ();
-						(connection, reused) = instrumentationListener.CreateConnection (ctx, this, false);
-						continue;
-					}
-					serverInitTask.TrySetResult (true);
-				} catch (OperationCanceledException) {
-					connection.Dispose ();
-					serverInitTask.TrySetCanceled ();
-					throw;
-				} catch (Exception ex) {
-					connection.Dispose ();
-					serverInitTask.TrySetException (ex);
-					throw;
-				}
-
-				ctx.LogDebug (2, $"{cncMe} LOOP #1: {reused}");
-
-				bool keepAlive;
-				try {
-					keepAlive = await Server.HandleConnection (ctx, this, connection, cancellationToken).ConfigureAwait (false);
-				} catch (Exception ex) {
-					ctx.LogDebug (2, $"{cncMe} - ERROR {ex.Message}");
-					connection.Dispose ();
-					throw;
-				}
-
-				lock (instrumentationListener) {
-					var redirect = Interlocked.Exchange (ref redirectRequested, null);
-					ctx.LogDebug (2, $"{cncMe} SERVER LOOP #2: {keepAlive} {redirect?.ME}");
-
-					if (redirect == null) {
-						instrumentationListener.Continue (ctx, connection, keepAlive);
-						return;
-					}
-
-					if (HasAnyFlags (HttpOperationFlags.ClientDoesNotSendRedirect)) {
-						connection.Dispose ();
-						return;
-					}
-
-					reused = redirect == connection;
-					if (!reused) {
-						connection.Dispose ();
-						connection = redirect;
-					}
-				}
-			}
-		}
-
-		async Task<bool> ReuseConnection (TestContext ctx, HttpConnection connection, CancellationToken cancellationToken)
-		{
-			var me = $"{FormatConnection (connection)} REUSE";
-			ctx.LogDebug (2, $"{me}");
-
-			serverStartTask.TrySetResult (null);
-
-			cancellationToken.ThrowIfCancellationRequested ();
-			var reusable = await connection.ReuseConnection (ctx, cancellationToken).ConfigureAwait (false);
-
-			ctx.LogDebug (2, $"{me} #1: {reusable}");
-			return reusable;
-		}
-
-		async Task<bool> InitConnection (TestContext ctx, HttpConnection connection, CancellationToken cancellationToken)
-		{
-			var me = $"{FormatConnection (connection)} INIT";
-			ctx.LogDebug (2, $"{me}");
-
-			cancellationToken.ThrowIfCancellationRequested ();
-			var acceptTask = connection.AcceptAsync (ctx, cancellationToken);
-
-			serverStartTask.TrySetResult (null);
-
-			await acceptTask.ConfigureAwait (false);
-
-			ctx.LogDebug (2, $"{me} ACCEPTED {connection.RemoteEndPoint}");
-
-			bool haveRequest;
-
-			cancellationToken.ThrowIfCancellationRequested ();
-			try {
-				await connection.Initialize (ctx, this, cancellationToken);
-				ctx.LogDebug (2, $"{me} #1 {connection.RemoteEndPoint}");
-
-				if (HasAnyFlags (HttpOperationFlags.ServerAbortsHandshake))
-					throw ctx.AssertFail ("Expected server to abort handshake.");
-
-				/*
-				 * There seems to be some kind of a race condition here.
-				 *
-				 * When the client aborts the handshake due the a certificate validation failure,
-				 * then we either receive an exception during the TLS handshake or the connection
-				 * will be closed when the handshake is completed.
-				 *
-				 */
-				haveRequest = await connection.HasRequest (cancellationToken);
-				ctx.LogDebug (2, $"{me} #2 {haveRequest}");
-
-				if (HasAnyFlags (HttpOperationFlags.ClientAbortsHandshake))
-					throw ctx.AssertFail ("Expected client to abort handshake.");
-			} catch (Exception ex) {
-				if (HasAnyFlags (HttpOperationFlags.ServerAbortsHandshake, HttpOperationFlags.ClientAbortsHandshake))
-					return false;
-				ctx.LogDebug (2, $"{me} FAILED: {ex.Message}\n{ex}");
-				throw;
-			}
-
-			if (!haveRequest) {
-				ctx.LogMessage ($"{me} got empty requets!");
-				throw ctx.AssertFail ("Got empty request.");
-			}
-
-			if (Server.UseSSL) {
-				ctx.Assert (connection.SslStream.IsAuthenticated, "server is authenticated");
-				if (HasAnyFlags (HttpOperationFlags.RequireClientCertificate))
-					ctx.Assert (connection.SslStream.IsMutuallyAuthenticated, "server is mutually authenticated");
-			}
-
-			ctx.LogDebug (2, $"{me} DONE");
-			return true;
-		}
-
 		internal void PrepareRedirect (TestContext ctx, HttpConnection connection, bool keepAlive)
 		{
-			if (listenerContext != null) {
-				listenerContext.PrepareRedirect (ctx, connection, keepAlive);
-				return;
-			}
-
-			lock (instrumentationListener) {
-				var me = $"{FormatConnection (connection)} PREPARE REDIRECT";
-				ctx.LogDebug (5, $"{me}: {keepAlive}");
-				HttpConnection next;
-				if (keepAlive)
-					next = connection;
-				else
-					(next, _) = instrumentationListener.CreateConnection (ctx, this, false);
-
-				if (Interlocked.CompareExchange (ref redirectRequested, next, null) != null)
-					throw new InvalidOperationException ();
-			}
+			listenerContext.PrepareRedirect (ctx, connection, keepAlive);
 		}
 
 		protected abstract Task<Response> RunInner (TestContext ctx, Request request, CancellationToken cancellationToken);

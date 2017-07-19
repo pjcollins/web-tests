@@ -134,20 +134,6 @@ namespace Xamarin.WebTests.Server
 			}
 		}
 
-		public void Continue (TestContext ctx, HttpConnection connection, bool keepAlive)
-		{
-			lock (this) {
-				ctx.LogDebug (5, $"{ME} CONTINUE: {connection.ME} {keepAlive}");
-				var context = FindConnection (connection);
-				if (keepAlive) {
-					context.Continue ();
-					return;
-				}
-				connections.Remove (context);
-				context.Dispose ();
-			}
-		}
-
 		internal void Continue (TestContext ctx, InstrumentationListenerContext context, bool keepAlive)
 		{
 			lock (this) {
