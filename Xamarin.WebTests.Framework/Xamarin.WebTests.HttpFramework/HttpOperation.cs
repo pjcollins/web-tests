@@ -335,18 +335,18 @@ namespace Xamarin.WebTests.HttpFramework
 
 			parallelListener = (ParallelListener)((BuiltinHttpServer)Server).Listener;
 
-			var uri = parallelListener.RegisterOperation (ctx, this);
-			var request = CreateRequest (ctx, uri);
+			var operation = parallelListener.RegisterOperation (ctx, this);
+			var request = CreateRequest (ctx, operation.Uri);
 			currentRequest = request;
 
 			if (request is TraditionalRequest traditionalRequest)
 				servicePoint = traditionalRequest.RequestExt.ServicePoint;
 
-			ConfigureRequest (ctx, uri, request);
+			ConfigureRequest (ctx, operation.Uri, request);
 
 			requestTask.SetResult (request);
 
-			ctx.LogDebug (2, $"{me} #1: {uri} {request}");
+			ctx.LogDebug (2, $"{me} #1: {operation.Uri} {request}");
 
 			var clientTask = RunInner (ctx, request, cancellationToken);
 

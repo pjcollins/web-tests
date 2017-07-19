@@ -167,6 +167,11 @@ namespace Xamarin.WebTests.Server
 			return false;
 		}
 
+		protected override ListenerOperation CreateOperation (HttpOperation operation, Uri uri)
+		{
+			return new Operation (this, operation, uri);
+		}
+
 		protected override void Close ()
 		{
 			closed = true;
@@ -183,6 +188,14 @@ namespace Xamarin.WebTests.Server
 
 			cts.Dispose ();
 			mainLoopEvent.Set ();
+		}
+
+		class Operation : ListenerOperation
+		{
+			public Operation (ParallelListener listener, HttpOperation operation, Uri uri)
+				: base (listener, operation, uri)
+			{
+			}
 		}
 	}
 }

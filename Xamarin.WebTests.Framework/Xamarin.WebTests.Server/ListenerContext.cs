@@ -66,9 +66,9 @@ namespace Xamarin.WebTests.Server
 
 		public abstract bool StartOperation (HttpOperation operation);
 
-		public void StartOperation (HttpOperation operation, HttpRequest request)
+		public void StartOperation (ListenerOperation operation, HttpRequest request)
 		{
-			if (!StartOperation (operation))
+			if (!StartOperation (operation.Operation))
 				throw new InvalidOperationException ();
 			Request = request;
 			State = ConnectionState.HasRequest;

@@ -37,7 +37,7 @@ namespace Xamarin.WebTests.Server
 
 	abstract class Listener : IDisposable
 	{
-		Dictionary<string, HttpOperation> registry;
+		Dictionary<string, ListenerOperation> registry;
 		volatile bool disposed;
 
 		static int nextID;
@@ -67,7 +67,7 @@ namespace Xamarin.WebTests.Server
 			Server = server;
 			Backend = backend;
 			ME = $"{GetType ().Name}({ID})";
-			registry = new Dictionary<string, HttpOperation> ();
+			registry = new Dictionary<string, ListenerOperation> ();
 		}
 
 		protected internal string FormatConnection (HttpConnection connection)
@@ -80,14 +80,17 @@ namespace Xamarin.WebTests.Server
 			TestContext.LogDebug (5, $"{ME}: {message}");
 		}
 
-		public Uri RegisterOperation (TestContext ctx, HttpOperation operation)
+		protected abstract ListenerOperation CreateOperation (HttpOperation operation, Uri uri);
+
+		public ListenerOperation RegisterOperation (TestContext ctx, HttpOperation operation)
 		{
 			lock (this) {
 				var id = Interlocked.Increment (ref nextRequestID);
 				var path = $"/id/{operation.ID}/{operation.Handler.GetType ().Name}/";
 				var uri = new Uri (Server.TargetUri, path);
-				registry.Add (path, operation);
-				return uri;
+				var listenerOperation = CreateOperation (operation, uri);
+				registry.Add (path, listenerOperation);
+				return listenerOperation;
 			}
 		}
 

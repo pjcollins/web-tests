@@ -103,6 +103,11 @@ namespace Xamarin.WebTests.Server
 			return context;
 		}
 
+		protected override ListenerOperation CreateOperation (HttpOperation operation, Uri uri)
+		{
+			return new Operation (this, operation, uri);
+		}
+
 		protected override void Close ()
 		{
 			TestContext.LogDebug (5, $"{ME}: CLOSE ALL");
@@ -114,6 +119,14 @@ namespace Xamarin.WebTests.Server
 
 				node.Dispose ();
 				connections.Remove (node);
+			}
+		}
+
+		class Operation : ListenerOperation
+		{
+			public Operation (InstrumentationListener listener, HttpOperation operation, Uri uri)
+				: base (listener, operation, uri)
+			{
 			}
 		}
 	}
