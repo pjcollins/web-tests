@@ -195,11 +195,18 @@ namespace Xamarin.WebTests.HttpFramework
 			ctx.LogDebug (2, $"{me} #1: {uri} {request}");
 
 			listenerContext = await instrumentationListener.CreateContext (ctx, this, cancellationToken).ConfigureAwait (false);
-			var serverTask = listenerContext.Run (ctx, cancellationToken);
-			var serverInitTask = listenerContext.ServerInitTask;
-			var serverStartTask = listenerContext.ServerStartTask;
+			Task serverTask, serverInitTask, serverStartTask;
 
-			// var serverTask = RunServer (ctx, cancellationToken);
+			if (listenerContext != null) {
+				serverTask = listenerContext.Run (ctx, cancellationToken);
+				serverInitTask = listenerContext.ServerInitTask;
+				serverStartTask = listenerContext.ServerStartTask;
+			} else {
+				serverInitTask = this.serverInitTask.Task;
+				serverStartTask = this.serverStartTask.Task;
+				serverTask = RunServer (ctx, cancellationToken);
+			}
+
 			await serverStartTask.ConfigureAwait (false);
 
 			ctx.LogDebug (2, $"{me} #2");
@@ -423,6 +430,11 @@ namespace Xamarin.WebTests.HttpFramework
 
 		internal void PrepareRedirect (TestContext ctx, HttpConnection connection, bool keepAlive)
 		{
+			if (listenerContext != null) {
+				listenerContext.PrepareRedirect (ctx, connection, keepAlive);
+				return;
+			}
+
 			lock (instrumentationListener) {
 				var me = $"{FormatConnection (connection)} PREPARE REDIRECT";
 				ctx.LogDebug (5, $"{me}: {keepAlive}");

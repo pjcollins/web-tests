@@ -140,6 +140,10 @@ namespace Xamarin.WebTests.Server
 
 					if (redirect == null) {
 						Listener.Continue (ctx, this, keepAlive);
+						if (keepAlive)
+							currentConnection = connection;
+						else
+							connection.Dispose ();
 						return;
 					}
 
