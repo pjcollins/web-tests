@@ -36,7 +36,7 @@ namespace Xamarin.WebTests.Server
 
 	class ParallelListener : Listener
 	{
-		LinkedList<Context> connections;
+		LinkedList<ParallelListenerContext> connections;
 		bool closed;
 
 		int running;
@@ -63,7 +63,7 @@ namespace Xamarin.WebTests.Server
 		public ParallelListener (TestContext ctx, HttpServer server, ListenerBackend backend)
 			: base (ctx, server, backend)
 		{
-			connections = new LinkedList<Context> ();
+			connections = new LinkedList<ParallelListenerContext> ();
 			registry = new Dictionary<string, HttpOperation> ();
 			mainLoopEvent = new AsyncManualResetEvent (false);
 			cts = new CancellationTokenSource ();
@@ -103,7 +103,7 @@ namespace Xamarin.WebTests.Server
 				Debug ($"MAIN LOOP");
 
 				var taskList = new List<Task> ();
-				var connectionArray = new List<Context> ();
+				var connectionArray = new List<ParallelListenerContext> ();
 				lock (this) {
 					RunScheduler ();
 
@@ -111,10 +111,10 @@ namespace Xamarin.WebTests.Server
 					foreach (var context in connections) {
 						Task task = null;
 						switch (context.State) {
-						case State.None:
+						case ParallelListenerContext.ConnectionState.None:
 							task = context.Run (TestContext, cts.Token);
 							break;
-						case State.HasRequest:
+						case ParallelListenerContext.ConnectionState.HasRequest:
 							task = context.HandleRequest (TestContext, cts.Token);
 							break;
 						}
@@ -148,10 +148,10 @@ namespace Xamarin.WebTests.Server
 					var context = connectionArray[idx];
 					Debug ($"MAIN LOOP #2: {context.State} {context.Connection.ME}");
 					switch (context.State) {
-					case State.Accepted:
+					case ParallelListenerContext.ConnectionState.Accepted:
 						reuse = GetOperation (context, (Task<HttpRequest>)ret);
 						break;
-					case State.HasRequest:
+					case ParallelListenerContext.ConnectionState.HasRequest:
 						reuse = RequestComplete (context, ret);
 						break;
 					}
@@ -169,12 +169,12 @@ namespace Xamarin.WebTests.Server
 			while (connections.Count < requestParallelConnections) {
 				Debug ($"RUN SCHEDULER: {connections.Count}");
 				var connection = Backend.CreateConnection ();
-				connections.AddLast (new Context (this, connection));
+				connections.AddLast (new ParallelListenerContext (this, connection));
 				Debug ($"RUN SCHEDULER #1: {connection.ME}");
 			}
 		}
 
-		bool GetOperation (Context context, Task<HttpRequest> task)
+		bool GetOperation (ParallelListenerContext context, Task<HttpRequest> task)
 		{
 			var me = $"{nameof (GetOperation)}({context.Connection.ME})";
 			if (task.Status == TaskStatus.Canceled || task.Status == TaskStatus.Faulted) {
@@ -196,11 +196,11 @@ namespace Xamarin.WebTests.Server
 
 			registry.Remove (request.Path);
 			context.Request = request;
-			context.State = State.HasRequest;
+			context.State = ParallelListenerContext.ConnectionState.HasRequest;
 			return true;
 		}
 
-		bool RequestComplete (Context context, Task task)
+		bool RequestComplete (ParallelListenerContext context, Task task)
 		{
 			var me = $"{nameof (RequestComplete)}({context.Connection.ME})";
 			if (task.Status == TaskStatus.Canceled || task.Status == TaskStatus.Faulted) {
@@ -229,124 +229,6 @@ namespace Xamarin.WebTests.Server
 
 			cts.Dispose ();
 			mainLoopEvent.Set ();
-		}
-
-		enum State
-		{
-			None,
-			Accepted,
-			HasRequest,
-			Closed
-		}
-
-		class Context : ListenerContext
-		{
-			public HttpRequest Request {
-				get; set;
-			}
-			public State State {
-				get; set;
-			}
-
-			public Context (ParallelListener listener, HttpConnection connection)
-				: base (listener)
-			{
-				this.connection = connection;
-				State = State.None;
-			}
-
-			public override HttpConnection Connection {
-				get { return connection; }
-			}
-
-			public override HttpOperation Operation {
-				get { return currentOperation; }
-			}
-
-			HttpOperation currentOperation;
-			HttpConnection connection;
-
-			public override bool StartOperation (HttpOperation operation)
-			{
-				return Interlocked.CompareExchange (ref currentOperation, operation, null) == null;
-			}
-
-			public override void Continue ()
-			{
-				currentOperation = null;
-			}
-
-			public override Task ServerInitTask => throw new NotImplementedException ();
-
-			public override Task ServerStartTask => throw new NotImplementedException ();
-
-			TaskCompletionSource<HttpRequest> initTask;
-
-			public override Task Run (TestContext ctx, CancellationToken cancellationToken)
-			{
-				throw new NotImplementedException ();
-			}
-
-			public Task<HttpRequest> MyRun (TestContext ctx, CancellationToken cancellationToken)
-			{
-				var tcs = new TaskCompletionSource<HttpRequest> ();
-				var old = Interlocked.CompareExchange (ref initTask, tcs, null);
-				if (old != null)
-					return old.Task;
-
-				Run_inner ().ContinueWith (t => {
-					State = State.Accepted;
-					if (t.Status == TaskStatus.Canceled)
-						tcs.TrySetCanceled ();
-					else if (t.Status == TaskStatus.Faulted)
-						tcs.TrySetException (t.Exception);
-					else
-						tcs.TrySetResult (t.Result);
-				});
-
-				return tcs.Task;
-
-				async Task<HttpRequest> Run_inner ()
-				{
-					var me = $"{Listener.ME}({Connection.ME}) RUN";
-					cancellationToken.ThrowIfCancellationRequested ();
-					await Connection.AcceptAsync (ctx, cancellationToken).ConfigureAwait (false);
-
-					ctx.LogDebug (5, $"{me} #1");
-
-					cancellationToken.ThrowIfCancellationRequested ();
-					await Connection.Initialize (ctx, Operation, cancellationToken);
-
-					ctx.LogDebug (5, $"{me} #2");
-
-					var reader = new HttpStreamReader (Connection.SslStream);
-					cancellationToken.ThrowIfCancellationRequested ();
-					var header = await reader.ReadLineAsync (cancellationToken);
-					var (method, protocol, path) = HttpMessage.ReadHttpHeader (header);
-					ctx.LogDebug (5, $"{me} #3: {method} {protocol} {path}");
-
-					var request = new HttpRequest (protocol, method, path, reader);
-					return request;
-				}
-			}
-
-			public Task HandleRequest (TestContext ctx, CancellationToken cancellationToken)
-			{
-				return Operation.HandleRequest (ctx, Connection, Request, cancellationToken);
-			}
-
-			public override void PrepareRedirect (TestContext ctx, HttpConnection connection, bool keepAlive)
-			{
-				throw new NotImplementedException ();
-			}
-
-			protected override void Close ()
-			{
-				if (connection != null) {
-					connection.Dispose ();
-					connection = null;
-				}
-			}
 		}
 	}
 }
