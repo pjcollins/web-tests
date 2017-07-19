@@ -49,7 +49,7 @@ namespace Xamarin.WebTests.Server
 
 	abstract class Listener : IDisposable
 	{
-		LinkedList<HttpConnection> connections;
+		LinkedList<ListenerContext> connections;
 		volatile bool disposed;
 		volatile bool closed;
 
@@ -73,7 +73,7 @@ namespace Xamarin.WebTests.Server
 			TestContext = ctx;
 			Server = server;
 			ME = $"{GetType ().Name}({ID})";
-			connections = new LinkedList<HttpConnection> ();
+			connections = new LinkedList<ListenerContext> ();
 		}
 
 		public virtual void CloseAll ()
@@ -103,14 +103,14 @@ namespace Xamarin.WebTests.Server
 		{
 		}
 
-		HttpConnection FindIdleConnection (TestContext ctx, HttpOperation operation)
+		ListenerContext FindIdleConnection (TestContext ctx, HttpOperation operation)
 		{
 			var iter = connections.First;
 			while (iter != null) {
 				var node = iter.Value;
 				iter = iter.Next;
 
-				if (node.StartOperation (ctx, operation))
+				if (node.Connection.StartOperation (ctx, operation))
 					return node;
 			}
 
@@ -121,22 +121,24 @@ namespace Xamarin.WebTests.Server
 			TestContext ctx, HttpOperation operation, bool reuse)
 		{
 			lock (this) {
-				HttpConnection connection = null;
+				ListenerContext context = null;
 				if (reuse)
-					connection = FindIdleConnection (ctx, operation);
+					context = FindIdleConnection (ctx, operation);
 
-				if (connection != null) {
-					ctx.LogDebug (5, $"{ME} REUSING CONNECTION: {connection} {connections.Count}");
-					return (connection, true);
+				if (context != null) {
+					ctx.LogDebug (5, $"{ME} REUSING CONNECTION: {context.Connection} {connections.Count}");
+					return (context.Connection, true);
 				}
 
-				connection = CreateConnection ();
+				var connection = CreateConnection ();
 				ctx.LogDebug (5, $"{ME} CREATE CONNECTION: {connection} {connections.Count}");
-				connections.AddLast (connection);
+
+				context = new ListenerContext (this, connection);
+				connections.AddLast (context);
 				connection.ClosedEvent += (sender, e) => {
 					lock (this) {
 						if (!e)
-							connections.Remove (connection);
+							connections.Remove (context);
 					}
 				};
 				if (!connection.StartOperation (ctx, operation))
@@ -155,6 +157,38 @@ namespace Xamarin.WebTests.Server
 				disposed = true;
 				CloseAll ();
 				Shutdown ();
+			}
+		}
+
+		class ListenerContext : IDisposable
+		{
+			public Listener Listener {
+				get;
+			}
+
+			public HttpConnection Connection {
+				get;
+				private set;
+			}
+
+			public ListenerContext (Listener listener, HttpConnection connection)
+			{
+				Listener = listener;
+				Connection = connection;
+			}
+
+			bool disposed;
+
+			public void Dispose ()
+			{
+				if (disposed)
+					return;
+				disposed = true;
+
+				if (Connection != null) {
+					Connection.Dispose ();
+					Connection = null;
+				}
 			}
 		}
 	}
