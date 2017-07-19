@@ -117,7 +117,7 @@ namespace Xamarin.WebTests.Server
 				var connection = Backend.CreateConnection ();
 				ctx.LogDebug (5, $"{ME} CREATE CONNECTION: {connection} {connections.Count}");
 
-				context = new ListenerContext (this, connection);
+				context = new InstrumentationListenerContext (this, connection);
 				connections.AddLast (context);
 				connection.ClosedEvent += (sender, e) => {
 					lock (this) {

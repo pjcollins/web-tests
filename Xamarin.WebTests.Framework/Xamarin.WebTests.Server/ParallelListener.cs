@@ -254,6 +254,22 @@ namespace Xamarin.WebTests.Server
 				State = State.None;
 			}
 
+			public override HttpOperation Operation {
+				get { return currentOperation; }
+			}
+
+			HttpOperation currentOperation;
+
+			public override bool StartOperation (HttpOperation operation)
+			{
+				return Interlocked.CompareExchange (ref currentOperation, operation, null) == null;
+			}
+
+			public override void Continue ()
+			{
+				currentOperation = null;
+			}
+
 			TaskCompletionSource<HttpRequest> initTask;
 
 			public Task<HttpRequest> Run (TestContext ctx, CancellationToken cancellationToken)
@@ -302,6 +318,10 @@ namespace Xamarin.WebTests.Server
 			public Task HandleRequest (TestContext ctx, CancellationToken cancellationToken)
 			{
 				return Operation.HandleRequest (ctx, Connection, Request, cancellationToken);
+			}
+
+			protected override void Close ()
+			{
 			}
 		}
 	}

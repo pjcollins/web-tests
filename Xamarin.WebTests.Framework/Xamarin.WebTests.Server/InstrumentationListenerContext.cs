@@ -1,5 +1,5 @@
 ﻿//
-// ListenerContext.cs
+// InstrumentationListenerContext.cs
 //
 // Author:
 //       Martin Baulig <mabaul@microsoft.com>
@@ -32,46 +32,31 @@ namespace Xamarin.WebTests.Server
 {
 	using HttpFramework;
 
-	abstract class ListenerContext : IDisposable
+	class InstrumentationListenerContext : ListenerContext
 	{
-		public Listener Listener {
-			get;
-		}
-
-		public HttpConnection Connection {
-			get;
-			private set;
-		}
-
-		public abstract HttpOperation Operation {
-			get;
-		}
-
-		public ListenerContext (Listener listener, HttpConnection connection)
+		public InstrumentationListenerContext (Listener listener, HttpConnection connection)
+			: base (listener, connection)
 		{
-			Listener = listener;
-			Connection = connection;
 		}
 
-		public abstract bool StartOperation (HttpOperation operation);
+		public override HttpOperation Operation {
+			get { return currentOperation; }
+		}
 
-		public abstract void Continue ();
+		HttpOperation currentOperation;
 
-		protected abstract void Close ();
-
-		bool disposed;
-
-		public void Dispose ()
+		public override bool StartOperation (HttpOperation operation)
 		{
-			if (disposed)
-				return;
-			disposed = true;
-			Close ();
+			return Interlocked.CompareExchange (ref currentOperation, operation, null) == null;
+		}
 
-			if (Connection != null) {
-				Connection.Dispose ();
-				Connection = null;
-			}
+		public override void Continue ()
+		{
+			currentOperation = null;
+		}
+
+		protected override void Close ()
+		{
 		}
 	}
 }
