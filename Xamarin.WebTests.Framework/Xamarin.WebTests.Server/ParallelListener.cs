@@ -276,9 +276,18 @@ namespace Xamarin.WebTests.Server
 				currentOperation = null;
 			}
 
+			public override Task ServerInitTask => throw new NotImplementedException ();
+
+			public override Task ServerStartTask => throw new NotImplementedException ();
+
 			TaskCompletionSource<HttpRequest> initTask;
 
-			public Task<HttpRequest> Run (TestContext ctx, CancellationToken cancellationToken)
+			public override Task Run (TestContext ctx, CancellationToken cancellationToken)
+			{
+				throw new NotImplementedException ();
+			}
+
+			public Task<HttpRequest> MyRun (TestContext ctx, CancellationToken cancellationToken)
 			{
 				var tcs = new TaskCompletionSource<HttpRequest> ();
 				var old = Interlocked.CompareExchange (ref initTask, tcs, null);
@@ -324,6 +333,11 @@ namespace Xamarin.WebTests.Server
 			public Task HandleRequest (TestContext ctx, CancellationToken cancellationToken)
 			{
 				return Operation.HandleRequest (ctx, Connection, Request, cancellationToken);
+			}
+
+			public override void PrepareRedirect (TestContext ctx, HttpConnection connection, bool keepAlive)
+			{
+				throw new NotImplementedException ();
 			}
 
 			protected override void Close ()

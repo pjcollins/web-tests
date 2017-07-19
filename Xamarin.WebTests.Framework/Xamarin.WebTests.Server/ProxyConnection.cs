@@ -41,8 +41,7 @@ namespace Xamarin.WebTests.Server
 			get;
 		}
 
-		HttpConnection targetConnection;
-		InstrumentationListenerContext targetContext;
+		ListenerContext targetContext;
 
 		public ProxyConnection (BuiltinProxyServer server, Socket socket, HttpServer target)
 			: base (server, socket)
@@ -58,25 +57,19 @@ namespace Xamarin.WebTests.Server
 		public override Task Initialize (TestContext ctx, HttpOperation operation, CancellationToken cancellationToken)
 		{
 			targetContext = TargetListener.CreateContext (ctx, operation, false);
-			// (targetConnection, _) = TargetListener.CreateConnection (ctx, operation, false);
-			// ctx.LogDebug (5, $"{ME} CREATE TARGET CONNECTION: {targetConnection.ME}");
 			return base.Initialize (ctx, operation, cancellationToken);
 		}
 
 		internal async Task RunTarget (TestContext ctx, HttpOperation operation, CancellationToken cancellationToken)
 		{
 			await targetContext.Run (ctx, cancellationToken).ConfigureAwait (false);
-			return;
-			await targetConnection.AcceptAsync (ctx, cancellationToken).ConfigureAwait (false);
-			await targetConnection.Initialize (ctx, operation, cancellationToken);
-			await TargetListener.Server.HandleConnection (ctx, operation, targetConnection, cancellationToken);
 		}
 
 		protected override void Close ()
 		{
-			if (targetConnection != null) {
-				targetConnection.Dispose ();
-				targetConnection = null;
+			if (targetContext != null) {
+				targetContext.Dispose ();
+				targetContext = null;
 			}
 			base.Close ();
 		}

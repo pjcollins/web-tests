@@ -73,11 +73,11 @@ namespace Xamarin.WebTests.Server
 			currentOperation = null;
 		}
 
-		public Task ServerInitTask => serverInitTask.Task;
+		public override Task ServerInitTask => serverInitTask.Task;
 
-		public Task ServerStartTask => serverStartTask.Task;
+		public override Task ServerStartTask => serverStartTask.Task;
 
-		public async Task Run (TestContext ctx, CancellationToken cancellationToken)
+		public override async Task Run (TestContext ctx, CancellationToken cancellationToken)
 		{
 			cancellationToken.ThrowIfCancellationRequested ();
 
@@ -252,7 +252,7 @@ namespace Xamarin.WebTests.Server
 			return true;
 		}
 
-		internal void PrepareRedirect (TestContext ctx, HttpConnection connection, bool keepAlive)
+		public override void PrepareRedirect (TestContext ctx, HttpConnection connection, bool keepAlive)
 		{
 			lock (Listener) {
 				var me = $"{FormatConnection (connection)} PREPARE REDIRECT";

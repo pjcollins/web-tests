@@ -35,88 +35,13 @@ namespace Xamarin.WebTests.Server
 
 	class InstrumentationListener : Listener
 	{
-		LinkedList<InstrumentationListenerContext> connections;
-
 		public InstrumentationListener (TestContext ctx, HttpServer server, ListenerBackend backend)
 			: base (ctx, server, backend)
 		{
-			connections = new LinkedList<InstrumentationListenerContext> ();
 		}
 
 		protected override void Close ()
 		{
-			lock (this) {
-				TestContext.LogDebug (5, $"{ME}: CLOSE ALL");
-
-				var iter = connections.First;
-				while (iter != null) {
-					var node = iter.Value;
-					iter = iter.Next;
-
-					node.Dispose ();
-					connections.Remove (node);
-				}
-			}
-		}
-
-		(InstrumentationListenerContext, bool) FindOrCreateContext (TestContext ctx, HttpOperation operation, bool reuse)
-		{
-			lock (this) {
-				var iter = connections.First;
-				while (reuse && iter != null) {
-					var node = iter.Value;
-					iter = iter.Next;
-
-					if (node.StartOperation (operation))
-						return (node, true);
-				}
-
-				var context = new InstrumentationListenerContext (this);
-				context.StartOperation (operation);
-				connections.AddLast (context);
-				return (context, false);
-			}
-		}
-
-		internal void Continue (TestContext ctx, InstrumentationListenerContext context, bool keepAlive)
-		{
-			lock (this) {
-				ctx.LogDebug (5, $"{ME} CONTINUE: {keepAlive}");
-				if (keepAlive) {
-					context.Continue ();
-					return;
-				}
-				connections.Remove (context);
-				context.Dispose ();
-			}
-		}
-
-		public InstrumentationListenerContext CreateContext (TestContext ctx, HttpOperation operation, bool reusing)
-		{
-			var (context, _) = FindOrCreateContext (ctx, operation, reusing);
-			return context;
-		}
-
-		public async Task<InstrumentationListenerContext> CreateContext (
-			TestContext ctx, HttpOperation operation, CancellationToken cancellationToken)
-		{
-			var reusing = !operation.HasAnyFlags (HttpOperationFlags.DontReuseConnection);
-			var (context, reused) = FindOrCreateContext (ctx, operation, reusing);
-
-			if (reused && operation.HasAnyFlags (HttpOperationFlags.ClientUsesNewConnection)) {
-				try {
-					await context.Connection.ReadRequest (ctx, cancellationToken).ConfigureAwait (false);
-					throw ctx.AssertFail ("Expected client to use a new connection.");
-				} catch (OperationCanceledException) {
-					throw;
-				} catch (Exception ex) {
-					ctx.LogDebug (2, $"{ME} EXPECTED EXCEPTION: {ex.GetType ()} {ex.Message}");
-				}
-				context.Dispose ();
-				(context, reused) = FindOrCreateContext (ctx, operation, false);
-			}
-
-			return context;
 		}
 	}
 }

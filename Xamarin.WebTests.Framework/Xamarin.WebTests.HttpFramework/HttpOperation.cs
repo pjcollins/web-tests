@@ -111,7 +111,7 @@ namespace Xamarin.WebTests.HttpFramework
 
 		Request currentRequest;
 		ServicePoint servicePoint;
-		InstrumentationListenerContext listenerContext;
+		ListenerContext listenerContext;
 		InstrumentationListener instrumentationListener;
 		ParallelListener parallelListener;
 		TaskCompletionSource<bool> serverInitTask;
@@ -119,7 +119,6 @@ namespace Xamarin.WebTests.HttpFramework
 		TaskCompletionSource<Request> requestTask;
 		TaskCompletionSource<Response> requestDoneTask;
 		CancellationTokenSource cts;
-		HttpConnection redirectRequested;
 		int requestStarted;
 
 		string FormatConnection (HttpConnection connection)

@@ -57,6 +57,18 @@ namespace Xamarin.WebTests.Server
 
 		public abstract void Continue ();
 
+		public abstract Task ServerInitTask {
+			get;
+		}
+
+		public abstract Task ServerStartTask {
+			get;
+		}
+
+		public abstract Task Run (TestContext ctx, CancellationToken cancellationToken);
+
+		public abstract void PrepareRedirect (TestContext ctx, HttpConnection connection, bool keepAlive);
+
 		protected abstract void Close ();
 
 		protected string FormatConnection (HttpConnection connection)

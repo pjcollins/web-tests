@@ -25,6 +25,7 @@
 // THE SOFTWARE.
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Xamarin.AsyncTests;
 
@@ -36,6 +37,7 @@ namespace Xamarin.WebTests.Server
 
 	abstract class Listener : IDisposable
 	{
+		LinkedList<ListenerContext> connections;
 		volatile bool disposed;
 
 		static int nextID;
@@ -63,11 +65,88 @@ namespace Xamarin.WebTests.Server
 			Server = server;
 			Backend = backend;
 			ME = $"{GetType ().Name}({ID})";
+			connections = new LinkedList<ListenerContext> (); 
 		}
 
 		protected internal string FormatConnection (HttpConnection connection)
 		{
 			return $"[{ME}:{connection.ME}]";
+		}
+
+		void CloseAll ()
+		{
+			lock (this) {
+				TestContext.LogDebug (5, $"{ME}: CLOSE ALL");
+
+				var iter = connections.First;
+				while (iter != null) {
+					var node = iter.Value;
+					iter = iter.Next;
+
+					node.Dispose ();
+					connections.Remove (node);
+				}
+			}
+		}
+
+		protected (ListenerContext context, bool reused) FindOrCreateContext (HttpOperation operation, bool reuse)
+		{
+			lock (this) {
+				var iter = connections.First;
+				while (reuse && iter != null) {
+					var node = iter.Value;
+					iter = iter.Next;
+
+					if (node.StartOperation (operation))
+						return (node, true);
+				}
+
+				var context = new InstrumentationListenerContext (this);
+				context.StartOperation (operation);
+				connections.AddLast (context);
+				return (context, false);
+			}
+		}
+
+		internal void Continue (TestContext ctx, ListenerContext context, bool keepAlive)
+		{
+			lock (this) {
+				ctx.LogDebug (5, $"{ME} CONTINUE: {keepAlive}");
+				if (keepAlive) {
+					context.Continue ();
+					return;
+				}
+				connections.Remove (context);
+				context.Dispose ();
+			}
+		}
+
+		public ListenerContext CreateContext (TestContext ctx, HttpOperation operation, bool reusing)
+		{
+			var (context, _) = FindOrCreateContext (operation, reusing);
+			return context;
+		}
+
+		public async Task<ListenerContext> CreateContext (
+			TestContext ctx, HttpOperation operation, CancellationToken cancellationToken)
+		{
+			var reusing = !operation.HasAnyFlags (HttpOperationFlags.DontReuseConnection);
+			var (context, reused) = FindOrCreateContext (operation, reusing);
+
+			if (reused && operation.HasAnyFlags (HttpOperationFlags.ClientUsesNewConnection)) {
+				try {
+					await context.Connection.ReadRequest (ctx, cancellationToken).ConfigureAwait (false);
+					throw ctx.AssertFail ("Expected client to use a new connection.");
+				} catch (OperationCanceledException) {
+					throw;
+				} catch (Exception ex) {
+					ctx.LogDebug (2, $"{ME} EXPECTED EXCEPTION: {ex.GetType ()} {ex.Message}");
+				}
+				context.Dispose ();
+				(context, reused) = FindOrCreateContext (operation, false);
+			}
+
+			return context;
 		}
 
 		protected abstract void Close ();
@@ -78,6 +157,7 @@ namespace Xamarin.WebTests.Server
 				if (disposed)
 					return;
 				disposed = true;
+				CloseAll ();
 				Close ();
 				Backend.Dispose ();
 			}
