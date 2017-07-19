@@ -200,6 +200,7 @@ namespace Xamarin.WebTests.Server
 					return;
 				disposed = true;
 				CloseAll ();
+				Backend.Dispose ();
 				Shutdown ();
 			}
 		}

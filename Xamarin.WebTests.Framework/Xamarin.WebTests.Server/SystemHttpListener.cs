@@ -34,34 +34,15 @@ using Xamarin.WebTests.ConnectionFramework;
 using Xamarin.WebTests.HttpFramework;
 
 namespace Xamarin.WebTests.Server {
-	class SystemHttpListener : Listener {
+	class SystemHttpListener : Listener
+	{
 		public SystemHttpListener (TestContext ctx, HttpServer server)
 			: base (ctx, server, new HttpListenerBackend (ctx, server))
 		{
-			if (server.SslStreamProvider != null) {
-				ctx.Assert (server.SslStreamProvider.SupportsHttpListener, "ISslStreamProvider.SupportsHttpListener");
-				listener = server.SslStreamProvider.CreateHttpListener (server.Parameters);
-			} else {
-				listener = new HttpListener ();
-			}
-
-			listener.Prefixes.Add (Server.Uri.AbsoluteUri);
-			listener.Start ();
 		}
-
-		HttpListener listener;
 
 		protected override void Shutdown ()
 		{
-			try {
-				listener.Abort ();
-				listener.Stop ();
-				listener.Close ();
-			} catch {
-				;
-			}
-			listener = null;
-			base.Shutdown ();
 		}
 	}
 }
