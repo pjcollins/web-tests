@@ -88,7 +88,7 @@ namespace Xamarin.WebTests.Server
 
 		public override Task Run (TestContext ctx, CancellationToken cancellationToken)
 		{
-			throw new NotImplementedException ();
+			return MyRun (ctx, cancellationToken);
 		}
 
 		public Task<HttpRequest> MyRun (TestContext ctx, CancellationToken cancellationToken)
