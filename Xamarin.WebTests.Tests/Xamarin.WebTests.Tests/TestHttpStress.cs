@@ -66,7 +66,7 @@ namespace Xamarin.WebTests.Tests
 			return runner.Run (ctx, cancellationToken);
 		}
 
-		[Martin]
+		[Martin2]
 		[ConnectionTestFlags (ConnectionTestFlags.RequireDotNet)]
 		[ConnectionTestCategory (ConnectionTestCategory.MartinTest)]
 		[AsyncTest (ParameterFilter = "martin", Unstable = true)]
