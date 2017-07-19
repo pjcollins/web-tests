@@ -198,30 +198,6 @@ namespace Xamarin.WebTests.Server
 			return response.Write (ctx, Stream, cancellationToken);
 		}
 
-		public override bool StartOperation (TestContext ctx, HttpOperation operation)
-		{
-			lock (SyncRoot) {
-				if (Interlocked.CompareExchange (ref currentOperation, operation, null) != null)
-					return false;
-				ctx.LogDebug (5, $"{ME} START OPERATION: {operation.ME}");
-				return true;
-			}
-		}
-
-		public override void Continue (TestContext ctx, bool keepAlive)
-		{
-			lock (SyncRoot) {
-				ctx.LogDebug (5, $"{ME} CONTINUE: {keepAlive}");
-				if (!keepAlive) {
-					Close ();
-					return;
-				}
-
-				currentOperation = null;
-				OnClosed (true);
-			}
-		}
-
 		protected override void Close ()
 		{
 			OnClosed (false);

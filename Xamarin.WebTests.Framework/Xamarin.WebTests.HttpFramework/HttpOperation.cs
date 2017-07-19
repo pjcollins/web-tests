@@ -324,7 +324,7 @@ namespace Xamarin.WebTests.HttpFramework
 					ctx.LogDebug (2, $"{cncMe} SERVER LOOP #2: {keepAlive} {redirect?.ME}");
 
 					if (redirect == null) {
-						connection.Continue (ctx, keepAlive);
+						listener.Continue (ctx, connection, keepAlive);
 						return;
 					}
 

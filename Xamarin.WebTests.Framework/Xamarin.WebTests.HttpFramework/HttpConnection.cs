@@ -87,10 +87,6 @@ namespace Xamarin.WebTests.HttpFramework
 
 		internal abstract Task WriteResponse (TestContext ctx, HttpResponse response, CancellationToken cancellationToken);
 
-		public abstract bool StartOperation (TestContext ctx, HttpOperation operation);
-
-		public abstract void Continue (TestContext ctx, bool keepAlive);
-
 		int disposed;
 
 		protected void OnClosed (bool keepAlive)
