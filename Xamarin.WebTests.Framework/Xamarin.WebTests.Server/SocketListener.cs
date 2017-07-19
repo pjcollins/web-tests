@@ -73,22 +73,6 @@ namespace Xamarin.WebTests.Server
 			return new SocketConnection (this, Server, Socket);
 		}
 
-		public override void CloseAll ()
-		{
-			base.CloseAll ();
-			SocketConnection[] array;
-			lock (this) {
-				array = connections.ToArray ();
-			}
-			foreach (var connection in array) {
-				try {
-					connection.Dispose ();
-				} catch {
-					;
-				}
-			}
-		}
-
 		protected override void Shutdown ()
 		{
 			TestContext.LogDebug (5, "SHUTDOWN: {0}", Socket.Connected);

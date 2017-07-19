@@ -130,11 +130,26 @@ namespace Xamarin.WebTests.Server
 			throw new InvalidOperationException ();
 		}
 
+		void CheckConnections (TestContext ctx)
+		{
+			int count = 0;
+			var iter = connections.First;
+			while (iter != null) {
+				var node = iter.Value;
+				iter = iter.Next;
+
+				if (node.Operation == null)
+					++count;
+			}
+			ctx.LogDebug (5, $"{ME} CHECK CONNECTIONS: {connections.Count} {count}");
+		}
+
 		public (HttpConnection connection, bool reused) CreateConnection (
 			TestContext ctx, HttpOperation operation, bool reuse)
 		{
 			lock (this) {
 				ListenerContext context = null;
+				CheckConnections (ctx);
 				if (reuse)
 					context = FindIdleConnection (ctx, operation);
 
