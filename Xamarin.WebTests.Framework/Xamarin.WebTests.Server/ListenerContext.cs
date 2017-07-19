@@ -38,19 +38,17 @@ namespace Xamarin.WebTests.Server
 			get;
 		}
 
-		public HttpConnection Connection {
+		public abstract HttpConnection Connection {
 			get;
-			private set;
 		}
 
 		public abstract HttpOperation Operation {
 			get;
 		}
 
-		public ListenerContext (Listener listener, HttpConnection connection)
+		public ListenerContext (Listener listener)
 		{
 			Listener = listener;
-			Connection = connection;
 		}
 
 		public abstract bool StartOperation (HttpOperation operation);
@@ -67,11 +65,6 @@ namespace Xamarin.WebTests.Server
 				return;
 			disposed = true;
 			Close ();
-
-			if (Connection != null) {
-				Connection.Dispose ();
-				Connection = null;
-			}
 		}
 	}
 }

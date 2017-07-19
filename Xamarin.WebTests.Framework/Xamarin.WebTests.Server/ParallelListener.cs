@@ -158,7 +158,7 @@ namespace Xamarin.WebTests.Server
 
 					if (!reuse) {
 						connections.Remove (context);
-						context.Connection.Dispose ();
+						context.Dispose ();
 					}
 				}
 			}
@@ -249,9 +249,14 @@ namespace Xamarin.WebTests.Server
 			}
 
 			public Context (ParallelListener listener, HttpConnection connection)
-				: base (listener, connection)
+				: base (listener)
 			{
+				this.connection = connection;
 				State = State.None;
+			}
+
+			public override HttpConnection Connection {
+				get { return connection; }
 			}
 
 			public override HttpOperation Operation {
@@ -259,6 +264,7 @@ namespace Xamarin.WebTests.Server
 			}
 
 			HttpOperation currentOperation;
+			HttpConnection connection;
 
 			public override bool StartOperation (HttpOperation operation)
 			{
@@ -322,6 +328,10 @@ namespace Xamarin.WebTests.Server
 
 			protected override void Close ()
 			{
+				if (connection != null) {
+					connection.Dispose ();
+					connection = null;
+				}
 			}
 		}
 	}

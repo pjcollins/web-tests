@@ -35,8 +35,13 @@ namespace Xamarin.WebTests.Server
 	class InstrumentationListenerContext : ListenerContext
 	{
 		public InstrumentationListenerContext (Listener listener, HttpConnection connection)
-			: base (listener, connection)
+			: base (listener)
 		{
+			this.connection = connection;
+		}
+
+		public override HttpConnection Connection {
+			get { return connection; }
 		}
 
 		public override HttpOperation Operation {
@@ -44,6 +49,7 @@ namespace Xamarin.WebTests.Server
 		}
 
 		HttpOperation currentOperation;
+		HttpConnection connection;
 
 		public override bool StartOperation (HttpOperation operation)
 		{
@@ -57,6 +63,10 @@ namespace Xamarin.WebTests.Server
 
 		protected override void Close ()
 		{
+			if (connection != null) {
+				connection.Dispose ();
+				connection = null;
+			}
 		}
 	}
 }
