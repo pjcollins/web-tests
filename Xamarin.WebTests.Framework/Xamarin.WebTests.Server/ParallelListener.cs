@@ -127,9 +127,24 @@ namespace Xamarin.WebTests.Server
 					bool reuse = false;
 					var context = connectionArray[idx];
 					Debug ($"MAIN LOOP #2: {context.State} {context.Connection.ME}");
+
+					if (ret.Status == TaskStatus.Canceled || ret.Status == TaskStatus.Faulted) {
+						Debug ($"MAIN LOOP #2 FAILED: {ret.Status} {ret.Exception?.Message}");
+						connections.Remove (context);
+						context.Dispose ();
+						continue;
+					}
+
+					HttpRequest request;
+					Operation operation;
+
 					switch (context.State) {
 					case ConnectionState.Accepted:
-						reuse = GetOperation (context, (Task<HttpRequest>)ret);
+						request = ((Task<HttpRequest>)ret).Result;
+						operation = (Operation)GetOperation (context, request);
+						if (operation == null)
+							break;
+						context.StartOperation (operation, request);
 						break;
 					case ConnectionState.HasRequest:
 						reuse = RequestComplete (context, ret);

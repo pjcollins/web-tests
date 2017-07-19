@@ -50,7 +50,7 @@ namespace Xamarin.WebTests.Server
 
 		public HttpRequest Request {
 			get;
-			private set;
+			protected set;
 		}
 
 		public ConnectionState State {

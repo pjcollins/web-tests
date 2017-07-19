@@ -94,27 +94,20 @@ namespace Xamarin.WebTests.Server
 			}
 		}
 
-		protected bool GetOperation (ListenerContext context, Task<HttpRequest> task)
+		protected ListenerOperation GetOperation (ListenerContext context, HttpRequest request)
 		{
 			lock (this) {
 				var me = $"{nameof (GetOperation)}({context.Connection.ME})";
-				if (task.Status == TaskStatus.Canceled || task.Status == TaskStatus.Faulted) {
-					Debug ($"{me} FAILED: {task.Status} {task.Exception?.Message}");
-					return false;
-				}
-
-				var request = task.Result;
 				Debug ($"{me} {request.Method} {request.Path} {request.Protocol}");
 
 				var operation = registry[request.Path];
 				if (operation == null) {
 					Debug ($"{me} INVALID PATH: {request.Path}!");
-					return false;
+					return null;
 				}
 
 				registry.Remove (request.Path);
-				context.StartOperation (operation, request);
-				return true;
+				return operation;
 			}
 		}
 
