@@ -1,4 +1,4 @@
-﻿﻿﻿﻿//
+﻿//
 // SocketListener.cs
 //
 // Author:
@@ -66,25 +66,6 @@ namespace Xamarin.WebTests.Server
 			Socket.Listen (128);
 
 			connections = new List<SocketConnection> ();
-		}
-
-		public override async Task<HttpConnection> AcceptAsync (CancellationToken cancellationToken)
-		{
-			TestContext.LogDebug (5, $"{ME} ACCEPT ASYNC: {NetworkEndPoint}");
-
-			var connection = new SocketConnection (this, Server, Socket);
-			lock (this) {
-				connections.Add (connection);
-			}
-			connection.ClosedEvent += (sender, e) => {
-				lock (this) {
-					TestContext.LogDebug (5, $"{ME} CONNECTION CLOSED: {connection} {e}");
-					if (!e)
-						connections.Remove (connection);
-				}
-			};
-			await connection.AcceptAsync (TestContext, cancellationToken).ConfigureAwait (false);
-			return connection;
 		}
 
 		protected override HttpConnection CreateConnection ()

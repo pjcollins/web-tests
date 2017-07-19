@@ -147,8 +147,6 @@ namespace Xamarin.WebTests.Server
 
 		protected abstract HttpConnection CreateConnection ();
 
-		public abstract Task<HttpConnection> AcceptAsync (CancellationToken cancellationToken);
-
 		public void Dispose ()
 		{
 			lock (this) {
