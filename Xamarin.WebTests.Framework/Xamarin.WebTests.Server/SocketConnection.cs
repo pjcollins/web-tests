@@ -69,7 +69,6 @@ namespace Xamarin.WebTests.Server
 		HttpStreamReader reader;
 		IPEndPoint remoteEndPoint;
 		HttpOperation currentOperation;
-		bool idle = true;
 
 		public SocketConnection (SocketListener listener, HttpServer server, Socket socket)
 			: base (server)
@@ -94,11 +93,8 @@ namespace Xamarin.WebTests.Server
 		{
 			ctx.LogDebug (5, $"{ME} ACCEPT: {ListenSocket.LocalEndPoint}");
 			lock (SyncRoot) {
-				if (!idle)
-					throw new NotSupportedException ();
 				if (Socket != null)
 					throw new NotSupportedException ();
-				idle = true;
 			}
 			Socket = await ListenSocket.AcceptAsync (cancellationToken).ConfigureAwait (false);
 			remoteEndPoint = (IPEndPoint)Socket.RemoteEndPoint;
@@ -228,7 +224,6 @@ namespace Xamarin.WebTests.Server
 					return;
 				}
 
-				idle = true;
 				currentOperation = null;
 				OnClosed (true);
 			}
