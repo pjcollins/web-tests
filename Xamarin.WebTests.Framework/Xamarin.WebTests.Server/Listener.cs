@@ -38,9 +38,12 @@ namespace Xamarin.WebTests.Server
 	abstract class Listener : IDisposable
 	{
 		LinkedList<ListenerContext> connections;
+		Dictionary<string, HttpOperation> registry;
 		volatile bool disposed;
 
 		static int nextID;
+		static long nextRequestID;
+
 		public readonly int ID = ++nextID;
 
 		internal TestContext TestContext {
@@ -65,12 +68,53 @@ namespace Xamarin.WebTests.Server
 			Server = server;
 			Backend = backend;
 			ME = $"{GetType ().Name}({ID})";
-			connections = new LinkedList<ListenerContext> (); 
+			connections = new LinkedList<ListenerContext> ();
+			registry = new Dictionary<string, HttpOperation> ();
 		}
 
 		protected internal string FormatConnection (HttpConnection connection)
 		{
 			return $"[{ME}:{connection.ME}]";
+		}
+
+		protected void Debug (string message)
+		{
+			TestContext.LogDebug (5, $"{ME}: {message}");
+		}
+
+		public Uri RegisterOperation (TestContext ctx, HttpOperation operation)
+		{
+			lock (this) {
+				var id = Interlocked.Increment (ref nextRequestID);
+				var path = $"/id/{operation.ID}/{operation.Handler.GetType ().Name}/";
+				var uri = new Uri (Server.TargetUri, path);
+				registry.Add (path, operation);
+				return uri;
+			}
+		}
+
+		protected bool GetOperation (ListenerContext context, Task<HttpRequest> task)
+		{
+			lock (this) {
+				var me = $"{nameof (GetOperation)}({context.Connection.ME})";
+				if (task.Status == TaskStatus.Canceled || task.Status == TaskStatus.Faulted) {
+					Debug ($"{me} FAILED: {task.Status} {task.Exception?.Message}");
+					return false;
+				}
+
+				var request = task.Result;
+				Debug ($"{me} {request.Method} {request.Path} {request.Protocol}");
+
+				var operation = registry[request.Path];
+				if (operation == null) {
+					Debug ($"{me} INVALID PATH: {request.Path}!");
+					return false;
+				}
+
+				registry.Remove (request.Path);
+				context.StartOperation (operation, request);
+				return true;
+			}
 		}
 
 		void CloseAll ()

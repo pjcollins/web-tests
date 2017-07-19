@@ -36,27 +36,10 @@ namespace Xamarin.WebTests.Server
 
 	class ParallelListenerContext : ListenerContext
 	{
-		internal enum ConnectionState
-		{
-			None,
-			Accepted,
-			HasRequest,
-			Closed
-		}
-
-		public HttpRequest Request {
-			get; set;
-		}
-
-		public ConnectionState State {
-			get; set;
-		}
-
 		public ParallelListenerContext (ParallelListener listener, HttpConnection connection)
 			: base (listener)
 		{
 			this.connection = connection;
-			State = ConnectionState.None;
 		}
 
 		public override HttpConnection Connection {

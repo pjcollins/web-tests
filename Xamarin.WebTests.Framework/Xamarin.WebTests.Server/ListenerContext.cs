@@ -48,12 +48,31 @@ namespace Xamarin.WebTests.Server
 			get;
 		}
 
+		public HttpRequest Request {
+			get;
+			private set;
+		}
+
+		public ConnectionState State {
+			get;
+			protected set;
+		}
+
 		public ListenerContext (Listener listener)
 		{
 			Listener = listener;
+			State = ConnectionState.None;
 		}
 
 		public abstract bool StartOperation (HttpOperation operation);
+
+		public void StartOperation (HttpOperation operation, HttpRequest request)
+		{
+			if (!StartOperation (operation))
+				throw new InvalidOperationException ();
+			Request = request;
+			State = ConnectionState.HasRequest;
+		}
 
 		public abstract void Continue ();
 

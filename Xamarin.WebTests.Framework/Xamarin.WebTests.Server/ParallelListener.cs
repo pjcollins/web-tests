@@ -42,11 +42,8 @@ namespace Xamarin.WebTests.Server
 		int running;
 		CancellationTokenSource cts;
 		AsyncManualResetEvent mainLoopEvent;
-		Dictionary<string, HttpOperation> registry;
 
 		int requestParallelConnections;
-
-		static long nextRequestID;
 
 		internal int RequestParallelConnections {
 			get { return requestParallelConnections; }
@@ -64,7 +61,6 @@ namespace Xamarin.WebTests.Server
 			: base (ctx, server, backend)
 		{
 			connections = new LinkedList<ParallelListenerContext> ();
-			registry = new Dictionary<string, HttpOperation> ();
 			mainLoopEvent = new AsyncManualResetEvent (false);
 			cts = new CancellationTokenSource ();
 
@@ -78,22 +74,6 @@ namespace Xamarin.WebTests.Server
 					MainLoop ();
 
 				mainLoopEvent.Set ();
-			}
-		}
-
-		void Debug (string message)
-		{
-			TestContext.LogDebug (5, $"{ME}: {message}");
-		}
-
-		public Uri RegisterOperation (TestContext ctx, HttpOperation operation)
-		{
-			lock (this) {
-				var id = Interlocked.Increment (ref nextRequestID);
-				var path = $"/id/{operation.ID}/{operation.Handler.GetType ().Name}/";
-				var uri = new Uri (Server.TargetUri, path);
-				registry.Add (path, operation);
-				return uri;
 			}
 		}
 
@@ -111,10 +91,10 @@ namespace Xamarin.WebTests.Server
 					foreach (var context in connections) {
 						Task task = null;
 						switch (context.State) {
-						case ParallelListenerContext.ConnectionState.None:
+						case ConnectionState.None:
 							task = context.Run (TestContext, cts.Token);
 							break;
-						case ParallelListenerContext.ConnectionState.HasRequest:
+						case ConnectionState.HasRequest:
 							task = context.HandleRequest (TestContext, cts.Token);
 							break;
 						}
@@ -148,10 +128,10 @@ namespace Xamarin.WebTests.Server
 					var context = connectionArray[idx];
 					Debug ($"MAIN LOOP #2: {context.State} {context.Connection.ME}");
 					switch (context.State) {
-					case ParallelListenerContext.ConnectionState.Accepted:
+					case ConnectionState.Accepted:
 						reuse = GetOperation (context, (Task<HttpRequest>)ret);
 						break;
-					case ParallelListenerContext.ConnectionState.HasRequest:
+					case ConnectionState.HasRequest:
 						reuse = RequestComplete (context, ret);
 						break;
 					}
@@ -172,32 +152,6 @@ namespace Xamarin.WebTests.Server
 				connections.AddLast (new ParallelListenerContext (this, connection));
 				Debug ($"RUN SCHEDULER #1: {connection.ME}");
 			}
-		}
-
-		bool GetOperation (ParallelListenerContext context, Task<HttpRequest> task)
-		{
-			var me = $"{nameof (GetOperation)}({context.Connection.ME})";
-			if (task.Status == TaskStatus.Canceled || task.Status == TaskStatus.Faulted) {
-				Debug ($"{me} FAILED: {task.Status} {task.Exception?.Message}");
-				return false;
-			}
-
-			var request = task.Result;
-			Debug ($"{me} {request.Method} {request.Path} {request.Protocol}");
-
-			var operation = registry[request.Path];
-			if (operation == null) {
-				Debug ($"{me} INVALID PATH: {request.Path}!");
-				return false;
-			}
-
-			if (!context.StartOperation (operation))
-				throw new InvalidOperationException ();
-
-			registry.Remove (request.Path);
-			context.Request = request;
-			context.State = ParallelListenerContext.ConnectionState.HasRequest;
-			return true;
 		}
 
 		bool RequestComplete (ParallelListenerContext context, Task task)
