@@ -111,8 +111,8 @@ namespace Xamarin.WebTests.HttpFramework
 
 		Request currentRequest;
 		ServicePoint servicePoint;
-		InstrumentationListener listener;
-		NewListener newListener;
+		InstrumentationListener instrumentationListener;
+		ParallelListener parallelListener;
 		TaskCompletionSource<bool> serverInitTask;
 		TaskCompletionSource<object> serverStartTask;
 		TaskCompletionSource<Request> requestTask;
@@ -178,7 +178,7 @@ namespace Xamarin.WebTests.HttpFramework
 			var me = $"{ME} RUN";
 			ctx.LogDebug (1, me);
 
-			listener = (InstrumentationListener)Server.Listener;
+			instrumentationListener = (InstrumentationListener)Server.Listener;
 
 			var uri = Handler.RegisterRequest (ctx, Server);
 			var request = CreateRequest (ctx, uri);
@@ -268,7 +268,7 @@ namespace Xamarin.WebTests.HttpFramework
 			cancellationToken.ThrowIfCancellationRequested ();
 
 			var reusing = !HasAnyFlags (HttpOperationFlags.DontReuseConnection);
-			var (connection, reused) = listener.CreateConnection (ctx, this, reusing);
+			var (connection, reused) = instrumentationListener.CreateConnection (ctx, this, reusing);
 
 			if (reused && HasAnyFlags (HttpOperationFlags.ClientUsesNewConnection)) {
 				try {
@@ -280,7 +280,7 @@ namespace Xamarin.WebTests.HttpFramework
 					ctx.LogDebug (2, $"{me} EXPECTED EXCEPTION: {ex.GetType ()} {ex.Message}");
 				}
 				connection.Dispose ();
-				(connection, reused) = listener.CreateConnection (ctx, this, false);
+				(connection, reused) = instrumentationListener.CreateConnection (ctx, this, false);
 			}
 
 			while (true) {
@@ -294,7 +294,7 @@ namespace Xamarin.WebTests.HttpFramework
 					}
 					if (reused && !await ReuseConnection (ctx, connection, cancellationToken).ConfigureAwait (false)) {
 						connection.Dispose ();
-						(connection, reused) = listener.CreateConnection (ctx, this, false);
+						(connection, reused) = instrumentationListener.CreateConnection (ctx, this, false);
 						continue;
 					}
 					serverInitTask.TrySetResult (true);
@@ -319,12 +319,12 @@ namespace Xamarin.WebTests.HttpFramework
 					throw;
 				}
 
-				lock (listener) {
+				lock (instrumentationListener) {
 					var redirect = Interlocked.Exchange (ref redirectRequested, null);
 					ctx.LogDebug (2, $"{cncMe} SERVER LOOP #2: {keepAlive} {redirect?.ME}");
 
 					if (redirect == null) {
-						listener.Continue (ctx, connection, keepAlive);
+						instrumentationListener.Continue (ctx, connection, keepAlive);
 						return;
 					}
 
@@ -417,14 +417,14 @@ namespace Xamarin.WebTests.HttpFramework
 
 		internal void PrepareRedirect (TestContext ctx, HttpConnection connection, bool keepAlive)
 		{
-			lock (listener) {
+			lock (instrumentationListener) {
 				var me = $"{FormatConnection (connection)} PREPARE REDIRECT";
 				ctx.LogDebug (5, $"{me}: {keepAlive}");
 				HttpConnection next;
 				if (keepAlive)
 					next = connection;
 				else
-					(next, _) = listener.CreateConnection (ctx, this, false);
+					(next, _) = instrumentationListener.CreateConnection (ctx, this, false);
 
 				if (Interlocked.CompareExchange (ref redirectRequested, next, null) != null)
 					throw new InvalidOperationException ();
@@ -497,9 +497,9 @@ namespace Xamarin.WebTests.HttpFramework
 			var me = $"{ME} NEW LISTENER";
 			ctx.LogDebug (1, me);
 
-			newListener = ((BuiltinHttpServer)Server).NewListener;
+			parallelListener = (ParallelListener)((BuiltinHttpServer)Server).Listener;
 
-			var uri = newListener.RegisterOperation (ctx, this);
+			var uri = parallelListener.RegisterOperation (ctx, this);
 			var request = CreateRequest (ctx, uri);
 			currentRequest = request;
 
