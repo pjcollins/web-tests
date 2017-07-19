@@ -117,7 +117,6 @@
     <Compile Include="Xamarin.WebTests.ConnectionFramework\StreamInstrumentation.cs" />
     <Compile Include="ReferenceSource\SimpleAsyncResult.cs" />
     <Compile Include="Xamarin.WebTests.Server\Listener.cs" />
-    <Compile Include="Xamarin.WebTests.Server\ProxyListener.cs" />
     <Compile Include="Xamarin.WebTests.ConnectionFramework\CertificateSelector.cs" />
     <Compile Include="Xamarin.WebTests.ConnectionFramework\CertificateValidator.cs" />
     <Compile Include="Xamarin.WebTests.Server\NTLMHandler.cs" />
