@@ -213,9 +213,10 @@
     <Compile Include="Xamarin.WebTests.Server\NewListener.cs" />
     <Compile Include="Xamarin.WebTests.Server\NewSocketListener.cs" />
     <Compile Include="Xamarin.WebTests.ConnectionFramework\AsyncManualResetEvent.cs" />
-    <Compile Include="Xamarin.WebTests.Server\NewListenerContext.cs" />
-    <Compile Include="Xamarin.WebTests.Server\NewSocketContext.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\Martin2Attribute.cs" />
+    <Compile Include="Xamarin.WebTests.Server\ListenerBackend.cs" />
+    <Compile Include="Xamarin.WebTests.Server\SocketBackend.cs" />
+    <Compile Include="Xamarin.WebTests.Server\HttpListenerBackend.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="..\CA\invalid-server-cert.pfx">

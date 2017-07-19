@@ -1,5 +1,5 @@
-﻿﻿﻿//
-// SystemHttpListener.cs
+﻿//
+// ListenerBackend.cs
 //
 // Author:
 //       Martin Baulig <mabaul@microsoft.com>
@@ -24,49 +24,34 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 using System;
-using System.IO;
-using System.Net;
-using System.Threading;
-using System.Threading.Tasks;
-using Xamarin.AsyncTests;
-using Xamarin.AsyncTests.Portable;
-using Xamarin.WebTests.ConnectionFramework;
-using Xamarin.WebTests.HttpFramework;
 
-namespace Xamarin.WebTests.Server {
-	class SystemHttpListener : Listener {
-		public SystemHttpListener (TestContext ctx, HttpServer server)
-			: base (ctx, server, new HttpListenerBackend (ctx, server))
-		{
-			if (server.SslStreamProvider != null) {
-				ctx.Assert (server.SslStreamProvider.SupportsHttpListener, "ISslStreamProvider.SupportsHttpListener");
-				listener = server.SslStreamProvider.CreateHttpListener (server.Parameters);
-			} else {
-				listener = new HttpListener ();
-			}
+namespace Xamarin.WebTests.Server
+{
+	using HttpFramework;
 
-			listener.Prefixes.Add (Server.Uri.AbsoluteUri);
-			listener.Start ();
+	abstract class ListenerBackend : IDisposable
+	{
+		public HttpServer Server {
+			get;
 		}
 
-		HttpListener listener;
-
-		protected override HttpConnection CreateConnection ()
+		public ListenerBackend (HttpServer server)
 		{
-			return new HttpListenerConnection (Server, listener);
+			Server = server;
 		}
 
-		protected override void Shutdown ()
+		public abstract HttpConnection CreateConnection ();
+
+		protected abstract void Close ();
+
+		bool disposed;
+
+		public void Dispose ()
 		{
-			try {
-				listener.Abort ();
-				listener.Stop ();
-				listener.Close ();
-			} catch {
-				;
-			}
-			listener = null;
-			base.Shutdown ();
+				if (disposed)
+					return;
+				disposed = true;
+				Close ();
 		}
 	}
 }

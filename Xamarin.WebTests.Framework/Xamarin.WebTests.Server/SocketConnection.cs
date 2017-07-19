@@ -56,10 +56,6 @@ namespace Xamarin.WebTests.Server
 			private set;
 		}
 
-		internal object SyncRoot {
-			get;
-		}
-
 		public override SslStream SslStream => sslStream;
 
 		internal override IPEndPoint RemoteEndPoint => remoteEndPoint;
@@ -69,18 +65,16 @@ namespace Xamarin.WebTests.Server
 		HttpStreamReader reader;
 		IPEndPoint remoteEndPoint;
 
-		public SocketConnection (SocketListener listener, HttpServer server, Socket socket)
+		public SocketConnection (HttpServer server, Socket socket)
 			: base (server)
 		{
 			ListenSocket = socket;
-			SyncRoot = listener;
 		}
 
 		public SocketConnection (NewSocketListener listener, HttpServer server, Socket socket)
 			: base (server)
 		{
 			ListenSocket = socket;
-			SyncRoot = listener.SyncRoot;
 		}
 
 		public SocketConnection (HttpServer server)
@@ -91,10 +85,8 @@ namespace Xamarin.WebTests.Server
 		public override async Task AcceptAsync (TestContext ctx, CancellationToken cancellationToken)
 		{
 			ctx.LogDebug (5, $"{ME} ACCEPT: {ListenSocket.LocalEndPoint}");
-			lock (SyncRoot) {
-				if (Socket != null)
-					throw new NotSupportedException ();
-			}
+			if (Socket != null)
+				throw new NotSupportedException ();
 			Socket = await ListenSocket.AcceptAsync (cancellationToken).ConfigureAwait (false);
 			remoteEndPoint = (IPEndPoint)Socket.RemoteEndPoint;
 			ctx.LogDebug (5, $"{ME} ACCEPT #1: {ListenSocket.LocalEndPoint} {remoteEndPoint}");

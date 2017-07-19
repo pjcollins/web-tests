@@ -52,7 +52,7 @@ namespace Xamarin.WebTests.Server
 		List<SocketConnection> connections;
 
 		public SocketListener (TestContext ctx, HttpServer server)
-			: base (ctx, server)
+			: base (ctx, server, new SocketBackend (ctx, server))
 		{
 			var ssl = (server.Flags & HttpServerFlags.SSL) != 0;
 			if (ssl & (server.Flags & HttpServerFlags.Proxy) != 0)
@@ -70,7 +70,7 @@ namespace Xamarin.WebTests.Server
 
 		protected override HttpConnection CreateConnection ()
 		{
-			return new SocketConnection (this, Server, Socket);
+			return new SocketConnection (Server, Socket);
 		}
 
 		protected override void Shutdown ()

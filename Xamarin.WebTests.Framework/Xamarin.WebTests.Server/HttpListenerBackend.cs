@@ -1,5 +1,5 @@
 ﻿//
-// NewListenerContext.cs
+// HttpListenerBackend.cs
 //
 // Author:
 //       Martin Baulig <mabaul@microsoft.com>
@@ -24,69 +24,50 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 using System;
+using System.IO;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Xamarin.AsyncTests;
+using Xamarin.AsyncTests.Portable;
+using Xamarin.WebTests.ConnectionFramework;
+using Xamarin.WebTests.HttpFramework;
 
 namespace Xamarin.WebTests.Server
 {
-	using HttpFramework;
-
-	abstract class NewListenerContext : IDisposable
+	class HttpListenerBackend : ListenerBackend
 	{
-		public NewListener Listener {
-			get;
-		}
-
-		public HttpServer Server => Listener.Server;
-
-		internal abstract string ME {
-			get;
-		}
-
-		public NewListenerContext (NewListener listener)
+		public HttpListenerBackend (TestContext ctx, HttpServer server)
+			: base (server)
 		{
-			Listener = listener;
+			if (server.SslStreamProvider != null) {
+				ctx.Assert (server.SslStreamProvider.SupportsHttpListener, "ISslStreamProvider.SupportsHttpListener");
+				listener = server.SslStreamProvider.CreateHttpListener (server.Parameters);
+			} else {
+				listener = new HttpListener ();
+			}
+
+			listener.Prefixes.Add (Server.Uri.AbsoluteUri);
+			listener.Start ();
 		}
 
-		internal bool HasConnection {
-			get;
-			private set;
-		}
+		HttpListener listener;
 
-		TaskCompletionSource<HttpRequest> initTask;
-
-		public Task<HttpRequest> Run (TestContext ctx, CancellationToken cancellationToken)
+		public override HttpConnection CreateConnection ()
 		{
-			var tcs = new TaskCompletionSource<HttpRequest> ();
-			var old = Interlocked.CompareExchange (ref initTask, tcs, null);
-			if (old != null)
-				return old.Task;
-
-			Accept (ctx, cancellationToken).ContinueWith (t => {
-				HasConnection = true;
-				if (t.Status == TaskStatus.Canceled)
-					tcs.TrySetCanceled ();
-				else if (t.Status == TaskStatus.Faulted)
-					tcs.TrySetException (t.Exception);
-				else
-					tcs.TrySetResult (t.Result);
-			});
-
-			return tcs.Task;
+			return new HttpListenerConnection (Server, listener);
 		}
 
-		protected abstract Task<HttpRequest> Accept (TestContext ctx, CancellationToken cancellationToken);
-
-		int disposed;
-
-		protected abstract void Close ();
-
-		public void Dispose ()
+		protected override void Close ()
 		{
-			if (Interlocked.CompareExchange (ref disposed, 1, 0) != 0)
-				return;
-			Close ();
+			try {
+				listener.Abort ();
+				listener.Stop ();
+				listener.Close ();
+			} catch {
+				;
+			}
+			listener = null;
 		}
 	}
 }

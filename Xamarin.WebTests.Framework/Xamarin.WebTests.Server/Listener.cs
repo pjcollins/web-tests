@@ -60,6 +60,10 @@ namespace Xamarin.WebTests.Server
 			get;
 		}
 
+		internal ListenerBackend Backend {
+			get;
+		}
+
 		internal HttpServer Server {
 			get;
 		}
@@ -68,10 +72,11 @@ namespace Xamarin.WebTests.Server
 			get;
 		}
 
-		public Listener (TestContext ctx, HttpServer server)
+		public Listener (TestContext ctx, HttpServer server, ListenerBackend backend)
 		{
 			TestContext = ctx;
 			Server = server;
+			Backend = backend;
 			ME = $"{GetType ().Name}({ID})";
 			connections = new LinkedList<ListenerContext> ();
 		}
