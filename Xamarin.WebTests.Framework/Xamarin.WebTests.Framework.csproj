@@ -158,7 +158,6 @@
     <Compile Include="Xamarin.WebTests.HttpFramework\BuiltinHttpServer.cs" />
     <Compile Include="Xamarin.WebTests.HttpFramework\BuiltinProxyServer.cs" />
     <Compile Include="Xamarin.WebTests.HttpFramework\AuthenticationType.cs" />
-    <Compile Include="Xamarin.WebTests.Server\SystemHttpListener.cs" />
     <Compile Include="Xamarin.WebTests.Server\SocketConnection.cs" />
     <Compile Include="Xamarin.WebTests.Server\HttpListenerConnection.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\HttpServerFlagsAttribute.cs" />
@@ -166,7 +165,6 @@
     <Compile Include="Xamarin.WebTests.TestFramework\CertificateResourceTypeAttribute.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\NetworkAttribute.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\Tls12Attribute.cs" />
-    <Compile Include="Xamarin.WebTests.Server\SocketListener.cs" />
     <Compile Include="Xamarin.WebTests.Server\SocketHelper.cs" />
     <Compile Include="Xamarin.WebTests.HttpFramework\HttpStreamReader.cs" />
     <Compile Include="Xamarin.WebTests.ConnectionFramework\SslStreamFlags.cs" />

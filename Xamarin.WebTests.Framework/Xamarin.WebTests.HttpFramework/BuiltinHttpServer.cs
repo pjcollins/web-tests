@@ -81,6 +81,7 @@ namespace Xamarin.WebTests.HttpFramework {
 		}
 
 		Listener currentListener;
+		ListenerBackend currentBackend;
 		NewListener newListener;
 
 		public override Task Start (TestContext ctx, CancellationToken cancellationToken)
@@ -93,13 +94,14 @@ namespace Xamarin.WebTests.HttpFramework {
 				return Handler.CompletedTask;
 			}
 
-			Listener listener;
+			ListenerBackend backend;
 			if ((Flags & HttpServerFlags.HttpListener) != 0)
-				listener = new SystemHttpListener (ctx, this);
+				backend = new HttpListenerBackend (ctx, this);
 			else
-				listener = new SocketListener (ctx, this);
-			if (Interlocked.CompareExchange (ref currentListener, listener, null) != null)
+				backend = new SocketBackend (ctx, this);
+			if (Interlocked.CompareExchange (ref currentBackend, backend, null) != null)
 				throw new InternalErrorException ();
+			currentListener = new Listener (ctx, this, backend);
 			return Handler.CompletedTask;
 		}
 
@@ -122,6 +124,8 @@ namespace Xamarin.WebTests.HttpFramework {
 				} catch {
 					if ((Flags & HttpServerFlags.ExpectException) == 0)
 						throw;
+				} finally {
+					currentBackend = null;
 				}
 			});
 		}
