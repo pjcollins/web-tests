@@ -191,8 +191,10 @@ namespace Xamarin.WebTests.Server
 				return false;
 			}
 
+			if (!context.StartOperation (operation))
+				throw new InvalidOperationException ();
+
 			registry.Remove (request.Path);
-			context.Operation = operation;
 			context.Request = request;
 			context.State = State.HasRequest;
 			return true;
@@ -237,18 +239,9 @@ namespace Xamarin.WebTests.Server
 			Closed
 		}
 
-		class Context
+		class Context : ListenerContext
 		{
-			public ParallelListener Listener {
-				get;
-			}
-			public HttpConnection Connection {
-				get; set;
-			}
 			public HttpRequest Request {
-				get; set;
-			}
-			public HttpOperation Operation {
 				get; set;
 			}
 			public State State {
@@ -256,9 +249,8 @@ namespace Xamarin.WebTests.Server
 			}
 
 			public Context (ParallelListener listener, HttpConnection connection)
+				: base (listener, connection)
 			{
-				Listener = listener;
-				Connection = connection;
 				State = State.None;
 			}
 

@@ -66,7 +66,7 @@ namespace Xamarin.WebTests.Server
 				var node = iter.Value;
 				iter = iter.Next;
 
-				if (node.StartOperation (ctx, operation))
+				if (node.StartOperation (operation))
 					return node;
 			}
 
@@ -124,7 +124,7 @@ namespace Xamarin.WebTests.Server
 						connections.Remove (context);
 					}
 				};
-				if (!context.StartOperation (ctx, operation))
+				if (!context.StartOperation (operation))
 					throw new InvalidOperationException ();
 				return (connection, false);
 			}

@@ -55,7 +55,7 @@ namespace Xamarin.WebTests.Server
 			Connection = connection;
 		}
 
-		public bool StartOperation (TestContext ctx, HttpOperation operation)
+		public bool StartOperation (HttpOperation operation)
 		{
 			return Interlocked.CompareExchange (ref currentOperation, operation, null) == null;
 		}
