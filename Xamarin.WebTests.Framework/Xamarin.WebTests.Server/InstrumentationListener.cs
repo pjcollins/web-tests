@@ -1,10 +1,10 @@
 ﻿//
-// Listener.cs
+// InstrumentationListener.cs
 //
 // Author:
-//       Martin Baulig <martin.baulig@xamarin.com>
+//       Martin Baulig <mabaul@microsoft.com>
 //
-// Copyright (c) 2014 Xamarin Inc. (http://www.xamarin.com)
+// Copyright (c) 2017 Xamarin Inc. (http://www.xamarin.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -25,16 +25,15 @@
 // THE SOFTWARE.
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Xamarin.AsyncTests;
 
 namespace Xamarin.WebTests.Server
 {
-	using ConnectionFramework;
 	using HttpFramework;
-	using TestFramework;
 
-	class Listener : IDisposable
+	class InstrumentationListener
 	{
 		LinkedList<ListenerContext> connections;
 		volatile bool disposed;
@@ -59,7 +58,7 @@ namespace Xamarin.WebTests.Server
 			get;
 		}
 
-		public Listener (TestContext ctx, HttpServer server, ListenerBackend backend)
+		public InstrumentationListener (TestContext ctx, HttpServer server, ListenerBackend backend)
 		{
 			TestContext = ctx;
 			Server = server;
@@ -185,7 +184,7 @@ namespace Xamarin.WebTests.Server
 
 		class ListenerContext : IDisposable
 		{
-			public Listener Listener {
+			public InstrumentationListener Listener {
 				get;
 			}
 
@@ -200,7 +199,7 @@ namespace Xamarin.WebTests.Server
 
 			HttpOperation currentOperation;
 
-			public ListenerContext (Listener listener, HttpConnection connection)
+			public ListenerContext (InstrumentationListener listener, HttpConnection connection)
 			{
 				Listener = listener;
 				Connection = connection;
