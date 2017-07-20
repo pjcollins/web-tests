@@ -54,6 +54,7 @@ namespace Xamarin.WebTests.Server
 			serverInitTask.TrySetResult (null);
 			try {
 				await Operation.HandleRequest (ctx, connection, request, cancellationToken).ConfigureAwait (false);
+				serverStartTask.TrySetResult (null);
 			} catch (OperationCanceledException) {
 				serverStartTask.TrySetCanceled ();
 				throw;

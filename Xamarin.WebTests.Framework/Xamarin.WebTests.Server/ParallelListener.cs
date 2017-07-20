@@ -124,7 +124,7 @@ namespace Xamarin.WebTests.Server
 						}
 					}
 
-					bool reuse = false;
+					bool ok = false;
 					var context = connectionArray[idx];
 					Debug ($"MAIN LOOP #2: {context.State} {context.Connection.ME}");
 
@@ -145,13 +145,14 @@ namespace Xamarin.WebTests.Server
 						if (operation == null)
 							break;
 						context.StartOperation (operation, request);
+						ok = true;
 						break;
 					case ConnectionState.HasRequest:
-						reuse = RequestComplete (context, ret);
+						ok = RequestComplete (context, ret);
 						break;
 					}
 
-					if (!reuse) {
+					if (!ok) {
 						connections.Remove (context);
 						context.Dispose ();
 					}

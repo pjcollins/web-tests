@@ -82,7 +82,7 @@ namespace Xamarin.WebTests.Server
 			return MyRun (ctx, cancellationToken);
 		}
 
-		public Task<HttpRequest> MyRun (TestContext ctx, CancellationToken cancellationToken)
+		Task<HttpRequest> MyRun (TestContext ctx, CancellationToken cancellationToken)
 		{
 			var tcs = new TaskCompletionSource<HttpRequest> ();
 			var old = Interlocked.CompareExchange (ref initTask, tcs, null);
@@ -110,7 +110,7 @@ namespace Xamarin.WebTests.Server
 				ctx.LogDebug (5, $"{me} #1");
 
 				cancellationToken.ThrowIfCancellationRequested ();
-				await Connection.Initialize (ctx, Operation.Operation, cancellationToken);
+				await Connection.Initialize (ctx, null, cancellationToken);
 
 				ctx.LogDebug (5, $"{me} #2");
 

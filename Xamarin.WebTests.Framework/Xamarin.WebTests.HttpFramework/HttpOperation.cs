@@ -81,8 +81,6 @@ namespace Xamarin.WebTests.HttpFramework
 
 			ME = $"[{GetType ().Name}({ID}:{me})]";
 
-			serverInitTask = new TaskCompletionSource<bool> ();
-			serverStartTask = new TaskCompletionSource<object> ();
 			requestTask = new TaskCompletionSource<Request> ();
 			requestDoneTask = new TaskCompletionSource<Response> ();
 			cts = new CancellationTokenSource ();
@@ -114,8 +112,6 @@ namespace Xamarin.WebTests.HttpFramework
 		ListenerContext listenerContext;
 		InstrumentationListener instrumentationListener;
 		ParallelListener parallelListener;
-		TaskCompletionSource<bool> serverInitTask;
-		TaskCompletionSource<object> serverStartTask;
 		TaskCompletionSource<Request> requestTask;
 		TaskCompletionSource<Response> requestDoneTask;
 		CancellationTokenSource cts;
@@ -368,18 +364,18 @@ namespace Xamarin.WebTests.HttpFramework
 
 				var tasks = new List<Task> ();
 				if (!initDone)
-					tasks.Add (serverInitTask.Task);
+					tasks.Add (operation.ServerInitTask);
 				if (!serverDone)
-					tasks.Add (serverStartTask.Task);
+					tasks.Add (operation.ServerStartTask);
 				if (!clientDone)
 					tasks.Add (clientTask);
 				var finished = await Task.WhenAny (tasks).ConfigureAwait (false);
 
 				string which;
-				if (finished == serverInitTask.Task) {
+				if (finished == operation.ServerInitTask) {
 					which = "init";
 					initDone = true;
-				} else if (finished == serverStartTask.Task) {
+				} else if (finished == operation.ServerStartTask) {
 					which = "server";
 					serverDone = true;
 				} else if (finished == clientTask) {
@@ -392,7 +388,7 @@ namespace Xamarin.WebTests.HttpFramework
 				ctx.LogDebug (2, $"{me} #4: {which} exited - {finished.Status}");
 				if (finished.Status == TaskStatus.Faulted || finished.Status == TaskStatus.Canceled) {
 					if (HasAnyFlags (HttpOperationFlags.ExpectServerException) &&
-					    (finished == serverStartTask.Task || finished == serverInitTask.Task))
+					    (finished == operation.ServerStartTask || finished == operation.ServerInitTask))
 						ctx.LogDebug (2, $"{me} #4 - EXPECTED EXCEPTION {finished.Exception.GetType ()}");
 					else {
 						ctx.LogDebug (2, $"{me} #4 FAILED: {finished.Exception.Message}");
@@ -413,7 +409,6 @@ namespace Xamarin.WebTests.HttpFramework
 		internal async Task HandleRequest (TestContext ctx, HttpConnection connection,
 		                                   HttpRequest request, CancellationToken cancellationToken)
 		{
-			serverInitTask.TrySetResult (false);
 			var me = $"{ME} HANDLE REQUEST";
 			ctx.LogDebug (2, $"{me} {connection.ME} {request}");
 
@@ -423,8 +418,6 @@ namespace Xamarin.WebTests.HttpFramework
 			ctx.LogDebug (2, $"{me} REQUEST FULLY READ");
 			var ret = await Handler.HandleRequest (ctx, this, connection, request, cancellationToken);
 			ctx.LogDebug (2, $"{me} HANDLE REQUEST DONE: {ret}");
-
-			serverStartTask.TrySetResult (null);
 		}
 
 		protected abstract void Destroy ();
