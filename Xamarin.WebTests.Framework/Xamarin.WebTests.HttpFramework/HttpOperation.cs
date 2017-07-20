@@ -177,18 +177,20 @@ namespace Xamarin.WebTests.HttpFramework
 
 			instrumentationListener = (InstrumentationListener)Server.Listener;
 
-			var uri = Handler.RegisterRequest (ctx, Server);
-			var request = CreateRequest (ctx, uri);
+			var operation = instrumentationListener.RegisterOperation (ctx, this);
+			var request = CreateRequest (ctx, operation.Uri);
+
+			listenerOperation = operation;
 			currentRequest = request;
 
 			if (request is TraditionalRequest traditionalRequest)
 				servicePoint = traditionalRequest.RequestExt.ServicePoint;
 
-			ConfigureRequest (ctx, uri, request);
+			ConfigureRequest (ctx, operation.Uri, request);
 
 			requestTask.SetResult (request);
 
-			ctx.LogDebug (2, $"{me} #1: {uri} {request}");
+			ctx.LogDebug (2, $"{me} #1: {operation.Uri} {request}");
 
 			listenerContext = await instrumentationListener.CreateContext (ctx, this, cancellationToken).ConfigureAwait (false);
 
@@ -416,8 +418,8 @@ namespace Xamarin.WebTests.HttpFramework
 			return listenerOperation.PrepareRedirect (ctx, handler, false);
 		}
 
-		internal async Task HandleRequest (TestContext ctx, HttpConnection connection,
-		                                   HttpRequest request, CancellationToken cancellationToken)
+		internal async Task<bool> HandleRequest (TestContext ctx, HttpConnection connection,
+		                                         HttpRequest request, CancellationToken cancellationToken)
 		{
 			var me = $"{ME} HANDLE REQUEST";
 			ctx.LogDebug (2, $"{me} {connection.ME} {request}");
@@ -428,6 +430,8 @@ namespace Xamarin.WebTests.HttpFramework
 			ctx.LogDebug (2, $"{me} REQUEST FULLY READ");
 			var ret = await Handler.HandleRequest (ctx, this, connection, request, cancellationToken);
 			ctx.LogDebug (2, $"{me} HANDLE REQUEST DONE: {ret}");
+
+			return ret;
 		}
 
 		protected abstract void Destroy ();

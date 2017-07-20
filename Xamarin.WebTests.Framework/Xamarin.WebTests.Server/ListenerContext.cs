@@ -49,10 +49,18 @@ namespace Xamarin.WebTests.Server
 			protected set;
 		}
 
+		static int nextID;
+		public readonly int ID = Interlocked.Increment (ref nextID);
+
+		internal string ME {
+			get;
+		}
+
 		public ListenerContext (Listener listener)
 		{
 			Listener = listener;
 			State = ConnectionState.None;
+			ME = $"[{ID}:{GetType ().Name}:{listener.ME}]";
 		}
 
 		public abstract void Continue ();
@@ -70,11 +78,6 @@ namespace Xamarin.WebTests.Server
 		public abstract void PrepareRedirect (TestContext ctx, HttpConnection connection, bool keepAlive);
 
 		protected abstract void Close ();
-
-		protected string FormatConnection (HttpConnection connection)
-		{
-			return $"[{Listener.ME}:{connection.ME}]";
-		}
 
 		bool disposed;
 

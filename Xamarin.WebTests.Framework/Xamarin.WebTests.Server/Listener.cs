@@ -94,7 +94,7 @@ namespace Xamarin.WebTests.Server
 			}
 		}
 
-		protected ListenerOperation GetOperation (ListenerContext context, HttpRequest request)
+		protected internal ListenerOperation GetOperation (ListenerContext context, HttpRequest request)
 		{
 			lock (this) {
 				var me = $"{nameof (GetOperation)}({context.Connection.ME})";
