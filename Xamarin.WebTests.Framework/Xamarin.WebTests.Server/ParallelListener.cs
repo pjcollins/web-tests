@@ -136,12 +136,12 @@ namespace Xamarin.WebTests.Server
 					}
 
 					HttpRequest request;
-					Operation operation;
+					ParallelListenerOperation operation;
 
 					switch (context.State) {
 					case ConnectionState.Accepted:
 						request = ((Task<HttpRequest>)ret).Result;
-						operation = (Operation)GetOperation (context, request);
+						operation = (ParallelListenerOperation)GetOperation (context, request);
 						if (operation == null)
 							break;
 						context.StartOperation (operation, request);
@@ -184,7 +184,7 @@ namespace Xamarin.WebTests.Server
 
 		protected override ListenerOperation CreateOperation (HttpOperation operation, Uri uri)
 		{
-			return new Operation (this, operation, uri);
+			return new ParallelListenerOperation (this, operation, uri);
 		}
 
 		protected override void Close ()
@@ -203,14 +203,6 @@ namespace Xamarin.WebTests.Server
 
 			cts.Dispose ();
 			mainLoopEvent.Set ();
-		}
-
-		class Operation : ListenerOperation
-		{
-			public Operation (ParallelListener listener, HttpOperation operation, Uri uri)
-				: base (listener, operation, uri)
-			{
-			}
 		}
 	}
 }

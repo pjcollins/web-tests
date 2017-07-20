@@ -53,17 +53,13 @@ namespace Xamarin.WebTests.Server
 			get { return currentConnection; }
 		}
 
-		public override HttpOperation Operation {
-			get { return currentOperation; }
-		}
-
 		HttpConnection redirectRequested;
 		HttpOperation currentOperation;
 		HttpConnection currentConnection;
 		TaskCompletionSource<object> serverInitTask;
 		TaskCompletionSource<object> serverStartTask;
 
-		public override bool StartOperation (HttpOperation operation)
+		public bool StartOperation (HttpOperation operation)
 		{
 			return Interlocked.CompareExchange (ref currentOperation, operation, null) == null;
 		}

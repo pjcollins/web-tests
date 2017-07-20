@@ -44,15 +44,6 @@ namespace Xamarin.WebTests.Server
 			get;
 		}
 
-		public abstract HttpOperation Operation {
-			get;
-		}
-
-		public HttpRequest Request {
-			get;
-			protected set;
-		}
-
 		public ConnectionState State {
 			get;
 			protected set;
@@ -62,16 +53,6 @@ namespace Xamarin.WebTests.Server
 		{
 			Listener = listener;
 			State = ConnectionState.None;
-		}
-
-		public abstract bool StartOperation (HttpOperation operation);
-
-		public void StartOperation (ListenerOperation operation, HttpRequest request)
-		{
-			if (!StartOperation (operation.Operation))
-				throw new InvalidOperationException ();
-			Request = request;
-			State = ConnectionState.HasRequest;
 		}
 
 		public abstract void Continue ();

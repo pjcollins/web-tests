@@ -1,5 +1,5 @@
 ﻿//
-// ListenerOperation.cs
+// ParallelListenerOperation.cs
 //
 // Author:
 //       Martin Baulig <mabaul@microsoft.com>
@@ -26,38 +26,41 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Xamarin.AsyncTests;
 
 namespace Xamarin.WebTests.Server
 {
 	using HttpFramework;
 
-	abstract class ListenerOperation
+	class ParallelListenerOperation : ListenerOperation
 	{
-		public Listener Listener {
-			get;
-		}
-
-		public HttpOperation Operation {
-			get;
-		}
-
-		public Uri Uri {
-			get;
-		}
-
-		public ListenerOperation (Listener listener, HttpOperation operation, Uri uri)
+		public ParallelListenerOperation (ParallelListener listener, HttpOperation operation, Uri uri)
+			: base (listener, operation, uri)
 		{
-			Listener = listener;
-			Operation = operation;
-			Uri = uri;
+			serverInitTask = new TaskCompletionSource<object> ();
+			serverStartTask = new TaskCompletionSource<object> (); 
 		}
 
-		public abstract Task ServerInitTask {
-			get;
-		}
+		TaskCompletionSource<object> serverInitTask;
+		TaskCompletionSource<object> serverStartTask;
 
-		public abstract Task ServerStartTask {
-			get;
+		public override Task ServerInitTask => serverInitTask.Task;
+
+		public override Task ServerStartTask => serverStartTask.Task;
+
+		public async Task HandleRequest (TestContext ctx, HttpConnection connection,
+		                                 HttpRequest request, CancellationToken cancellationToken)
+		{
+			serverInitTask.TrySetResult (null);
+			try {
+				await Operation.HandleRequest (ctx, connection, request, cancellationToken).ConfigureAwait (false);
+			} catch (OperationCanceledException) {
+				serverStartTask.TrySetCanceled ();
+				throw;
+			} catch (Exception ex) {
+				serverStartTask.TrySetException (ex);
+				throw;
+			}
 		}
 	}
 }

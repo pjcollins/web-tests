@@ -35,12 +35,12 @@ namespace Xamarin.WebTests.Server
 
 	class InstrumentationListener : Listener
 	{
-		LinkedList<ListenerContext> connections;
+		LinkedList<InstrumentationListenerContext> connections;
 
 		public InstrumentationListener (TestContext ctx, HttpServer server, ListenerBackend backend)
 			: base (ctx, server, backend)
 		{
-			connections = new LinkedList<ListenerContext> ();
+			connections = new LinkedList<InstrumentationListenerContext> ();
 		}
 
 		(ListenerContext context, bool reused) FindOrCreateContext (HttpOperation operation, bool reuse)
@@ -62,7 +62,7 @@ namespace Xamarin.WebTests.Server
 			}
 		}
 
-		internal void Continue (TestContext ctx, ListenerContext context, bool keepAlive)
+		internal void Continue (TestContext ctx, InstrumentationListenerContext context, bool keepAlive)
 		{
 			lock (this) {
 				ctx.LogDebug (5, $"{ME} CONTINUE: {keepAlive}");
@@ -127,6 +127,18 @@ namespace Xamarin.WebTests.Server
 			public Operation (InstrumentationListener listener, HttpOperation operation, Uri uri)
 				: base (listener, operation, uri)
 			{
+			}
+
+			public override Task ServerInitTask {
+				get {
+					throw new NotImplementedException ();
+				}
+			}
+
+			public override Task ServerStartTask {
+				get {
+					throw new NotImplementedException ();
+				}
 			}
 		}
 	}

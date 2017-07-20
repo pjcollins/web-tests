@@ -46,16 +46,24 @@ namespace Xamarin.WebTests.Server
 			get { return connection; }
 		}
 
-		public override HttpOperation Operation {
+		public ParallelListenerOperation Operation {
 			get { return currentOperation; }
 		}
 
-		HttpOperation currentOperation;
+		public HttpRequest Request {
+			get;
+			private set;
+		}
+
+		ParallelListenerOperation currentOperation;
 		HttpConnection connection;
 
-		public override bool StartOperation (HttpOperation operation)
+		public void StartOperation (ParallelListenerOperation operation, HttpRequest request)
 		{
-			return Interlocked.CompareExchange (ref currentOperation, operation, null) == null;
+			if (Interlocked.CompareExchange (ref currentOperation, operation, null) != null)
+				throw new InvalidOperationException ();
+			Request = request;
+			State = ConnectionState.HasRequest;
 		}
 
 		public override void Continue ()
@@ -102,7 +110,7 @@ namespace Xamarin.WebTests.Server
 				ctx.LogDebug (5, $"{me} #1");
 
 				cancellationToken.ThrowIfCancellationRequested ();
-				await Connection.Initialize (ctx, Operation, cancellationToken);
+				await Connection.Initialize (ctx, Operation.Operation, cancellationToken);
 
 				ctx.LogDebug (5, $"{me} #2");
 
