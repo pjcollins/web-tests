@@ -35,8 +35,8 @@ namespace Xamarin.WebTests.Server
 
 	class ParallelListenerOperation : ListenerOperation
 	{
-		public ParallelListenerOperation (ParallelListener listener, HttpOperation operation, Uri uri)
-			: base (listener, operation, uri)
+		public ParallelListenerOperation (ParallelListener listener, HttpOperation operation, Handler handler, Uri uri)
+			: base (listener, operation, handler, uri)
 		{
 			serverInitTask = new TaskCompletionSource<object> ();
 			serverStartTask = new TaskCompletionSource<object> (); 
@@ -50,12 +50,12 @@ namespace Xamarin.WebTests.Server
 
 		public override Task ServerStartTask => serverStartTask.Task;
 
-		public async Task HandleRequest (TestContext ctx, HttpConnection connection,
-		                                 HttpRequest request, CancellationToken cancellationToken)
+		new public async Task HandleRequest (TestContext ctx, HttpConnection connection,
+		                                     HttpRequest request, CancellationToken cancellationToken)
 		{
 			serverInitTask.TrySetResult (null);
 			try {
-				await Operation.HandleRequest (ctx, connection, request, cancellationToken).ConfigureAwait (false);
+				await base.HandleRequest (ctx, connection, request, cancellationToken).ConfigureAwait (false);
 				serverStartTask.TrySetResult (null);
 			} catch (OperationCanceledException) {
 				serverStartTask.TrySetCanceled ();

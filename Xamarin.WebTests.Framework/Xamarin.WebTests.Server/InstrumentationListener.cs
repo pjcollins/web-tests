@@ -32,6 +32,7 @@ using Xamarin.AsyncTests;
 namespace Xamarin.WebTests.Server
 {
 	using HttpFramework;
+	using HttpHandlers;
 
 	class InstrumentationListener : Listener
 	{
@@ -103,9 +104,9 @@ namespace Xamarin.WebTests.Server
 			return context;
 		}
 
-		protected override ListenerOperation CreateOperation (HttpOperation operation, Uri uri)
+		protected override ListenerOperation CreateOperation (HttpOperation operation, Handler handler, Uri uri)
 		{
-			return new Operation (this, operation, uri);
+			return new Operation (this, operation, handler, uri);
 		}
 
 		protected override void Close ()
@@ -124,8 +125,8 @@ namespace Xamarin.WebTests.Server
 
 		class Operation : ListenerOperation
 		{
-			public Operation (InstrumentationListener listener, HttpOperation operation, Uri uri)
-				: base (listener, operation, uri)
+			public Operation (InstrumentationListener listener, HttpOperation operation, Handler handler, Uri uri)
+				: base (listener, operation, handler, uri)
 			{
 			}
 

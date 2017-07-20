@@ -97,7 +97,7 @@ namespace Xamarin.WebTests.Server
 
 			while (true) {
 				var me = $"{ME}({connection.ME}) LOOP";
-				ctx.LogDebug (2, $"{me} LOOP: {reused}");
+				ctx.LogDebug (2, $"{me}: {reused}");
 
 				try {
 					var (complete, success) = await Initialize ().ConfigureAwait (false);
@@ -131,12 +131,12 @@ namespace Xamarin.WebTests.Server
 				lock (Listener) {
 					currentConnection = connection;
 					listenerOperation = Listener.GetOperation (this, request);
-					ctx.LogDebug (2, $"{me} GOT REQUEST OPERATION: {listenerOperation.ME}");
+					ctx.LogDebug (2, $"{me} GOT OPERATION: {listenerOperation.ME}");
 				}
 
 				bool keepAlive;
 				try {
-					keepAlive = await listenerOperation.Operation.HandleRequest (
+					keepAlive = await listenerOperation.HandleRequest (
 						ctx, connection, request, cancellationToken);
 				} catch (Exception ex) {
 					ctx.LogDebug (2, $"{me} - ERROR {ex.Message}");
@@ -146,7 +146,7 @@ namespace Xamarin.WebTests.Server
 
 				lock (Listener) {
 					var redirect = Interlocked.Exchange (ref redirectRequested, null);
-					ctx.LogDebug (2, $"{me} SERVER LOOP #2: {keepAlive} {redirect?.ME}");
+					ctx.LogDebug (2, $"{me} #2: {keepAlive} {redirect?.ME}");
 
 					if (redirect == null) {
 						Listener.Continue (ctx, this, keepAlive);

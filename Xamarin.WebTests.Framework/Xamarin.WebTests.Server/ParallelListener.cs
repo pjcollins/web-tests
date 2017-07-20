@@ -33,6 +33,7 @@ namespace Xamarin.WebTests.Server
 {
 	using ConnectionFramework;
 	using HttpFramework;
+	using HttpHandlers;
 
 	class ParallelListener : Listener
 	{
@@ -183,9 +184,9 @@ namespace Xamarin.WebTests.Server
 			return false;
 		}
 
-		protected override ListenerOperation CreateOperation (HttpOperation operation, Uri uri)
+		protected override ListenerOperation CreateOperation (HttpOperation operation, Handler handler, Uri uri)
 		{
-			return new ParallelListenerOperation (this, operation, uri);
+			return new ParallelListenerOperation (this, operation, handler, uri);
 		}
 
 		protected override void Close ()

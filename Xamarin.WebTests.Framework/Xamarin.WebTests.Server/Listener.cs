@@ -33,6 +33,7 @@ namespace Xamarin.WebTests.Server
 {
 	using ConnectionFramework;
 	using HttpFramework;
+	using HttpHandlers;
 	using TestFramework;
 
 	abstract class Listener : IDisposable
@@ -80,7 +81,7 @@ namespace Xamarin.WebTests.Server
 			TestContext.LogDebug (5, $"{ME}: {message}");
 		}
 
-		protected abstract ListenerOperation CreateOperation (HttpOperation operation, Uri uri);
+		protected abstract ListenerOperation CreateOperation (HttpOperation operation, Handler handler, Uri uri);
 
 		public ListenerOperation RegisterOperation (TestContext ctx, HttpOperation operation)
 		{
@@ -88,7 +89,7 @@ namespace Xamarin.WebTests.Server
 				var id = Interlocked.Increment (ref nextRequestID);
 				var path = $"/id/{operation.ID}/{operation.Handler.GetType ().Name}/";
 				var uri = new Uri (Server.TargetUri, path);
-				var listenerOperation = CreateOperation (operation, uri);
+				var listenerOperation = CreateOperation (operation, operation.Handler, uri);
 				registry.Add (path, listenerOperation);
 				return listenerOperation;
 			}

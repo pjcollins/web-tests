@@ -43,6 +43,10 @@ namespace Xamarin.WebTests.Server
 			get;
 		}
 
+		public Handler Handler {
+			get;
+		}
+
 		public Uri Uri {
 			get;
 		}
@@ -54,10 +58,11 @@ namespace Xamarin.WebTests.Server
 		static int nextID;
 		public readonly int ID = Interlocked.Increment (ref nextID);
 
-		public ListenerOperation (Listener listener, HttpOperation operation, Uri uri)
+		public ListenerOperation (Listener listener, HttpOperation operation, Handler handler, Uri uri)
 		{
 			Listener = listener;
 			Operation = operation;
+			Handler = handler;
 			Uri = uri;
 
 			ME = $"[{ID}:{GetType ().Name}:{operation.ME}]";
@@ -69,6 +74,23 @@ namespace Xamarin.WebTests.Server
 
 		public abstract Task ServerStartTask {
 			get;
+		}
+
+		internal async Task<bool> HandleRequest (
+			TestContext ctx, HttpConnection connection,
+			HttpRequest request, CancellationToken cancellationToken)
+		{
+			var me = $"{ME} HANDLE REQUEST";
+			ctx.LogDebug (2, $"{me} {connection.ME} {request}");
+
+			cancellationToken.ThrowIfCancellationRequested ();
+			await request.Read (ctx, cancellationToken).ConfigureAwait (false);
+
+			ctx.LogDebug (2, $"{me} REQUEST FULLY READ");
+			var ret = await Handler.HandleRequest (ctx, Operation, connection, request, cancellationToken);
+			ctx.LogDebug (2, $"{me} HANDLE REQUEST DONE: {ret}");
+
+			return ret;
 		}
 
 		public abstract void PrepareRedirect (TestContext ctx, HttpConnection connection, bool keepAlive);
