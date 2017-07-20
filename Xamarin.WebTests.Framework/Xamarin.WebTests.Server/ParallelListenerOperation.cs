@@ -31,6 +31,7 @@ using Xamarin.AsyncTests;
 namespace Xamarin.WebTests.Server
 {
 	using HttpFramework;
+	using HttpHandlers;
 
 	class ParallelListenerOperation : ListenerOperation
 	{
@@ -62,6 +63,15 @@ namespace Xamarin.WebTests.Server
 			} catch (Exception ex) {
 				serverStartTask.TrySetException (ex);
 				throw;
+			}
+		}
+
+		public override Uri PrepareRedirect (TestContext ctx, Handler handler, bool keepAlive)
+		{
+			lock (Listener) {
+				var me = $"{ME}({nameof (PrepareRedirect)}";
+				ctx.LogDebug (5, $"{me}: {handler.Value} {keepAlive}");
+				throw new NotImplementedException ();
 			}
 		}
 

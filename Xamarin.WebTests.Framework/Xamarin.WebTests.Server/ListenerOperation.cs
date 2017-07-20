@@ -31,6 +31,7 @@ using Xamarin.AsyncTests;
 namespace Xamarin.WebTests.Server
 {
 	using HttpFramework;
+	using HttpHandlers;
 
 	abstract class ListenerOperation
 	{
@@ -46,11 +47,20 @@ namespace Xamarin.WebTests.Server
 			get;
 		}
 
+		internal string ME {
+			get;
+		}
+
+		static int nextID;
+		public readonly int ID = Interlocked.Increment (ref nextID);
+
 		public ListenerOperation (Listener listener, HttpOperation operation, Uri uri)
 		{
 			Listener = listener;
 			Operation = operation;
 			Uri = uri;
+
+			ME = $"[{ID}:{GetType ().Name}:{operation.ME}]";
 		}
 
 		public abstract Task ServerInitTask {
@@ -62,5 +72,7 @@ namespace Xamarin.WebTests.Server
 		}
 
 		public abstract void PrepareRedirect (TestContext ctx, HttpConnection connection, bool keepAlive);
+
+		public abstract Uri PrepareRedirect (TestContext ctx, Handler handler, bool keepAlive);
 	}
 }

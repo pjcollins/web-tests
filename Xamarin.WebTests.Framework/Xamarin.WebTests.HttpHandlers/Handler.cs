@@ -209,6 +209,7 @@ namespace Xamarin.WebTests.HttpHandlers
 			HttpRequest request, RequestFlags effectiveFlags,
 			CancellationToken cancellationToken);
 
+		[Obsolete]
 		public Uri RegisterRequest (TestContext ctx, HttpServer server)
 		{
 			lock (this) {

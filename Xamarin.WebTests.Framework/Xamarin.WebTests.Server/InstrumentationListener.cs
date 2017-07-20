@@ -141,6 +141,11 @@ namespace Xamarin.WebTests.Server
 				}
 			}
 
+			public override Uri PrepareRedirect (TestContext ctx, HttpHandlers.Handler handler, bool keepAlive)
+			{
+				throw new NotImplementedException ();
+			}
+
 			public override void PrepareRedirect (TestContext ctx, HttpConnection connection, bool keepAlive)
 			{
 				throw new NotImplementedException ();

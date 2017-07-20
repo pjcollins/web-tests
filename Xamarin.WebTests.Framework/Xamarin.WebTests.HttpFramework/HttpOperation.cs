@@ -411,6 +411,11 @@ namespace Xamarin.WebTests.HttpFramework
 			return response;
 		}
 
+		public Uri RegisterRedirect (TestContext ctx, Handler handler)
+		{
+			return listenerOperation.PrepareRedirect (ctx, handler, false);
+		}
+
 		internal async Task HandleRequest (TestContext ctx, HttpConnection connection,
 		                                   HttpRequest request, CancellationToken cancellationToken)
 		{
