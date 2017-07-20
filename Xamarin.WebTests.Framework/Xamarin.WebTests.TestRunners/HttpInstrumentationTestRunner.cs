@@ -1181,7 +1181,7 @@ namespace Xamarin.WebTests.TestRunners
 			}
 
 			async Task<HttpResponse> HandleNtlmRequest (
-				TestContext ctx, HttpConnection connection, HttpRequest request,
+				TestContext ctx, HttpOperation operation, HttpConnection connection, HttpRequest request,
 				RequestFlags effectiveFlags, CancellationToken cancellationToken)
 			{
 				var me = $"{ME}.{nameof (HandleNtlmRequest)}";
@@ -1213,14 +1213,14 @@ namespace Xamarin.WebTests.TestRunners
 					return new HttpResponse (HttpStatusCode.OK, content);
 				}
 
-				var ret = await Target.HandleRequest (ctx, connection, request, effectiveFlags, cancellationToken);
+				var ret = await Target.HandleRequest (ctx, operation, connection, request, effectiveFlags, cancellationToken);
 				ctx.LogDebug (3, $"{me} target done: {Target} {ret}");
 				ret.KeepAlive = false;
 				return ret;
 			}
 
 			protected internal override async Task<HttpResponse> HandleRequest (
-				TestContext ctx, HttpConnection connection, HttpRequest request,
+				TestContext ctx, HttpOperation operation, HttpConnection connection, HttpRequest request,
 				RequestFlags effectiveFlags, CancellationToken cancellationToken)
 			{
 				switch (TestRunner.EffectiveType) {
@@ -1248,7 +1248,7 @@ namespace Xamarin.WebTests.TestRunners
 				case HttpInstrumentationTestType.ParallelNtlm:
 				case HttpInstrumentationTestType.NtlmWhileQueued:
 					return await HandleNtlmRequest (
-						ctx, connection, request, effectiveFlags, cancellationToken).ConfigureAwait (false);
+						ctx, operation, connection, request, effectiveFlags, cancellationToken).ConfigureAwait (false);
 
 				case HttpInstrumentationTestType.RedirectNoLength:
 				case HttpInstrumentationTestType.PutChunked:

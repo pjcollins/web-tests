@@ -69,7 +69,7 @@ namespace Xamarin.WebTests.HttpHandlers
 		}
 
 		internal protected override Task<HttpResponse> HandleRequest (
-			TestContext ctx, HttpConnection connection, HttpRequest request,
+			TestContext ctx, HttpOperation operation, HttpConnection connection, HttpRequest request,
 			RequestFlags effectiveFlags, CancellationToken cancellationToken)
 		{
 			var targetUri = Target.RegisterRequest (ctx, connection.Server);

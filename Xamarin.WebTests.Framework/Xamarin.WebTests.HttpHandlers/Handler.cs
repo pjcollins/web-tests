@@ -142,7 +142,7 @@ namespace Xamarin.WebTests.HttpHandlers
 				Debug (ctx, 1, $"HANDLE REQUEST: {connection.RemoteEndPoint}");
 				DumpHeaders (ctx, request);
 				connection.Server.CheckEncryption (ctx, connection.SslStream);
-				response = await HandleRequest (ctx, connection, request, Flags, cancellationToken);
+				response = await HandleRequest (ctx, operation, connection, request, Flags, cancellationToken);
 
 				if (response == null)
 					response = HttpResponse.CreateSuccess ();
@@ -204,8 +204,10 @@ namespace Xamarin.WebTests.HttpHandlers
 		}
 
 		[StackTraceEntryPoint]
-		protected internal abstract Task<HttpResponse> HandleRequest (TestContext ctx, HttpConnection connection, HttpRequest request,
-		                                                              RequestFlags effectiveFlags, CancellationToken cancellationToken);
+		protected internal abstract Task<HttpResponse> HandleRequest (
+			TestContext ctx, HttpOperation operation, HttpConnection connection,
+			HttpRequest request, RequestFlags effectiveFlags,
+			CancellationToken cancellationToken);
 
 		public Uri RegisterRequest (TestContext ctx, HttpServer server)
 		{
