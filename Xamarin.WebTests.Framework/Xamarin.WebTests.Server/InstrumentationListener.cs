@@ -140,6 +140,11 @@ namespace Xamarin.WebTests.Server
 					throw new NotImplementedException ();
 				}
 			}
+
+			public override void PrepareRedirect (TestContext ctx, HttpConnection connection, bool keepAlive)
+			{
+				throw new NotImplementedException ();
+			}
 		}
 	}
 }

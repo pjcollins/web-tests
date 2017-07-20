@@ -43,6 +43,7 @@ namespace Xamarin.WebTests.Server
 
 		TaskCompletionSource<object> serverInitTask;
 		TaskCompletionSource<object> serverStartTask;
+		HttpConnection redirectRequested;
 
 		public override Task ServerInitTask => serverInitTask.Task;
 
@@ -61,6 +62,22 @@ namespace Xamarin.WebTests.Server
 			} catch (Exception ex) {
 				serverStartTask.TrySetException (ex);
 				throw;
+			}
+		}
+
+		public override void PrepareRedirect (TestContext ctx, HttpConnection connection, bool keepAlive)
+		{
+			lock (Listener) {
+				var me = $"{Listener.FormatConnection (connection)} PREPARE REDIRECT";
+				ctx.LogDebug (5, $"{me}: {keepAlive}");
+				HttpConnection next;
+				if (keepAlive)
+					next = connection;
+				else
+					next = Listener.Backend.CreateConnection ();
+
+				if (Interlocked.CompareExchange (ref redirectRequested, next, null) != null)
+					throw new InvalidOperationException ();
 			}
 		}
 	}

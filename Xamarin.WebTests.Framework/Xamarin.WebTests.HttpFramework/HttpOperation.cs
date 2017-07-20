@@ -110,6 +110,7 @@ namespace Xamarin.WebTests.HttpFramework
 		Request currentRequest;
 		ServicePoint servicePoint;
 		ListenerContext listenerContext;
+		ListenerOperation listenerOperation;
 		InstrumentationListener instrumentationListener;
 		ParallelListener parallelListener;
 		TaskCompletionSource<Request> requestTask;
@@ -260,7 +261,9 @@ namespace Xamarin.WebTests.HttpFramework
 
 		internal void PrepareRedirect (TestContext ctx, HttpConnection connection, bool keepAlive)
 		{
-			listenerContext.PrepareRedirect (ctx, connection, keepAlive);
+			listenerContext?.PrepareRedirect (ctx, connection, keepAlive);
+
+			listenerOperation?.PrepareRedirect (ctx, connection, keepAlive);
 		}
 
 		protected abstract Task<Response> RunInner (TestContext ctx, Request request, CancellationToken cancellationToken);
@@ -333,6 +336,8 @@ namespace Xamarin.WebTests.HttpFramework
 
 			var operation = parallelListener.RegisterOperation (ctx, this);
 			var request = CreateRequest (ctx, operation.Uri);
+
+			listenerOperation = operation;
 			currentRequest = request;
 
 			if (request is TraditionalRequest traditionalRequest)

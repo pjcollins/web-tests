@@ -164,13 +164,15 @@ namespace Xamarin.WebTests.TestRunners
 			var me = $"{ME}.{nameof (Run)}()";
 			ctx.LogDebug (2, $"{me}");
 
-			var operation = new TraditionalOperation (Server, HelloWorldHandler.GetSimple (), true);
+			var redirect = new RedirectHandler (HelloWorldHandler.GetSimple (), HttpStatusCode.Redirect);
+
+			var operation = new TraditionalOperation (Server, redirect, true);
 			await operation.Run (ctx, cancellationToken).ConfigureAwait (false);
 
 			var secondOperation = new TraditionalOperation (Server, HelloWorldHandler.GetSimple (), true);
 			await secondOperation.Run (ctx, cancellationToken);
 
-			for (int i = 0; i < 500; i++) {
+			for (int i = 0; i < -500; i++) {
 				var loopOperation = new TraditionalOperation (Server, HelloWorldHandler.GetSimple (), true);
 				await loopOperation.Run (ctx, cancellationToken);
 			}

@@ -26,6 +26,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Xamarin.AsyncTests;
 
 namespace Xamarin.WebTests.Server
 {
@@ -59,5 +60,7 @@ namespace Xamarin.WebTests.Server
 		public abstract Task ServerStartTask {
 			get;
 		}
+
+		public abstract void PrepareRedirect (TestContext ctx, HttpConnection connection, bool keepAlive);
 	}
 }

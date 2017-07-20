@@ -131,7 +131,12 @@ namespace Xamarin.WebTests.HttpHandlers
 			Exception originalError;
 			HttpResponse response;
 
-			var expectServerError = operation?.HasAnyFlags (HttpOperationFlags.ExpectServerException) ?? false;
+			if (operation == null)
+				throw new ArgumentNullException (nameof (operation));
+			if (connection == null)
+				throw new ArgumentNullException (nameof (connection));
+
+			var expectServerError = operation.HasAnyFlags (HttpOperationFlags.ExpectServerException);
 
 			try {
 				Debug (ctx, 1, $"HANDLE REQUEST: {connection.RemoteEndPoint}");
@@ -145,7 +150,7 @@ namespace Xamarin.WebTests.HttpHandlers
 					response.KeepAlive = true;
 				var keepAlive = (response.KeepAlive ?? false) && ((Flags & RequestFlags.CloseConnection) == 0);
 
-				if (response.IsRedirect && operation != null) {
+				if (response.IsRedirect) {
 					Debug (ctx, 1, $"HANDLE REQUEST - REDIRECT: {keepAlive}");
 					operation.PrepareRedirect (ctx, connection, keepAlive);
 				}
