@@ -91,12 +91,22 @@ namespace Xamarin.WebTests.Server
 					taskList.Add (mainLoopEvent.WaitAsync ());
 					foreach (var context in connections) {
 						Task task = null;
+						Debug ($"  MAIN LOOP #0: {context.ME} {context.State}");
 						switch (context.State) {
 						case ConnectionState.None:
-							task = context.Run (TestContext, cts.Token);
+							context.Start (TestContext, cts.Token);
+							task = context.ServerInitTask;
+							break;
+						case ConnectionState.Accepted:
+							task = context.WaitForRequest ();
 							break;
 						case ConnectionState.HasRequest:
 							task = context.HandleRequest (TestContext, cts.Token);
+							break;
+						case ConnectionState.KeepAlive:
+							break;
+						default:
+							Debug ($"UNKNOWN STATE {context.State}");
 							break;
 						}
 						if (task != null) {
@@ -106,7 +116,7 @@ namespace Xamarin.WebTests.Server
 					}
 				}
 
-				Debug ($"MAIN LOOP #0: {connectionArray.Count}");
+				Debug ($"MAIN LOOP #0: {connectionArray.Count} {taskList.Count}");
 
 				var ret = await Task.WhenAny (taskList).ConfigureAwait (false);
 				Debug ($"MAIN LOOP #1: {ret.Status} {ret == taskList[0]}");
@@ -148,6 +158,8 @@ namespace Xamarin.WebTests.Server
 						context.StartOperation (operation, request);
 						ok = true;
 						break;
+					case ConnectionState.WaitingForRequest:
+						break;
 					case ConnectionState.HasRequest:
 						ok = RequestComplete (context, ret);
 						break;
@@ -179,9 +191,11 @@ namespace Xamarin.WebTests.Server
 				return false;
 			}
 
-			Debug ($"{me}");
+			var keepAlive = ((Task<bool>)task).Result;
 
-			return false;
+			Debug ($"{me}: {keepAlive}");
+
+			return keepAlive;
 		}
 
 		protected override ListenerOperation CreateOperation (HttpOperation operation, Handler handler, Uri uri)

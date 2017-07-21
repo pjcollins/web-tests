@@ -40,7 +40,15 @@ namespace Xamarin.WebTests.Server
 			: base (listener)
 		{
 			this.connection = connection;
+			serverInitTask = new TaskCompletionSource<object> ();
+			serverStartTask = new TaskCompletionSource<object> ();
+			requestTask = new TaskCompletionSource<HttpRequest> ();
 		}
+
+		TaskCompletionSource<object> serverInitTask;
+		TaskCompletionSource<object> serverStartTask;
+		TaskCompletionSource<HttpRequest> requestTask;
+		int initialized;
 
 		public override HttpConnection Connection {
 			get { return connection; }
@@ -71,61 +79,100 @@ namespace Xamarin.WebTests.Server
 			currentOperation = null;
 		}
 
-		public override Task ServerInitTask => throw new NotImplementedException ();
+		public override Task ServerInitTask => serverInitTask.Task;
 
-		public override Task ServerStartTask => throw new NotImplementedException ();
+		public override Task ServerStartTask => serverStartTask.Task;
 
-		TaskCompletionSource<HttpRequest> initTask;
+		public Task<HttpRequest> RequestTask => requestTask.Task;
 
 		public override Task Run (TestContext ctx, CancellationToken cancellationToken)
 		{
-			return MyRun (ctx, cancellationToken);
+			throw new NotImplementedException ();
 		}
 
-		Task<HttpRequest> MyRun (TestContext ctx, CancellationToken cancellationToken)
+		public Task Start (TestContext ctx, CancellationToken cancellationToken)
 		{
+			var me = $"{Listener.ME}({Connection.ME}) START";
+
 			var tcs = new TaskCompletionSource<HttpRequest> ();
-			var old = Interlocked.CompareExchange (ref initTask, tcs, null);
-			if (old != null)
-				return old.Task;
+			if (Interlocked.CompareExchange (ref initialized, 1, 0) != 0)
+				throw new InternalErrorException ();
 
-			Run_inner ().ContinueWith (t => {
-				State = ConnectionState.Accepted;
-				if (t.Status == TaskStatus.Canceled)
-					tcs.TrySetCanceled ();
-				else if (t.Status == TaskStatus.Faulted)
-					tcs.TrySetException (t.Exception);
-				else
-					tcs.TrySetResult (t.Result);
-			});
+			Start_inner ();
 
-			return tcs.Task;
+			State = ConnectionState.Accepted;
+			return serverInitTask.Task;
 
-			async Task<HttpRequest> Run_inner ()
+			void OnCanceled ()
 			{
-				var me = $"{Listener.ME}({Connection.ME}) RUN";
-				cancellationToken.ThrowIfCancellationRequested ();
-				await Connection.AcceptAsync (ctx, cancellationToken).ConfigureAwait (false);
+				serverInitTask.TrySetCanceled ();
+				serverStartTask.TrySetCanceled ();
+				requestTask.TrySetCanceled ();
+			}
 
-				ctx.LogDebug (5, $"{me} #1");
+			void OnError (Exception error)
+			{
+				serverInitTask.TrySetException (error);
+				serverStartTask.TrySetException (error);
+				requestTask.TrySetException (error);
+			}
 
-				cancellationToken.ThrowIfCancellationRequested ();
-				await Connection.Initialize (ctx, null, cancellationToken);
+			async void Start_inner ()
+			{
+				try {
+					ctx.LogDebug (5, "${me} ACCEPT");
+					cancellationToken.ThrowIfCancellationRequested ();
+					await Connection.AcceptAsync (ctx, cancellationToken).ConfigureAwait (false);
+					ctx.LogDebug (5, $"{me} ACCEPTED");
+					serverInitTask.TrySetResult (null);
+				} catch (OperationCanceledException) {
+					OnCanceled ();
+					return;
+				} catch (Exception ex) {
+					OnError (ex);
+					return;
+				}
+
+				try {
+					cancellationToken.ThrowIfCancellationRequested ();
+					await Connection.Initialize (ctx, null, cancellationToken);
+					serverStartTask.TrySetResult (null);
+				} catch (OperationCanceledException) {
+					OnCanceled ();
+					return;
+				} catch (Exception ex) {
+					OnError (ex);
+					return;
+				}
 
 				ctx.LogDebug (5, $"{me} #2");
 
-				var reader = new HttpStreamReader (Connection.SslStream);
-				cancellationToken.ThrowIfCancellationRequested ();
-				var header = await reader.ReadLineAsync (cancellationToken);
-				var (method, protocol, path) = HttpMessage.ReadHttpHeader (header);
-				ctx.LogDebug (5, $"{me} #3: {method} {protocol} {path}");
+				try {
+					var reader = new HttpStreamReader (Connection.SslStream);
+					cancellationToken.ThrowIfCancellationRequested ();
+					var header = await reader.ReadLineAsync (cancellationToken);
+					var (method, protocol, path) = HttpMessage.ReadHttpHeader (header);
+					ctx.LogDebug (5, $"{me} #3: {method} {protocol} {path}");
 
-				var request = new HttpRequest (protocol, method, path, reader);
-				return request;
+					var request = new HttpRequest (protocol, method, path, reader);
+					requestTask.TrySetResult (request);
+				} catch (OperationCanceledException) {
+					OnCanceled ();
+					return;
+				} catch (Exception ex) {
+					OnError (ex);
+					return;
+				}
 			}
 		}
 
-		public Task HandleRequest (TestContext ctx, CancellationToken cancellationToken)
+		public Task<HttpRequest> WaitForRequest ()
+		{
+			State = ConnectionState.WaitingForRequest;
+			return requestTask.Task;
+		}
+
+		public Task<bool> HandleRequest (TestContext ctx, CancellationToken cancellationToken)
 		{
 			return Operation.HandleRequest (ctx, Connection, Request, cancellationToken);
 		}

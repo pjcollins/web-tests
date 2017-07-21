@@ -31,7 +31,9 @@ namespace Xamarin.WebTests.Server
 	{
 		None,
 		Accepted,
+		WaitingForRequest,
 		HasRequest,
+		KeepAlive,
 		Closed
 	}
 }
