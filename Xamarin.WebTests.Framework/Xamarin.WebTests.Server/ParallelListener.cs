@@ -99,9 +99,9 @@ namespace Xamarin.WebTests.Server
 							context.State = ConnectionState.Listening;
 							break;
 						case ConnectionState.KeepAlive:
-							context.Start (TestContext, false, cts.Token);
+							context.Start (TestContext, true, cts.Token);
 							task = context.ServerStartTask;
-							context.State = ConnectionState.WaitingForRequest;
+							context.State = ConnectionState.Accepted;
 							break;
 						case ConnectionState.Listening:
 							task = context.ServerInitTask;
