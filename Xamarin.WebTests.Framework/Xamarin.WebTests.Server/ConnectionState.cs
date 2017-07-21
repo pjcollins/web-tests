@@ -30,6 +30,7 @@ namespace Xamarin.WebTests.Server
 	enum ConnectionState
 	{
 		None,
+		Listening,
 		Accepted,
 		WaitingForRequest,
 		HasRequest,

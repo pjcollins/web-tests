@@ -46,7 +46,7 @@ namespace Xamarin.WebTests.Server
 
 		public ConnectionState State {
 			get;
-			protected set;
+			internal set;
 		}
 
 		static int nextID;

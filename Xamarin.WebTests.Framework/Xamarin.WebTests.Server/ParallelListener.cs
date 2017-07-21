@@ -96,9 +96,16 @@ namespace Xamarin.WebTests.Server
 						case ConnectionState.None:
 							context.Start (TestContext, cts.Token);
 							task = context.ServerInitTask;
+							context.State = ConnectionState.Listening;
+							break;
+						case ConnectionState.Listening:
+							task = context.ServerInitTask;
 							break;
 						case ConnectionState.Accepted:
-							task = context.WaitForRequest ();
+							task = context.ServerStartTask;
+							break;
+						case ConnectionState.WaitingForRequest:
+							task = context.RequestTask;
 							break;
 						case ConnectionState.HasRequest:
 							task = context.HandleRequest (TestContext, cts.Token);
@@ -150,15 +157,21 @@ namespace Xamarin.WebTests.Server
 					ParallelListenerOperation operation;
 
 					switch (context.State) {
+					case ConnectionState.Listening:
+						ok = true;
+						context.State = ConnectionState.Accepted;
+						break;
 					case ConnectionState.Accepted:
+						ok = true;
+						context.State = ConnectionState.WaitingForRequest;
+						break;
+					case ConnectionState.WaitingForRequest:
 						request = ((Task<HttpRequest>)ret).Result;
 						operation = (ParallelListenerOperation)GetOperation (context, request);
 						if (operation == null)
 							break;
 						context.StartOperation (operation, request);
 						ok = true;
-						break;
-					case ConnectionState.WaitingForRequest:
 						break;
 					case ConnectionState.HasRequest:
 						ok = RequestComplete (context, ret);

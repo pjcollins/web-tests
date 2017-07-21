@@ -99,8 +99,6 @@ namespace Xamarin.WebTests.Server
 				throw new InternalErrorException ();
 
 			Start_inner ();
-
-			State = ConnectionState.Accepted;
 			return serverInitTask.Task;
 
 			void OnCanceled ()
@@ -120,7 +118,7 @@ namespace Xamarin.WebTests.Server
 			async void Start_inner ()
 			{
 				try {
-					ctx.LogDebug (5, "${me} ACCEPT");
+					ctx.LogDebug (5, $"{me} ACCEPT");
 					cancellationToken.ThrowIfCancellationRequested ();
 					await Connection.AcceptAsync (ctx, cancellationToken).ConfigureAwait (false);
 					ctx.LogDebug (5, $"{me} ACCEPTED");
@@ -164,12 +162,6 @@ namespace Xamarin.WebTests.Server
 					return;
 				}
 			}
-		}
-
-		public Task<HttpRequest> WaitForRequest ()
-		{
-			State = ConnectionState.WaitingForRequest;
-			return requestTask.Task;
 		}
 
 		public Task<bool> HandleRequest (TestContext ctx, CancellationToken cancellationToken)
