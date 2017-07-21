@@ -634,7 +634,7 @@ namespace Xamarin.WebTests.TestRunners
 				else
 					ConfigurePrimaryRequest (ctx, traditionalRequest);
 
-				InstrumentationHandler.ConfigureRequest (request, uri);
+				Handler.ConfigureRequest (request, uri);
 
 				request.SetProxy (Parent.Server.GetProxy ());
 			}

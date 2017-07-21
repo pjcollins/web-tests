@@ -106,7 +106,7 @@ namespace Xamarin.WebTests.Server
 
 		protected override ListenerOperation CreateOperation (HttpOperation operation, Handler handler, Uri uri)
 		{
-			return new Operation (this, operation, handler, uri);
+			return new InstrumentationListenerOperation (this, operation, handler, uri);
 		}
 
 		protected override void Close ()
@@ -120,36 +120,6 @@ namespace Xamarin.WebTests.Server
 
 				node.Dispose ();
 				connections.Remove (node);
-			}
-		}
-
-		class Operation : ListenerOperation
-		{
-			public Operation (InstrumentationListener listener, HttpOperation operation, Handler handler, Uri uri)
-				: base (listener, operation, handler, uri)
-			{
-			}
-
-			public override Task ServerInitTask {
-				get {
-					throw new NotImplementedException ();
-				}
-			}
-
-			public override Task ServerFinishedTask {
-				get {
-					throw new NotImplementedException ();
-				}
-			}
-
-			public override Uri PrepareRedirect (TestContext ctx, HttpHandlers.Handler handler, bool keepAlive)
-			{
-				throw new NotImplementedException ();
-			}
-
-			public override void PrepareRedirect (TestContext ctx, HttpConnection connection, bool keepAlive)
-			{
-				throw new NotImplementedException ();
 			}
 		}
 	}

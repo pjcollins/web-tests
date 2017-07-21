@@ -1,5 +1,5 @@
 ﻿//
-// ParallelListenerOperation.cs
+// InstrumentationListenerOperation.cs
 //
 // Author:
 //       Martin Baulig <mabaul@microsoft.com>
@@ -33,13 +33,13 @@ namespace Xamarin.WebTests.Server
 	using HttpFramework;
 	using HttpHandlers;
 
-	class ParallelListenerOperation : ListenerOperation
+	class InstrumentationListenerOperation : ListenerOperation
 	{
-		public ParallelListenerOperation (ParallelListener listener, HttpOperation operation, Handler handler, Uri uri)
+		public InstrumentationListenerOperation (InstrumentationListener listener, HttpOperation operation, Handler handler, Uri uri)
 			: base (listener, operation, handler, uri)
 		{
 			serverInitTask = new TaskCompletionSource<object> ();
-			serverFinished = new TaskCompletionSource<object> (); 
+			serverFinished = new TaskCompletionSource<object> ();
 		}
 
 		TaskCompletionSource<object> serverInitTask;
@@ -52,7 +52,7 @@ namespace Xamarin.WebTests.Server
 		public override Task ServerFinishedTask => serverFinished.Task;
 
 		new public async Task HandleRequest (TestContext ctx, HttpConnection connection,
-		                                     HttpRequest request, CancellationToken cancellationToken)
+						     HttpRequest request, CancellationToken cancellationToken)
 		{
 			serverInitTask.TrySetResult (null);
 			try {
