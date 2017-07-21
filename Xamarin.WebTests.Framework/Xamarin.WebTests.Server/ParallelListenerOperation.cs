@@ -38,34 +38,10 @@ namespace Xamarin.WebTests.Server
 		public ParallelListenerOperation (ParallelListener listener, HttpOperation operation, Handler handler, Uri uri)
 			: base (listener, operation, handler, uri)
 		{
-			serverInitTask = new TaskCompletionSource<object> ();
-			serverFinished = new TaskCompletionSource<object> (); 
 		}
 
-		TaskCompletionSource<object> serverInitTask;
-		TaskCompletionSource<object> serverFinished;
 		HttpConnection redirectRequested;
 		ListenerOperation redirect;
-
-		public override Task ServerInitTask => serverInitTask.Task;
-
-		public override Task ServerFinishedTask => serverFinished.Task;
-
-		new public async Task HandleRequest (TestContext ctx, HttpConnection connection,
-		                                     HttpRequest request, CancellationToken cancellationToken)
-		{
-			serverInitTask.TrySetResult (null);
-			try {
-				await base.HandleRequest (ctx, connection, request, cancellationToken).ConfigureAwait (false);
-				serverFinished.TrySetResult (null);
-			} catch (OperationCanceledException) {
-				serverFinished.TrySetCanceled ();
-				throw;
-			} catch (Exception ex) {
-				serverFinished.TrySetException (ex);
-				throw;
-			}
-		}
 
 		public override Uri PrepareRedirect (TestContext ctx, Handler handler, bool keepAlive)
 		{

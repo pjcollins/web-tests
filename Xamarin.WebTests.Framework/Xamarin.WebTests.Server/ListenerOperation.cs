@@ -58,6 +58,9 @@ namespace Xamarin.WebTests.Server
 		static int nextID;
 		public readonly int ID = Interlocked.Increment (ref nextID);
 
+		TaskCompletionSource<object> serverInitTask;
+		TaskCompletionSource<object> serverFinishedTask;
+
 		public ListenerOperation (Listener listener, HttpOperation operation, Handler handler, Uri uri)
 		{
 			Listener = listener;
@@ -66,15 +69,13 @@ namespace Xamarin.WebTests.Server
 			Uri = uri;
 
 			ME = $"[{ID}:{GetType ().Name}:{operation.ME}]";
+			serverInitTask = new TaskCompletionSource<object> ();
+			serverFinishedTask = new TaskCompletionSource<object> (); 
 		}
 
-		public abstract Task ServerInitTask {
-			get;
-		}
+		public Task ServerInitTask => serverInitTask.Task;
 
-		public abstract Task ServerFinishedTask {
-			get;
-		}
+		public Task ServerFinishedTask => serverFinishedTask.Task;
 
 		internal async Task<bool> HandleRequest (
 			TestContext ctx, HttpConnection connection,
@@ -83,14 +84,26 @@ namespace Xamarin.WebTests.Server
 			var me = $"{ME} HANDLE REQUEST";
 			ctx.LogDebug (2, $"{me} {connection.ME} {request}");
 
-			cancellationToken.ThrowIfCancellationRequested ();
-			await request.Read (ctx, cancellationToken).ConfigureAwait (false);
+			serverInitTask.TrySetResult (null);
 
-			ctx.LogDebug (2, $"{me} REQUEST FULLY READ");
-			var ret = await Handler.HandleRequest (ctx, Operation, connection, request, cancellationToken);
-			ctx.LogDebug (2, $"{me} HANDLE REQUEST DONE: {ret}");
+			try {
+				cancellationToken.ThrowIfCancellationRequested ();
+				await request.Read (ctx, cancellationToken).ConfigureAwait (false);
 
-			return ret;
+				ctx.LogDebug (2, $"{me} REQUEST FULLY READ");
+				var ret = await Handler.HandleRequest (ctx, Operation, connection, request, cancellationToken);
+				ctx.LogDebug (2, $"{me} HANDLE REQUEST DONE: {ret}");
+
+				serverFinishedTask.TrySetResult (null);
+
+				return ret;
+			} catch (OperationCanceledException) {
+				serverFinishedTask.TrySetCanceled ();
+				throw;
+			} catch (Exception ex) {
+				serverFinishedTask.TrySetException (ex);
+				throw;
+			}
 		}
 
 		public abstract void PrepareRedirect (TestContext ctx, HttpConnection connection, bool keepAlive);
