@@ -125,63 +125,75 @@ namespace Xamarin.WebTests.Server
 
 				Debug ($"MAIN LOOP #0: {connectionArray.Count} {taskList.Count}");
 
-				var ret = await Task.WhenAny (taskList).ConfigureAwait (false);
-				Debug ($"MAIN LOOP #1: {ret.Status} {ret == taskList[0]}");
+				var finished = await Task.WhenAny (taskList).ConfigureAwait (false);
+				Debug ($"MAIN LOOP #1: {finished.Status} {finished == taskList[0]}");
 
 				lock (this) {
-					if (ret == taskList[0]) {
+					if (finished == taskList[0]) {
 						mainLoopEvent.Reset ();
 						continue;
 					}
 
 					int idx = -1;
 					for (int i = 0; i < connectionArray.Count; i++) {
-						if (ret == taskList[i + 1]) {
+						if (finished == taskList[i + 1]) {
 							idx = i;
 							break;
 						}
 					}
 
-					bool ok = false;
 					var context = connectionArray[idx];
 					Debug ($"MAIN LOOP #2: {context.State} {context.Connection.ME}");
 
-					if (ret.Status == TaskStatus.Canceled || ret.Status == TaskStatus.Faulted) {
-						Debug ($"MAIN LOOP #2 FAILED: {ret.Status} {ret.Exception?.Message}");
+					if (finished.Status == TaskStatus.Canceled || finished.Status == TaskStatus.Faulted) {
+						Debug ($"MAIN LOOP #2 FAILED: {finished.Status} {finished.Exception?.Message}");
 						connections.Remove (context);
 						context.Dispose ();
 						continue;
 					}
 
-					HttpRequest request;
-					ParallelListenerOperation operation;
-
 					switch (context.State) {
 					case ConnectionState.Listening:
-						ok = true;
 						context.State = ConnectionState.Accepted;
 						break;
 					case ConnectionState.Accepted:
-						ok = true;
 						context.State = ConnectionState.WaitingForRequest;
 						break;
 					case ConnectionState.WaitingForRequest:
-						request = ((Task<HttpRequest>)ret).Result;
-						operation = (ParallelListenerOperation)GetOperation (context, request);
-						if (operation == null)
-							break;
-						context.StartOperation (operation, request);
-						ok = true;
+						GotRequest (context, finished);
 						break;
 					case ConnectionState.HasRequest:
-						ok = RequestComplete (context, ret);
+						RequestComplete (context, finished);
 						break;
 					}
+				}
+			}
 
-					if (!ok) {
-						connections.Remove (context);
-						context.Dispose ();
-					}
+			void GotRequest (ParallelListenerContext context, Task task)
+			{
+				var request = ((Task<HttpRequest>)task).Result;
+				var operation = (ParallelListenerOperation)GetOperation (context, request);
+				if (operation == null) {
+					connections.Remove (context);
+					context.Dispose ();
+					return;
+				}
+				context.StartOperation (operation, request);
+				context.State = ConnectionState.HasRequest;
+			}
+
+			void RequestComplete (ParallelListenerContext context, Task task)
+			{
+				var me = $"{nameof (RequestComplete)}({context.Connection.ME})";
+
+				var keepAlive = ((Task<bool>)task).Result;
+				Debug ($"{me}: {keepAlive}");
+
+				if (keepAlive) {
+					context.State = ConnectionState.KeepAlive;
+				} else {
+					connections.Remove (context);
+					context.Dispose ();
 				}
 			}
 		}
@@ -194,21 +206,6 @@ namespace Xamarin.WebTests.Server
 				connections.AddLast (new ParallelListenerContext (this, connection));
 				Debug ($"RUN SCHEDULER #1: {connection.ME}");
 			}
-		}
-
-		bool RequestComplete (ParallelListenerContext context, Task task)
-		{
-			var me = $"{nameof (RequestComplete)}({context.Connection.ME})";
-			if (task.Status == TaskStatus.Canceled || task.Status == TaskStatus.Faulted) {
-				Debug ($"{me} FAILED: {task.Status} {task.Exception?.Message}");
-				return false;
-			}
-
-			var keepAlive = ((Task<bool>)task).Result;
-
-			Debug ($"{me}: {keepAlive}");
-
-			return keepAlive;
 		}
 
 		protected override ListenerOperation CreateOperation (HttpOperation operation, Handler handler, Uri uri)

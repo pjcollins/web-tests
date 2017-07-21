@@ -71,7 +71,6 @@ namespace Xamarin.WebTests.Server
 			if (Interlocked.CompareExchange (ref currentOperation, operation, null) != null)
 				throw new InvalidOperationException ();
 			Request = request;
-			State = ConnectionState.HasRequest;
 		}
 
 		public override void Continue ()
