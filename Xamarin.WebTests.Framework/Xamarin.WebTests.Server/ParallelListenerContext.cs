@@ -41,12 +41,10 @@ namespace Xamarin.WebTests.Server
 		{
 			this.connection = connection;
 			serverInitTask = new TaskCompletionSource<object> ();
-			serverStartTask = new TaskCompletionSource<object> ();
 			requestTask = new TaskCompletionSource<HttpRequest> ();
 		}
 
 		TaskCompletionSource<object> serverInitTask;
-		TaskCompletionSource<object> serverStartTask;
 		TaskCompletionSource<HttpRequest> requestTask;
 		int initialized;
 
@@ -80,9 +78,7 @@ namespace Xamarin.WebTests.Server
 			Request = null;
 		}
 
-		public override Task ServerInitTask => serverInitTask.Task;
-
-		public override Task ServerStartTask => serverStartTask.Task;
+		public override Task ServerInitTask => ServerReadyTask;
 
 		public Task<HttpRequest> RequestTask => requestTask.Task;
 
@@ -100,82 +96,15 @@ namespace Xamarin.WebTests.Server
 				throw new InternalErrorException ();
 
 			Start_inner ();
-			return serverInitTask.Task;
-
-			void OnCanceled ()
-			{
-				serverInitTask.TrySetCanceled ();
-				serverStartTask.TrySetCanceled ();
-				requestTask.TrySetCanceled ();
-			}
-
-			void OnError (Exception error)
-			{
-				serverInitTask.TrySetException (error);
-				serverStartTask.TrySetException (error);
-				requestTask.TrySetException (error);
-			}
-
-			async Task<(bool complete, bool success)> Initialize ()
-			{
-				if (reused) {
-					if (!await ReuseConnection ().ConfigureAwait (false))
-						return (false, false);
-					return (true, true);
-				}
-
-				await InitConnection ().ConfigureAwait (false);
-				return (true, true);
-			}
-
-			async Task InitConnection ()
-			{
-				try {
-					ctx.LogDebug (5, $"{me} ACCEPT");
-					cancellationToken.ThrowIfCancellationRequested ();
-					await Connection.AcceptAsync (ctx, cancellationToken).ConfigureAwait (false);
-					ctx.LogDebug (5, $"{me} ACCEPTED");
-					serverInitTask.TrySetResult (null);
-				} catch (OperationCanceledException) {
-					OnCanceled ();
-					return;
-				} catch (Exception ex) {
-					OnError (ex);
-					return;
-				}
-
-				try {
-					cancellationToken.ThrowIfCancellationRequested ();
-					await Connection.Initialize (ctx, null, cancellationToken);
-					serverStartTask.TrySetResult (null);
-				} catch (OperationCanceledException) {
-					OnCanceled ();
-					return;
-				} catch (Exception ex) {
-					OnError (ex);
-					return;
-				}
-			}
-
-			async Task<bool> ReuseConnection ()
-			{
-				ctx.LogDebug (2, $"{me} REUSE");
-
-				serverStartTask.TrySetResult (null);
-
-				cancellationToken.ThrowIfCancellationRequested ();
-				var reusable = await Connection.ReuseConnection (ctx, cancellationToken).ConfigureAwait (false);
-
-				ctx.LogDebug (2, $"{me} REUSE #1: {reusable}");
-				return reusable;
-			}
+			return ServerReadyTask;
 
 			async void Start_inner ()
 			{
 				try {
 					ctx.LogDebug (5, $"{me}");
 					cancellationToken.ThrowIfCancellationRequested ();
-					var (complete, success) = await Initialize ().ConfigureAwait (false);
+					var (complete, success) = await Initialize (
+						ctx, connection, reused, null, cancellationToken).ConfigureAwait (false);
 				} catch (OperationCanceledException) {
 					OnCanceled ();
 					return;
@@ -203,6 +132,18 @@ namespace Xamarin.WebTests.Server
 					return;
 				}
 			}
+		}
+
+		protected override void OnCanceled ()
+		{
+			base.OnCanceled ();
+			requestTask.TrySetCanceled ();
+		}
+
+		protected override void OnError (Exception error)
+		{
+			base.OnError (error);
+			requestTask.TrySetException (error);
 		}
 
 		public Task<bool> HandleRequest (TestContext ctx, CancellationToken cancellationToken)
