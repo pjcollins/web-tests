@@ -51,7 +51,7 @@ namespace Xamarin.WebTests.HttpFramework
 			get;
 		}
 
-		public Handler Handler {
+		protected Handler Handler {
 			get;
 		}
 
@@ -177,7 +177,7 @@ namespace Xamarin.WebTests.HttpFramework
 
 			instrumentationListener = (InstrumentationListener)Server.Listener;
 
-			var operation = instrumentationListener.RegisterOperation (ctx, this);
+			var operation = instrumentationListener.RegisterOperation (ctx, this, Handler);
 			var request = CreateRequest (ctx, operation.Uri);
 
 			listenerOperation = operation;
@@ -336,7 +336,7 @@ namespace Xamarin.WebTests.HttpFramework
 
 			parallelListener = (ParallelListener)((BuiltinHttpServer)Server).Listener;
 
-			var operation = parallelListener.RegisterOperation (ctx, this);
+			var operation = parallelListener.RegisterOperation (ctx, this, Handler);
 			var request = CreateRequest (ctx, operation.Uri);
 
 			listenerOperation = operation;
@@ -373,7 +373,7 @@ namespace Xamarin.WebTests.HttpFramework
 				if (!initDone)
 					tasks.Add (operation.ServerInitTask);
 				if (!serverDone)
-					tasks.Add (operation.ServerStartTask);
+					tasks.Add (operation.ServerFinishedTask);
 				if (!clientDone)
 					tasks.Add (clientTask);
 				var finished = await Task.WhenAny (tasks).ConfigureAwait (false);
@@ -382,7 +382,7 @@ namespace Xamarin.WebTests.HttpFramework
 				if (finished == operation.ServerInitTask) {
 					which = "init";
 					initDone = true;
-				} else if (finished == operation.ServerStartTask) {
+				} else if (finished == operation.ServerFinishedTask) {
 					which = "server";
 					serverDone = true;
 				} else if (finished == clientTask) {
@@ -395,7 +395,7 @@ namespace Xamarin.WebTests.HttpFramework
 				ctx.LogDebug (2, $"{me} #4: {which} exited - {finished.Status}");
 				if (finished.Status == TaskStatus.Faulted || finished.Status == TaskStatus.Canceled) {
 					if (HasAnyFlags (HttpOperationFlags.ExpectServerException) &&
-					    (finished == operation.ServerStartTask || finished == operation.ServerInitTask))
+					    (finished == operation.ServerFinishedTask || finished == operation.ServerInitTask))
 						ctx.LogDebug (2, $"{me} #4 - EXPECTED EXCEPTION {finished.Exception.GetType ()}");
 					else {
 						ctx.LogDebug (2, $"{me} #4 FAILED: {finished.Exception.Message}");

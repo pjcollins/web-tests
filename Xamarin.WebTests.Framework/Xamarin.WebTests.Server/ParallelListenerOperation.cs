@@ -45,10 +45,11 @@ namespace Xamarin.WebTests.Server
 		TaskCompletionSource<object> serverInitTask;
 		TaskCompletionSource<object> serverStartTask;
 		HttpConnection redirectRequested;
+		ListenerOperation redirect;
 
 		public override Task ServerInitTask => serverInitTask.Task;
 
-		public override Task ServerStartTask => serverStartTask.Task;
+		public override Task ServerFinishedTask => serverStartTask.Task;
 
 		new public async Task HandleRequest (TestContext ctx, HttpConnection connection,
 		                                     HttpRequest request, CancellationToken cancellationToken)
@@ -71,7 +72,8 @@ namespace Xamarin.WebTests.Server
 			lock (Listener) {
 				var me = $"{ME}({nameof (PrepareRedirect)}";
 				ctx.LogDebug (5, $"{me}: {handler.Value} {keepAlive}");
-				throw new NotImplementedException ();
+				redirect = Listener.RegisterOperation (ctx, Operation, handler);
+				return redirect.Uri;
 			}
 		}
 
@@ -80,6 +82,7 @@ namespace Xamarin.WebTests.Server
 			lock (Listener) {
 				var me = $"{Listener.FormatConnection (connection)} PREPARE REDIRECT";
 				ctx.LogDebug (5, $"{me}: {keepAlive}");
+				return;
 				HttpConnection next;
 				if (keepAlive)
 					next = connection;

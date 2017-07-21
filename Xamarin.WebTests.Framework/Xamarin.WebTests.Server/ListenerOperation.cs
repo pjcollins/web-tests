@@ -72,7 +72,7 @@ namespace Xamarin.WebTests.Server
 			get;
 		}
 
-		public abstract Task ServerStartTask {
+		public abstract Task ServerFinishedTask {
 			get;
 		}
 

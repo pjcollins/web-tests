@@ -93,7 +93,7 @@ namespace Xamarin.WebTests.TestRunners
 			ME = $"{GetType ().Name}({EffectiveType})";
 		}
 
-		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.Simple;
+		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.SimpleRedirect;
 
 		static readonly HttpInstrumentationTestType[] WorkingTests = {
 			HttpInstrumentationTestType.Simple,
@@ -488,7 +488,7 @@ namespace Xamarin.WebTests.TestRunners
 
 			async Task ParallelNtlm ()
 			{
-				var firstHandler = (HttpInstrumentationHandler)currentOperation.Handler;
+				var firstHandler = currentOperation.InstrumentationHandler;
 				if (handler != firstHandler || state != AuthenticationState.Challenge)
 					return;
 
@@ -504,7 +504,7 @@ namespace Xamarin.WebTests.TestRunners
 
 			void MustNotReuseConnection ()
 			{
-				var firstHandler = (HttpInstrumentationHandler)currentOperation.Handler;
+				var firstHandler = currentOperation.InstrumentationHandler;
 				ctx.LogDebug (2, $"{handler.ME}: {handler == firstHandler} {handler.RemoteEndPoint}");
 				if (handler == firstHandler)
 					return;
@@ -513,7 +513,7 @@ namespace Xamarin.WebTests.TestRunners
 
 			void MustReuseConnection ()
 			{
-				var firstHandler = (HttpInstrumentationHandler)currentOperation.Handler;
+				var firstHandler = currentOperation.InstrumentationHandler;
 				ctx.LogDebug (2, $"{handler.ME}: {handler == firstHandler} {handler.RemoteEndPoint}");
 				if (handler == firstHandler)
 					return;
@@ -587,6 +587,8 @@ namespace Xamarin.WebTests.TestRunners
 				get;
 			}
 
+			public HttpInstrumentationHandler InstrumentationHandler => (HttpInstrumentationHandler)base.Handler;
+
 			StreamInstrumentation instrumentation;
 
 			public Operation (HttpInstrumentationTestRunner parent, Handler handler,
@@ -632,7 +634,7 @@ namespace Xamarin.WebTests.TestRunners
 				else
 					ConfigurePrimaryRequest (ctx, traditionalRequest);
 
-				Handler.ConfigureRequest (request, uri);
+				InstrumentationHandler.ConfigureRequest (request, uri);
 
 				request.SetProxy (Parent.Server.GetProxy ());
 			}

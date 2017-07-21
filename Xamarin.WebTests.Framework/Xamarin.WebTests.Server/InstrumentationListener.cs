@@ -136,7 +136,7 @@ namespace Xamarin.WebTests.Server
 				}
 			}
 
-			public override Task ServerStartTask {
+			public override Task ServerFinishedTask {
 				get {
 					throw new NotImplementedException ();
 				}

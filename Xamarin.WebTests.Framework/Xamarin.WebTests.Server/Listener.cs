@@ -83,13 +83,13 @@ namespace Xamarin.WebTests.Server
 
 		protected abstract ListenerOperation CreateOperation (HttpOperation operation, Handler handler, Uri uri);
 
-		public ListenerOperation RegisterOperation (TestContext ctx, HttpOperation operation)
+		public ListenerOperation RegisterOperation (TestContext ctx, HttpOperation operation, Handler handler)
 		{
 			lock (this) {
 				var id = Interlocked.Increment (ref nextRequestID);
-				var path = $"/id/{operation.ID}/{operation.Handler.GetType ().Name}/";
+				var path = $"/id/{operation.ID}/{handler.GetType ().Name}/";
 				var uri = new Uri (Server.TargetUri, path);
-				var listenerOperation = CreateOperation (operation, operation.Handler, uri);
+				var listenerOperation = CreateOperation (operation, handler, uri);
 				registry.Add (path, listenerOperation);
 				return listenerOperation;
 			}
