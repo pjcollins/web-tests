@@ -76,6 +76,8 @@ namespace Xamarin.WebTests.Server
 		public override void Continue ()
 		{
 			currentOperation = null;
+			connection = null;
+			Request = null;
 		}
 
 		public override Task ServerInitTask => serverInitTask.Task;
@@ -89,7 +91,7 @@ namespace Xamarin.WebTests.Server
 			throw new NotImplementedException ();
 		}
 
-		public Task Start (TestContext ctx, CancellationToken cancellationToken)
+		public Task Start (TestContext ctx, bool reused, CancellationToken cancellationToken)
 		{
 			var me = $"{Listener.ME}({Connection.ME}) START";
 
@@ -114,7 +116,19 @@ namespace Xamarin.WebTests.Server
 				requestTask.TrySetException (error);
 			}
 
-			async void Start_inner ()
+			async Task<(bool complete, bool success)> Initialize ()
+			{
+				if (reused) {
+					if (!await ReuseConnection ().ConfigureAwait (false))
+						return (false, false);
+					return (true, true);
+				}
+
+				await InitConnection ().ConfigureAwait (false);
+				return (true, true);
+			}
+
+			async Task InitConnection ()
 			{
 				try {
 					ctx.LogDebug (5, $"{me} ACCEPT");
@@ -134,6 +148,34 @@ namespace Xamarin.WebTests.Server
 					cancellationToken.ThrowIfCancellationRequested ();
 					await Connection.Initialize (ctx, null, cancellationToken);
 					serverStartTask.TrySetResult (null);
+				} catch (OperationCanceledException) {
+					OnCanceled ();
+					return;
+				} catch (Exception ex) {
+					OnError (ex);
+					return;
+				}
+			}
+
+			async Task<bool> ReuseConnection ()
+			{
+				ctx.LogDebug (2, $"{me} REUSE");
+
+				serverStartTask.TrySetResult (null);
+
+				cancellationToken.ThrowIfCancellationRequested ();
+				var reusable = await Connection.ReuseConnection (ctx, cancellationToken).ConfigureAwait (false);
+
+				ctx.LogDebug (2, $"{me} REUSE #1: {reusable}");
+				return reusable;
+			}
+
+			async void Start_inner ()
+			{
+				try {
+					ctx.LogDebug (5, $"{me}");
+					cancellationToken.ThrowIfCancellationRequested ();
+					var (complete, success) = await Initialize ().ConfigureAwait (false);
 				} catch (OperationCanceledException) {
 					OnCanceled ();
 					return;

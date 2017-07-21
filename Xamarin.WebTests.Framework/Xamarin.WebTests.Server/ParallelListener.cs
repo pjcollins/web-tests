@@ -94,9 +94,14 @@ namespace Xamarin.WebTests.Server
 						Debug ($"  MAIN LOOP #0: {context.ME} {context.State}");
 						switch (context.State) {
 						case ConnectionState.None:
-							context.Start (TestContext, cts.Token);
+							context.Start (TestContext, false, cts.Token);
 							task = context.ServerInitTask;
 							context.State = ConnectionState.Listening;
+							break;
+						case ConnectionState.KeepAlive:
+							context.Start (TestContext, false, cts.Token);
+							task = context.ServerStartTask;
+							context.State = ConnectionState.WaitingForRequest;
 							break;
 						case ConnectionState.Listening:
 							task = context.ServerInitTask;
@@ -110,8 +115,6 @@ namespace Xamarin.WebTests.Server
 						case ConnectionState.HasRequest:
 							task = context.HandleRequest (TestContext, cts.Token);
 							break;
-						case ConnectionState.KeepAlive:
-							break;
 						default:
 							Debug ($"UNKNOWN STATE {context.State}");
 							break;
@@ -121,9 +124,9 @@ namespace Xamarin.WebTests.Server
 							taskList.Add (task);
 						}
 					}
-				}
 
-				Debug ($"MAIN LOOP #0: {connectionArray.Count} {taskList.Count}");
+					Debug ($"MAIN LOOP #0: {connectionArray.Count} {taskList.Count}");
+				}
 
 				var finished = await Task.WhenAny (taskList).ConfigureAwait (false);
 				Debug ($"MAIN LOOP #1: {finished.Status} {finished == taskList[0]}");
@@ -171,15 +174,19 @@ namespace Xamarin.WebTests.Server
 
 			void GotRequest (ParallelListenerContext context, Task task)
 			{
+				var me = $"{nameof (GotRequest)}({context.Connection.ME})";
+
 				var request = ((Task<HttpRequest>)task).Result;
 				var operation = (ParallelListenerOperation)GetOperation (context, request);
 				if (operation == null) {
+					Debug ($"{me} INVALID REQUEST: {request.Path}");
 					connections.Remove (context);
 					context.Dispose ();
 					return;
 				}
 				context.StartOperation (operation, request);
 				context.State = ConnectionState.HasRequest;
+				Debug ($"{me}");
 			}
 
 			void RequestComplete (ParallelListenerContext context, Task task)
@@ -189,22 +196,28 @@ namespace Xamarin.WebTests.Server
 				var keepAlive = ((Task<bool>)task).Result;
 				Debug ($"{me}: {keepAlive}");
 
-				if (keepAlive) {
-					context.State = ConnectionState.KeepAlive;
-				} else {
+				if (!keepAlive) {
 					connections.Remove (context);
 					context.Dispose ();
+					return;
 				}
-			}
-		}
 
-		void RunScheduler ()
-		{
-			while (connections.Count < requestParallelConnections) {
-				Debug ($"RUN SCHEDULER: {connections.Count}");
-				var connection = Backend.CreateConnection ();
-				connections.AddLast (new ParallelListenerContext (this, connection));
-				Debug ($"RUN SCHEDULER #1: {connection.ME}");
+				var newContext = new ParallelListenerContext (this, context.Connection);
+				newContext.State = ConnectionState.KeepAlive;
+				connections.AddLast (newContext);
+
+				connections.Remove (context);
+				context.Continue ();
+			}
+
+			void RunScheduler ()
+			{
+				while (connections.Count < requestParallelConnections) {
+					Debug ($"RUN SCHEDULER: {connections.Count}");
+					var connection = Backend.CreateConnection ();
+					connections.AddLast (new ParallelListenerContext (this, connection));
+					Debug ($"RUN SCHEDULER #1: {connection.ME}");
+				}
 			}
 		}
 
