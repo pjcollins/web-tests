@@ -43,12 +43,6 @@ namespace Xamarin.WebTests.Server
 			serverStartTask = new TaskCompletionSource<object> ();
 		}
 
-		public InstrumentationListenerContext (Listener listener, HttpConnection connection)
-			: this (listener)
-		{
-			this.currentConnection = connection;
-		}
-
 		public override HttpConnection Connection {
 			get { return currentConnection; }
 		}
