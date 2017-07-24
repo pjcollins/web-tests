@@ -63,6 +63,7 @@ namespace Xamarin.WebTests.Server
 
 		ParallelListenerOperation currentOperation;
 		HttpConnection connection;
+		Task currentTask;
 
 		public void StartOperation (ParallelListenerOperation operation, HttpRequest request)
 		{
@@ -85,6 +86,56 @@ namespace Xamarin.WebTests.Server
 		public override Task Run (TestContext ctx, CancellationToken cancellationToken)
 		{
 			throw new NotImplementedException ();
+		}
+
+		public Task MainLoopIteration (TestContext ctx, CancellationToken cancellationToken)
+		{
+			var me = $"{Listener.ME}({Connection.ME}) ITERATION";
+
+			if (currentTask != null)
+				return currentTask;
+
+			try {
+				currentTask = StartIteration ();
+			} catch (Exception ex) {
+				currentTask = Listener.FailedTask (ex);
+			}
+
+			return currentTask;
+
+			Task StartIteration ()
+			{
+				switch (State) {
+				case ConnectionState.None:
+					Start (ctx, false, cancellationToken);
+					State = ConnectionState.Listening;
+					return ServerReadyTask;
+				case ConnectionState.KeepAlive:
+					Start (ctx, true, cancellationToken);
+					State = ConnectionState.Accepted;
+					return ServerStartTask;
+				case ConnectionState.Listening:
+					return ServerInitTask;
+				case ConnectionState.Accepted:
+					return ServerStartTask;
+				case ConnectionState.WaitingForRequest:
+					return RequestTask;
+				case ConnectionState.HasRequest:
+					return HandleRequest (ctx, cancellationToken);
+				default:
+					throw ctx.AssertFail (State);
+				}
+			}
+		}
+
+		public void MainLoopIterationDone (TestContext ctx, Task task, CancellationToken cancellationToken)
+		{
+			var me = $"{Listener.ME}({Connection.ME}) ITERATION DONE";
+
+			if (task != currentTask)
+				throw new InvalidOperationException ();
+
+
 		}
 
 		public Task Start (TestContext ctx, bool reused, CancellationToken cancellationToken)
@@ -114,6 +165,7 @@ namespace Xamarin.WebTests.Server
 				}
 
 				ctx.LogDebug (5, $"{me} #2: {connection.ME} {((SocketConnection)connection).RemoteEndPoint}");
+				return;
 
 				try {
 					var request = await Connection.ReadRequestHeader (ctx, cancellationToken).ConfigureAwait (false);
@@ -126,6 +178,12 @@ namespace Xamarin.WebTests.Server
 					return;
 				}
 			}
+		}
+
+		public async Task<HttpRequest> ReadRequest (TestContext ctx, CancellationToken cancellationToken)
+		{
+			var request = await Connection.ReadRequestHeader (ctx, cancellationToken).ConfigureAwait (false);
+			return request;
 		}
 
 		protected override void OnCanceled ()

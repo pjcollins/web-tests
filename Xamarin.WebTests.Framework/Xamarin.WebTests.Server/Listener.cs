@@ -112,6 +112,16 @@ namespace Xamarin.WebTests.Server
 			}
 		}
 
+		internal static Task FailedTask (Exception ex)
+		{
+			var tcs = new TaskCompletionSource<object> ();
+			if (ex is OperationCanceledException)
+				tcs.SetCanceled ();
+			else
+				tcs.SetException (ex);
+			return tcs.Task;
+		}
+
 		protected abstract void Close ();
 
 		public void Dispose ()

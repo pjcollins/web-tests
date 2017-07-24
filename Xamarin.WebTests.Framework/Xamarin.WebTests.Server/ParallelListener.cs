@@ -92,32 +92,10 @@ namespace Xamarin.WebTests.Server
 					foreach (var context in connections) {
 						Task task = null;
 						Debug ($"  MAIN LOOP #0: {context.ME} {context.State}");
-						switch (context.State) {
-						case ConnectionState.None:
-							context.Start (TestContext, false, cts.Token);
-							task = context.ServerInitTask;
-							context.State = ConnectionState.Listening;
-							break;
-						case ConnectionState.KeepAlive:
-							context.Start (TestContext, true, cts.Token);
-							task = context.ServerStartTask;
-							context.State = ConnectionState.Accepted;
-							break;
-						case ConnectionState.Listening:
-							task = context.ServerInitTask;
-							break;
-						case ConnectionState.Accepted:
-							task = context.ServerStartTask;
-							break;
-						case ConnectionState.WaitingForRequest:
-							task = context.RequestTask;
-							break;
-						case ConnectionState.HasRequest:
-							task = context.HandleRequest (TestContext, cts.Token);
-							break;
-						default:
-							Debug ($"UNKNOWN STATE {context.State}");
-							break;
+						try {
+							task = context.MainLoopIteration (TestContext, cts.Token);
+						} catch (Exception ex) {
+							task = FailedTask (ex);
 						}
 						if (task != null) {
 							connectionArray.Add (context);
@@ -154,6 +132,8 @@ namespace Xamarin.WebTests.Server
 						context.Dispose ();
 						continue;
 					}
+
+					context.MainLoopIterationDone (TestContext, finished, cts.Token);
 
 					switch (context.State) {
 					case ConnectionState.Listening:
