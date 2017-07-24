@@ -157,14 +157,6 @@ namespace Xamarin.WebTests.Server
 			return !await reader.IsEndOfStream (cancellationToken).ConfigureAwait (false);
 		}
 
-		public override async Task<HttpRequest> ReadRequest (TestContext ctx, CancellationToken cancellationToken)
-		{
-			ctx.LogDebug (5, $"{ME} READ REQUEST: {ListenSocket?.LocalEndPoint} {remoteEndPoint}");
-			var request = await HttpRequest.Read (ctx, reader, cancellationToken).ConfigureAwait (false);
-			ctx.LogDebug (5, $"{ME} READ REQUEST DONE: {ListenSocket?.LocalEndPoint} {remoteEndPoint} - {request}");
-			return request;
-		}
-
 		public override async Task<HttpRequest> ReadRequestHeader (TestContext ctx, CancellationToken cancellationToken)
 		{
 			cancellationToken.ThrowIfCancellationRequested ();
