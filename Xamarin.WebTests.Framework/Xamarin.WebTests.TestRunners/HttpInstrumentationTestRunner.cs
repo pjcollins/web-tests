@@ -1204,7 +1204,7 @@ namespace Xamarin.WebTests.TestRunners
 					ctx, this, connection, request, state, cancellationToken).ConfigureAwait (false);
 
 				if (response != null) {
-					connection.Server.RegisterHandler (ctx, request.Path, this);
+					operation.RegisterRedirect (ctx, this, true, request.Path);
 					return response;
 				}
 
@@ -1300,7 +1300,7 @@ namespace Xamarin.WebTests.TestRunners
 					return new HttpResponse (HttpStatusCode.OK, Content);
 
 				case HttpInstrumentationTestType.RedirectNoLength:
-					var targetUri = Target.RegisterRequest (ctx, connection.Server);
+					var targetUri = operation.RegisterRedirect (ctx, Target, false);
 					response = HttpResponse.CreateRedirect (HttpStatusCode.Redirect, targetUri);
 					response.NoContentLength = true;
 					return response;
