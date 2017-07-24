@@ -143,7 +143,7 @@ namespace Xamarin.WebTests.Server
 				return Initialize (ctx, connection, false, null, cancellationToken);
 			}
 
-			ConnectionState Accepted ((bool completed, bool success) result)
+			ConnectionState Accepted (bool completed, bool success)
 			{
 				return ConnectionState.WaitingForRequest;
 			}
@@ -173,7 +173,7 @@ namespace Xamarin.WebTests.Server
 				return Operation.HandleRequest (ctx, this, Connection, Request, cancellationToken);
 			}
 
-			ConnectionState RequestComplete ((bool keepAlive, ListenerOperation next) result)
+			ConnectionState RequestComplete (bool keepAlive, ListenerOperation next)
 			{
 				throw new NotImplementedException ();
 			}
@@ -254,9 +254,14 @@ namespace Xamarin.WebTests.Server
 			}
 		}
 
-		static Iteration<T> CreateIteration<T> (Func<Task<T>> start, Func<T, ConnectionState> continuation)
+		static Iteration CreateIteration<T> (Func<Task<T>> start, Func<T, ConnectionState> continuation)
 		{
 			return new Iteration<T> (start, continuation);
+		}
+
+		static Iteration CreateIteration<T,U> (Func<Task<(T,U)>> start, Func<T, U, ConnectionState> continuation)
+		{
+			return new Iteration<T, U> (start, continuation);
 		}
 
 		abstract class Iteration
@@ -290,6 +295,31 @@ namespace Xamarin.WebTests.Server
 			{
 				var result = Start.Result;
 				return Continuation (result);
+			}
+		}
+
+		class Iteration<T,U> : Iteration
+		{
+			public Task<(T,U)> Start {
+				get;
+			}
+
+			public override Task Task => Start;
+
+			public Func<T, U, ConnectionState> Continuation {
+				get;
+			}
+
+			public Iteration (Func<Task<(T, U)>> start, Func<T, U, ConnectionState> continuation)
+			{
+				Start = start ();
+				Continuation = continuation;
+			}
+
+			public override ConnectionState Continue ()
+			{
+				var (first, second) = Start.Result;
+				return Continuation (first, second);
 			}
 		}
 
