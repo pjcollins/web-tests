@@ -72,8 +72,12 @@ namespace Xamarin.WebTests.HttpHandlers
 			TestContext ctx, HttpOperation operation, HttpConnection connection, HttpRequest request,
 			RequestFlags effectiveFlags, CancellationToken cancellationToken)
 		{
-			var targetUri = operation.RegisterRedirect (ctx, Target);
-			return Task.FromResult (HttpResponse.CreateRedirect (Code, targetUri));
+			var keepAlive = (effectiveFlags & (RequestFlags.KeepAlive | RequestFlags.CloseConnection)) == RequestFlags.KeepAlive;
+			var targetUri = operation.RegisterRedirect (ctx, Target, keepAlive);
+			var response = HttpResponse.CreateRedirect (Code, targetUri);
+			if (keepAlive)
+				response.KeepAlive = true;
+			return Task.FromResult (response);
 		}
 
 		public override bool CheckResponse (TestContext ctx, Response response)

@@ -153,13 +153,19 @@ namespace Xamarin.WebTests.Server
 			{
 				ctx.LogDebug (5, $"{me}: {keepAlive} {next?.ME}");
 
-				if (next != null) {
-					throw new NotImplementedException ();
+				if (!keepAlive) {
+					if (next != null)
+						throw new InvalidOperationException ();
+					currentOperation = null;
+					return ConnectionState.Closed;
 				}
 
-				if (!keepAlive)
-					return ConnectionState.Closed;
+				if (next != null) {
+					currentOperation = (ParallelListenerOperation)next;
+					return ConnectionState.WaitingForRequest;
+				}
 
+				currentOperation = null;
 				return ConnectionState.KeepAlive;
 			}
 		}
