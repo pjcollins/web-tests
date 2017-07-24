@@ -107,9 +107,11 @@ namespace Xamarin.WebTests.Server
 				}
 
 				var finished = await Task.WhenAny (taskList).ConfigureAwait (false);
-				Debug ($"MAIN LOOP #1: {finished.Status} {finished == taskList[0]}");
+				Debug ($"MAIN LOOP #1: {finished.Status} {finished == taskList[0]} {taskList[0].Status}");
 
 				lock (this) {
+					if (closed)
+						break;
 					if (finished == taskList[0]) {
 						mainLoopEvent.Reset ();
 						continue;
@@ -124,7 +126,7 @@ namespace Xamarin.WebTests.Server
 					}
 
 					var context = connectionArray[idx];
-					Debug ($"MAIN LOOP #2: {context.State} {context?.Connection?.ME}");
+					Debug ($"MAIN LOOP #2: {idx} {context.State} {context?.Connection?.ME}");
 
 					if (finished.Status == TaskStatus.Canceled || finished.Status == TaskStatus.Faulted) {
 						Debug ($"MAIN LOOP #2 FAILED: {finished.Status} {finished.Exception?.Message}");
@@ -140,6 +142,9 @@ namespace Xamarin.WebTests.Server
 					}
 				}
 			}
+
+			Debug ($"MAIN LOOP COMPLETE");
+			cts.Dispose ();
 
 			void RunScheduler ()
 			{
@@ -159,6 +164,7 @@ namespace Xamarin.WebTests.Server
 
 		protected override void Close ()
 		{
+			Debug ($"CLOSE");
 			closed = true;
 			cts.Cancel ();
 
@@ -171,7 +177,6 @@ namespace Xamarin.WebTests.Server
 				connections.Remove (node);
 			}
 
-			cts.Dispose ();
 			mainLoopEvent.Set ();
 		}
 	}
