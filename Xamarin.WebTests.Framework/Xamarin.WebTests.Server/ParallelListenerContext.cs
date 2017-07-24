@@ -51,24 +51,14 @@ namespace Xamarin.WebTests.Server
 			get { return connection; }
 		}
 
-		public ParallelListenerOperation Operation {
-			get { return currentOperation; }
-		}
-
-		public HttpRequest Request {
-			get;
-			private set;
-		}
-
+		HttpRequest currentRequest;
 		ParallelListenerOperation currentOperation;
 		HttpConnection connection;
 		Iteration currentIteration;
 
 		public override void Continue ()
 		{
-			currentOperation = null;
-			connection = null;
-			Request = null;
+			throw new NotImplementedException ();
 		}
 
 		public override Task ServerInitTask => ServerReadyTask;
@@ -139,14 +129,14 @@ namespace Xamarin.WebTests.Server
 					return ConnectionState.Closed;
 				}
 				currentOperation = operation;
-				Request = request;
+				currentRequest = request;
 				ctx.LogDebug (5, $"{me} GOT REQUEST");
 				return ConnectionState.HasRequest;
 			}
 
 			Task<(bool keepAlive, ListenerOperation next)> HandleRequest ()
 			{
-				return Operation.HandleRequest (ctx, this, Connection, Request, cancellationToken);
+				return currentOperation.HandleRequest (ctx, this, Connection, currentRequest, cancellationToken);
 			}
 
 			ConnectionState RequestComplete (bool keepAlive, ListenerOperation next)
@@ -156,17 +146,24 @@ namespace Xamarin.WebTests.Server
 				if (!keepAlive) {
 					if (next != null)
 						throw new InvalidOperationException ();
-					currentOperation = null;
+					CompleteOperation ();
 					return ConnectionState.Closed;
 				}
 
 				if (next != null) {
+					CompleteOperation ();
 					currentOperation = (ParallelListenerOperation)next;
 					return ConnectionState.WaitingForRequest;
 				}
 
-				currentOperation = null;
+				CompleteOperation ();
 				return ConnectionState.KeepAlive;
+			}
+
+			void CompleteOperation ()
+			{
+				currentOperation = null;
+				currentRequest = null;
 			}
 		}
 
