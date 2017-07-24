@@ -100,7 +100,7 @@ namespace Xamarin.WebTests.Server
 			if (currentTask != null)
 				return currentTask;
 
-			ctx.LogDebug (5, "${me}");
+			ctx.LogDebug (5, $"{me}");
 
 			try {
 				currentIteration = StartIteration ();
@@ -119,6 +119,9 @@ namespace Xamarin.WebTests.Server
 					// State = ConnectionState.Listening;
 					// return ServerReadyTask;
 					return CreateIteration (Start, Accepted);
+
+				case ConnectionState.KeepAlive:
+					return CreateIteration (ReuseConnection, Accepted);
 #if FIXME
 				case ConnectionState.KeepAlive:
 					Start (ctx, true, cancellationToken);
@@ -141,6 +144,11 @@ namespace Xamarin.WebTests.Server
 			Task<(bool complete, bool success)> Start ()
 			{
 				return Initialize (ctx, connection, false, null, cancellationToken);
+			}
+
+			Task<(bool complete, bool success)> ReuseConnection ()
+			{
+				return Initialize (ctx, connection, true, null, cancellationToken);
 			}
 
 			ConnectionState Accepted (bool completed, bool success)
@@ -175,13 +183,29 @@ namespace Xamarin.WebTests.Server
 
 			ConnectionState RequestComplete (bool keepAlive, ListenerOperation next)
 			{
-				throw new NotImplementedException ();
+				ctx.LogDebug (5, $"{me}: {keepAlive} {next?.ME}");
+
+				if (!keepAlive) {
+					// connections.Remove (context);
+					// context.Dispose ();
+					return ConnectionState.Closed;
+				}
+
+				if (next != null) {
+					throw new NotImplementedException ();
+				}
+
+				var newContext = new ParallelListenerContext (Listener, Connection);
+				newContext.State = ConnectionState.KeepAlive;
+				// connections.AddLast (newContext);
+
+				// connections.Remove (context);
+				// context.Continue ();
+				return ConnectionState.KeepAlive;
 			}
-
-
 		}
 
-		public void MainLoopIterationDone (TestContext ctx, Task task, CancellationToken cancellationToken)
+		public bool MainLoopIterationDone (TestContext ctx, Task task, CancellationToken cancellationToken)
 		{
 			var me = $"{Listener.ME}({Connection.ME}) ITERATION DONE";
 
@@ -197,7 +221,7 @@ namespace Xamarin.WebTests.Server
 			ctx.LogDebug (5, $"{me} DONE: {State} -> {nextState}");
 
 			State = nextState;
-			return;
+			return nextState != ConnectionState.Closed;
 
 			switch (State) {
 			case ConnectionState.Listening:

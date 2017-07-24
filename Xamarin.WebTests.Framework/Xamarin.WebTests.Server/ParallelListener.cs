@@ -133,70 +133,13 @@ namespace Xamarin.WebTests.Server
 						continue;
 					}
 
-					context.MainLoopIterationDone (TestContext, finished, cts.Token);
-
-#if FIXME
-					switch (context.State) {
-					case ConnectionState.Listening:
-						context.State = ConnectionState.Accepted;
-						break;
-					case ConnectionState.Accepted:
-						context.State = ConnectionState.WaitingForRequest;
-						break;
-					case ConnectionState.WaitingForRequest:
-						GotRequest (context, finished);
-						break;
-					case ConnectionState.HasRequest:
-						RequestComplete (context, finished);
-						break;
+					if (!context.MainLoopIterationDone (TestContext, finished, cts.Token)) {
+						connections.Remove (context);
+						context.Dispose ();
+						continue;
 					}
-#endif
 				}
 			}
-
-#if FIXME
-			void GotRequest (ParallelListenerContext context, Task task)
-			{
-				var me = $"{nameof (GotRequest)}({context.Connection.ME})";
-
-				var request = ((Task<HttpRequest>)task).Result;
-				var operation = (ParallelListenerOperation)GetOperation (context, request);
-				if (operation == null) {
-					Debug ($"{me} INVALID REQUEST: {request.Path}");
-					connections.Remove (context);
-					context.Dispose ();
-					return;
-				}
-				context.StartOperation (operation, request);
-				context.State = ConnectionState.HasRequest;
-				Debug ($"{me}");
-			}
-
-			void RequestComplete (ParallelListenerContext context, Task task)
-			{
-				var me = $"{nameof (RequestComplete)}({context.Connection.ME})";
-
-				var (keepAlive, next) = ((Task<(bool, ListenerOperation)>)task).Result;
-				Debug ($"{me}: {keepAlive} {next?.ME}");
-
-				if (!keepAlive) {
-					connections.Remove (context);
-					context.Dispose ();
-					return;
-				}
-
-				if (next != null) {
-					throw new NotImplementedException ();
-				}
-
-				var newContext = new ParallelListenerContext (this, context.Connection);
-				newContext.State = ConnectionState.KeepAlive;
-				connections.AddLast (newContext);
-
-				connections.Remove (context);
-				context.Continue ();
-			}
-#endif
 
 			void RunScheduler ()
 			{
