@@ -106,8 +106,20 @@ namespace Xamarin.WebTests.Server
 			}
 		}
 
-		public abstract void PrepareRedirect (TestContext ctx, HttpConnection connection, bool keepAlive);
+		ListenerOperation redirect;
 
-		public abstract Uri PrepareRedirect (TestContext ctx, Handler handler, bool keepAlive);
+		public Uri PrepareRedirect (TestContext ctx, Handler handler, bool keepAlive)
+		{
+			lock (Listener) {
+				var me = $"{ME}({nameof (PrepareRedirect)}";
+				ctx.LogDebug (5, $"{me}: {handler.Value} {keepAlive}");
+				if (redirect != null)
+					throw new InvalidOperationException ();
+				redirect = Listener.RegisterOperation (ctx, Operation, handler);
+				return redirect.Uri;
+			}
+		}
+
+		public abstract void PrepareRedirect (TestContext ctx, HttpConnection connection, bool keepAlive);
 	}
 }

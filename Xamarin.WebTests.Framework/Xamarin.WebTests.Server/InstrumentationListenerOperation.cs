@@ -41,17 +41,6 @@ namespace Xamarin.WebTests.Server
 		}
 
 		HttpConnection redirectRequested;
-		ListenerOperation redirect;
-
-		public override Uri PrepareRedirect (TestContext ctx, Handler handler, bool keepAlive)
-		{
-			lock (Listener) {
-				var me = $"{ME}({nameof (PrepareRedirect)}";
-				ctx.LogDebug (5, $"{me}: {handler.Value} {keepAlive}");
-				redirect = Listener.RegisterOperation (ctx, Operation, handler);
-				return redirect.Uri;
-			}
-		}
 
 		public override void PrepareRedirect (TestContext ctx, HttpConnection connection, bool keepAlive)
 		{

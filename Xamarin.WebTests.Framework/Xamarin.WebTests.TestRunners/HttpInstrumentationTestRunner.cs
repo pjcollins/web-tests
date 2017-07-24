@@ -93,7 +93,7 @@ namespace Xamarin.WebTests.TestRunners
 			ME = $"{GetType ().Name}({EffectiveType})";
 		}
 
-		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.SimpleRedirect;
+		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.SimpleNtlm;
 
 		static readonly HttpInstrumentationTestType[] WorkingTests = {
 			HttpInstrumentationTestType.Simple,

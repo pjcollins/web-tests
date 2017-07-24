@@ -107,7 +107,7 @@ namespace Xamarin.WebTests.Server
 					return null;
 				}
 
-				registry.Remove (request.Path);
+//				registry.Remove (request.Path);
 				return operation;
 			}
 		}
