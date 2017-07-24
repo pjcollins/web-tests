@@ -193,13 +193,17 @@ namespace Xamarin.WebTests.Server
 			{
 				var me = $"{nameof (RequestComplete)}({context.Connection.ME})";
 
-				var keepAlive = ((Task<bool>)task).Result;
-				Debug ($"{me}: {keepAlive}");
+				var (keepAlive, next) = ((Task<(bool, ListenerOperation)>)task).Result;
+				Debug ($"{me}: {keepAlive} {next?.ME}");
 
 				if (!keepAlive) {
 					connections.Remove (context);
 					context.Dispose ();
 					return;
+				}
+
+				if (next != null) {
+					throw new NotImplementedException ();
 				}
 
 				var newContext = new ParallelListenerContext (this, context.Connection);

@@ -77,8 +77,8 @@ namespace Xamarin.WebTests.Server
 
 		public Task ServerFinishedTask => serverFinishedTask.Task;
 
-		internal async Task<bool> HandleRequest (
-			TestContext ctx, HttpConnection connection,
+		internal async Task<(bool keepAlive, ListenerOperation next)> HandleRequest (
+			TestContext ctx, ListenerContext context, HttpConnection connection,
 			HttpRequest request, CancellationToken cancellationToken)
 		{
 			var me = $"{ME} HANDLE REQUEST";
@@ -86,17 +86,16 @@ namespace Xamarin.WebTests.Server
 
 			serverInitTask.TrySetResult (null);
 
+			bool keepAlive;
+
 			try {
 				cancellationToken.ThrowIfCancellationRequested ();
 				await request.Read (ctx, cancellationToken).ConfigureAwait (false);
 
 				ctx.LogDebug (2, $"{me} REQUEST FULLY READ");
-				var ret = await Handler.HandleRequest (ctx, Operation, connection, request, cancellationToken);
-				ctx.LogDebug (2, $"{me} HANDLE REQUEST DONE: {ret}");
+				keepAlive = await Handler.HandleRequest (ctx, Operation, connection, request, cancellationToken);
+				ctx.LogDebug (2, $"{me} HANDLE REQUEST DONE: {keepAlive}");
 
-				serverFinishedTask.TrySetResult (null);
-
-				return ret;
 			} catch (OperationCanceledException) {
 				serverFinishedTask.TrySetCanceled ();
 				throw;
@@ -104,18 +103,26 @@ namespace Xamarin.WebTests.Server
 				serverFinishedTask.TrySetException (ex);
 				throw;
 			}
+
+			var redirect = Interlocked.Exchange (ref redirectOperation, null);
+
+			serverFinishedTask.TrySetResult (null);
+			return (keepAlive, redirect);
 		}
 
-		ListenerOperation redirect;
+		ListenerOperation redirectOperation;
+		int redirectRequested;
 
 		public Uri PrepareRedirect (TestContext ctx, Handler handler, bool keepAlive)
 		{
 			lock (Listener) {
 				var me = $"{ME}({nameof (PrepareRedirect)}";
 				ctx.LogDebug (5, $"{me}: {handler.Value} {keepAlive}");
-				if (redirect != null)
+				if (Interlocked.CompareExchange (ref redirectRequested, 1, 0) != 0)
 					throw new InvalidOperationException ();
-				redirect = Listener.RegisterOperation (ctx, Operation, handler);
+				var redirect = Listener.RegisterOperation (ctx, Operation, handler);
+				if (keepAlive)
+					redirectOperation = redirect;
 				return redirect.Uri;
 			}
 		}

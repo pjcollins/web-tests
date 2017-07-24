@@ -127,8 +127,8 @@ namespace Xamarin.WebTests.Server
 
 				bool keepAlive;
 				try {
-					keepAlive = await listenerOperation.HandleRequest (
-						ctx, connection, request, cancellationToken);
+					(keepAlive, _) = await listenerOperation.HandleRequest (
+						ctx, this, connection, request, cancellationToken);
 				} catch (Exception ex) {
 					ctx.LogDebug (2, $"{me} - ERROR {ex.Message}");
 					connection.Dispose ();

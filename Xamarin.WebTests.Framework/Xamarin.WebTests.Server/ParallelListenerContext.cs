@@ -140,9 +140,9 @@ namespace Xamarin.WebTests.Server
 			requestTask.TrySetException (error);
 		}
 
-		public Task<bool> HandleRequest (TestContext ctx, CancellationToken cancellationToken)
+		public Task<(bool keepAlive, ListenerOperation next)> HandleRequest (TestContext ctx, CancellationToken cancellationToken)
 		{
-			return Operation.HandleRequest (ctx, Connection, Request, cancellationToken);
+			return Operation.HandleRequest (ctx, this, Connection, Request, cancellationToken);
 		}
 
 		public override void PrepareRedirect (TestContext ctx, HttpConnection connection, bool keepAlive)
