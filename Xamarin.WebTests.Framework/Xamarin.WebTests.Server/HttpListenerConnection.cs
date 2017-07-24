@@ -105,6 +105,15 @@ namespace Xamarin.WebTests.Server {
 			return request;
 		}
 
+		public override Task<HttpRequest> ReadRequestHeader (TestContext ctx, CancellationToken cancellationToken)
+		{
+			var listenerRequest = Context.Request;
+			var protocol = GetProtocol (listenerRequest.ProtocolVersion);
+			var request = new HttpRequest (protocol, listenerRequest.HttpMethod, listenerRequest.RawUrl, listenerRequest.Headers);
+			ctx.LogDebug (5, "GOT REQUEST: {0} {1}", request, listenerRequest.HasEntityBody);
+			return Task.FromResult (request);
+		}
+
 		public override Task<HttpResponse> ReadResponse (TestContext ctx, CancellationToken cancellationToken)
 		{
 			throw new NotImplementedException ();

@@ -81,6 +81,8 @@ namespace Xamarin.WebTests.HttpFramework
 
 		public abstract Task<HttpRequest> ReadRequest (TestContext ctx, CancellationToken cancellationToken);
 
+		public abstract Task<HttpRequest> ReadRequestHeader (TestContext ctx, CancellationToken cancellationToken);
+
 		public abstract Task<HttpResponse> ReadResponse (TestContext ctx, CancellationToken cancellationToken);
 
 		internal abstract Task WriteRequest (TestContext ctx, HttpRequest request, CancellationToken cancellationToken);

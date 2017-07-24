@@ -113,16 +113,10 @@ namespace Xamarin.WebTests.Server
 					return;
 				}
 
-				ctx.LogDebug (5, $"{me} #2");
+				ctx.LogDebug (5, $"{me} #2: {connection.ME} {((SocketConnection)connection).RemoteEndPoint}");
 
 				try {
-					var reader = new HttpStreamReader (Connection.SslStream);
-					cancellationToken.ThrowIfCancellationRequested ();
-					var header = await reader.ReadLineAsync (cancellationToken);
-					var (method, protocol, path) = HttpMessage.ReadHttpHeader (header);
-					ctx.LogDebug (5, $"{me} #3: {method} {protocol} {path}");
-
-					var request = new HttpRequest (protocol, method, path, reader);
+					var request = await Connection.ReadRequestHeader (ctx, cancellationToken).ConfigureAwait (false);
 					requestTask.TrySetResult (request);
 				} catch (OperationCanceledException) {
 					OnCanceled ();

@@ -155,7 +155,7 @@ namespace Xamarin.WebTests.Server
 				await connection.Initialize (ctx, operation, cancellationToken);
 				ctx.LogDebug (2, $"{me} #1 {connection.RemoteEndPoint}");
 
-				if (operation.HasAnyFlags (HttpOperationFlags.ServerAbortsHandshake))
+				if (operation != null && operation.HasAnyFlags (HttpOperationFlags.ServerAbortsHandshake))
 					throw ctx.AssertFail ("Expected server to abort handshake.");
 
 				/*
@@ -169,7 +169,7 @@ namespace Xamarin.WebTests.Server
 				haveRequest = await connection.HasRequest (cancellationToken);
 				ctx.LogDebug (2, $"{me} #2 {haveRequest}");
 
-				if (operation.HasAnyFlags (HttpOperationFlags.ClientAbortsHandshake))
+				if (operation != null && operation.HasAnyFlags (HttpOperationFlags.ClientAbortsHandshake))
 					throw ctx.AssertFail ("Expected client to abort handshake.");
 			} catch (Exception ex) {
 				if (operation.HasAnyFlags (HttpOperationFlags.ServerAbortsHandshake, HttpOperationFlags.ClientAbortsHandshake))
@@ -185,7 +185,7 @@ namespace Xamarin.WebTests.Server
 
 			if (Listener.Server.UseSSL) {
 				ctx.Assert (connection.SslStream.IsAuthenticated, "server is authenticated");
-				if (operation.HasAnyFlags (HttpOperationFlags.RequireClientCertificate))
+				if (operation != null && operation.HasAnyFlags (HttpOperationFlags.RequireClientCertificate))
 					ctx.Assert (connection.SslStream.IsMutuallyAuthenticated, "server is mutually authenticated");
 			}
 

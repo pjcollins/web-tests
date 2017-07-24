@@ -172,8 +172,12 @@ namespace Xamarin.WebTests.TestRunners
 			var operation = new TraditionalOperation (Server, helloKeepAlive, true);
 			await operation.Run (ctx, cancellationToken).ConfigureAwait (false);
 
+			ctx.LogDebug (2, $"{me} first operation done.");
+
 			var secondOperation = new TraditionalOperation (Server, HelloWorldHandler.GetSimple (), true);
 			await secondOperation.Run (ctx, cancellationToken);
+
+			ctx.LogDebug (2, $"{me} second operation done.");
 
 			for (int i = 0; i < -500; i++) {
 				var loopOperation = new TraditionalOperation (Server, HelloWorldHandler.GetSimple (), true);
