@@ -43,12 +43,9 @@ namespace Xamarin.WebTests.Server
 		{
 			this.connection = connection;
 			serverInitTask = new TaskCompletionSource<object> ();
-			requestTask = new TaskCompletionSource<HttpRequest> ();
 		}
 
 		TaskCompletionSource<object> serverInitTask;
-		TaskCompletionSource<HttpRequest> requestTask;
-		int initialized;
 
 		public override HttpConnection Connection {
 			get { return connection; }
@@ -66,7 +63,6 @@ namespace Xamarin.WebTests.Server
 		ParallelListenerOperation currentOperation;
 		HttpConnection connection;
 		Iteration currentIteration;
-		Task currentTask;
 
 		public override void Continue ()
 		{
@@ -77,8 +73,6 @@ namespace Xamarin.WebTests.Server
 
 		public override Task ServerInitTask => ServerReadyTask;
 
-		public Task<HttpRequest> RequestTask => requestTask.Task;
-
 		public override Task Run (TestContext ctx, CancellationToken cancellationToken)
 		{
 			throw new NotImplementedException ();
@@ -88,19 +82,18 @@ namespace Xamarin.WebTests.Server
 		{
 			var me = $"{Listener.ME}({Connection.ME}) ITERATION";
 
-			if (currentTask != null)
-				return currentTask;
+			if (currentIteration != null)
+				return currentIteration.Task;
 
 			ctx.LogDebug (5, $"{me}");
 
 			try {
 				currentIteration = StartIteration ();
 			} catch (Exception ex) {
-				currentTask = FailedTask (ex);
+				return FailedTask (ex);
 			}
 
-			currentTask = currentIteration.Task;
-			return currentTask;
+			return currentIteration.Task;
 
 			Iteration StartIteration ()
 			{
@@ -175,13 +168,12 @@ namespace Xamarin.WebTests.Server
 		{
 			var me = $"{Listener.ME}({Connection.ME}) ITERATION DONE";
 
-			if (task != currentTask)
+			var iteration = Interlocked.Exchange (ref currentIteration, null);
+			if (task != iteration.Task)
 				throw new InvalidOperationException ();
-			currentTask = null;
 
 			ctx.LogDebug (5, $"{me}: {State}");
 
-			var iteration = Interlocked.Exchange (ref currentIteration, null);
 			var nextState = iteration.Continue ();
 
 			ctx.LogDebug (5, $"{me} DONE: {State} -> {nextState}");
@@ -257,18 +249,6 @@ namespace Xamarin.WebTests.Server
 				var (first, second) = Start.Result;
 				return Continuation (first, second);
 			}
-		}
-
-		protected override void OnCanceled ()
-		{
-			base.OnCanceled ();
-			requestTask.TrySetCanceled ();
-		}
-
-		protected override void OnError (Exception error)
-		{
-			base.OnError (error);
-			requestTask.TrySetException (error);
 		}
 
 		public override void PrepareRedirect (TestContext ctx, HttpConnection connection, bool keepAlive)
