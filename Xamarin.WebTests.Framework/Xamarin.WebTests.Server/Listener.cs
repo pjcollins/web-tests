@@ -90,6 +90,8 @@ namespace Xamarin.WebTests.Server
 					var id = Interlocked.Increment (ref nextRequestID);
 					path = $"/id/{operation.ID}/{handler.GetType ().Name}/";
 				}
+				var me = $"{nameof (RegisterOperation)}({handler.Value})";
+				Debug ($"{me} {path}");
 				var uri = new Uri (Server.TargetUri, path);
 				var listenerOperation = CreateOperation (operation, handler, uri);
 				registry.Add (path, listenerOperation);
@@ -103,12 +105,12 @@ namespace Xamarin.WebTests.Server
 				var me = $"{nameof (GetOperation)}({context.Connection.ME})";
 				Debug ($"{me} {request.Method} {request.Path} {request.Protocol}");
 
-				var operation = registry[request.Path];
-				if (operation == null) {
+				if (!registry.ContainsKey (request.Path)) {
 					Debug ($"{me} INVALID PATH: {request.Path}!");
 					return null;
 				}
 
+				var operation = registry[request.Path];
 				registry.Remove (request.Path);
 				return operation;
 			}

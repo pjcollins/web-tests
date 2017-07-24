@@ -130,16 +130,19 @@ namespace Xamarin.WebTests.HttpFramework {
 			Target.CloseAll ();
 		}
 
-		protected override async Task<bool> HandleConnection (TestContext ctx, HttpOperation operation,
-								      HttpConnection connection, HttpRequest request,
-								      CancellationToken cancellationToken)
+		internal override async Task<bool> HandleConnection (TestContext ctx, HttpOperation operation,
+		                                                     HttpConnection connection, HttpRequest request,
+		                                                     Handler handler, CancellationToken cancellationToken)
 		{
+			++countRequests;
 			var proxyConnection = (ProxyConnection)connection;
 
 			var remoteAddress = connection.RemoteEndPoint.Address;
 			request.AddHeader ("X-Forwarded-For", remoteAddress);
 
 			ctx.LogDebug (5, $"{ME} HANDLE CONNECTION: {remoteAddress}");
+
+			proxyConnection.TargetListener.RegisterOperation (ctx, operation, handler, request.Path);
 
 			if (AuthenticationManager != null) {
 				AuthenticationState state;

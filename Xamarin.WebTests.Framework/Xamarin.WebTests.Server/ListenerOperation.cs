@@ -93,7 +93,10 @@ namespace Xamarin.WebTests.Server
 				await request.Read (ctx, cancellationToken).ConfigureAwait (false);
 
 				ctx.LogDebug (2, $"{me} REQUEST FULLY READ");
-				keepAlive = await Handler.HandleRequest (ctx, Operation, connection, request, cancellationToken);
+
+				keepAlive = await Listener.Server.HandleConnection (
+					ctx, Operation, connection, request, Handler, cancellationToken).ConfigureAwait (false);
+
 				ctx.LogDebug (2, $"{me} HANDLE REQUEST DONE: {keepAlive}");
 
 			} catch (OperationCanceledException) {

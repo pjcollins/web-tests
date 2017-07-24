@@ -162,7 +162,7 @@ namespace Xamarin.WebTests.HttpFramework {
 		public readonly int ID = ++nextServerId;
 
 		static long nextId;
-		int countRequests;
+		protected int countRequests;
 
 		public Uri RegisterHandler (TestContext ctx, Handler handler)
 		{
@@ -176,20 +176,12 @@ namespace Xamarin.WebTests.HttpFramework {
 
 		protected internal abstract Handler GetHandler (TestContext ctx, string path);
 
-		public async Task<bool> HandleConnection (TestContext ctx, HttpOperation operation,
-		                                          HttpConnection connection, CancellationToken cancellationToken)
+		internal virtual Task<bool> HandleConnection (TestContext ctx, HttpOperation operation,
+		                                              HttpConnection connection, HttpRequest request,
+		                                              Handler handler, CancellationToken cancellationToken)
 		{
-			var request = await connection.ReadRequest (ctx, cancellationToken);
 			++countRequests;
-			return await HandleConnection (ctx, operation, connection, request, cancellationToken);
-		}
-
-		protected virtual async Task<bool> HandleConnection (TestContext ctx, HttpOperation operation,
-		                                                     HttpConnection connection, HttpRequest request,
-		                                                     CancellationToken cancellationToken)
-		{
-			var handler = GetHandler (ctx, request.Path);
-			return await handler.HandleRequest (ctx, operation, connection, request, cancellationToken).ConfigureAwait (false);
+			return handler.HandleRequest (ctx, operation, connection, request, cancellationToken);
 		}
 
 		public void CheckEncryption (TestContext ctx, SslStream sslStream)
