@@ -164,12 +164,12 @@ namespace Xamarin.WebTests.TestRunners
 			var me = $"{ME}.{nameof (Run)}()";
 			ctx.LogDebug (2, $"{me}");
 
-			var redirect = new RedirectHandler (HelloWorldHandler.GetSimple (), HttpStatusCode.Redirect);
 			var helloKeepAlive = new HelloWorldHandler (EffectiveType.ToString ()) {
 				Flags = RequestFlags.KeepAlive
 			};
+			var redirect = new RedirectHandler (helloKeepAlive, HttpStatusCode.Redirect);
 
-			var operation = new TraditionalOperation (Server, helloKeepAlive, true);
+			var operation = new TraditionalOperation (Server, redirect, true);
 			await operation.Run (ctx, cancellationToken).ConfigureAwait (false);
 
 			ctx.LogDebug (2, $"{me} first operation done.");
