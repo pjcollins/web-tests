@@ -115,7 +115,7 @@ namespace Xamarin.WebTests.Server
 
 				ctx.LogDebug (2, $"{me} #1: {reused}");
 
-				var request = await ((SocketConnection)connection).ReadRequestHeader (ctx, cancellationToken);
+				var request = await connection.ReadRequestHeader (ctx, cancellationToken);
 				ctx.LogDebug (2, $"{me} GOT REQUEST: {request}");
 
 				ListenerOperation listenerOperation;
