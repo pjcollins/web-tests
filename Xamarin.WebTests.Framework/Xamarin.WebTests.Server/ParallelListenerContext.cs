@@ -132,7 +132,7 @@ namespace Xamarin.WebTests.Server
 				case ConnectionState.WaitingForRequest:
 					return CreateIteration (ReadRequestHeader, GotRequest);
 ;				case ConnectionState.HasRequest:
-					// return HandleRequest (ctx, cancellationToken);
+					return CreateIteration (HandleRequest, RequestComplete);
 				default:
 					throw ctx.AssertFail (State);
 				}
@@ -145,7 +145,7 @@ namespace Xamarin.WebTests.Server
 
 			ConnectionState Accepted ((bool completed, bool success) result)
 			{
-				return ConnectionState.Accepted;
+				return ConnectionState.WaitingForRequest;
 			}
 
 			Task<HttpRequest> ReadRequestHeader ()
@@ -155,8 +155,30 @@ namespace Xamarin.WebTests.Server
 
 			ConnectionState GotRequest (HttpRequest request)
 			{
+				var operation = (ParallelListenerOperation)Listener.GetOperation (this, request);
+				if (operation == null) {
+					ctx.LogDebug (5, $"{me} INVALID REQUEST: {request.Path}");
+					// connections.Remove (context);
+					// context.Dispose ();
+					return ConnectionState.Closed;
+				}
+				currentOperation = operation;
+				Request = request;
+				ctx.LogDebug (5, $"{me} GOT REQUEST");
+				return ConnectionState.HasRequest;
+			}
+
+			Task<(bool keepAlive, ListenerOperation next)> HandleRequest ()
+			{
+				return Operation.HandleRequest (ctx, this, Connection, Request, cancellationToken);
+			}
+
+			ConnectionState RequestComplete ((bool keepAlive, ListenerOperation next) result)
+			{
 				throw new NotImplementedException ();
 			}
+
+
 		}
 
 		public void MainLoopIterationDone (TestContext ctx, Task task, CancellationToken cancellationToken)
