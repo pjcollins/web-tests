@@ -65,6 +65,7 @@ namespace Xamarin.WebTests.Server
 
 		ParallelListenerOperation currentOperation;
 		HttpConnection connection;
+		Iteration currentIteration;
 		Task currentTask;
 
 #if FIXME
@@ -100,20 +101,23 @@ namespace Xamarin.WebTests.Server
 				return currentTask;
 
 			try {
-				currentTask = StartIteration ();
+				currentIteration = StartIteration ();
 			} catch (Exception ex) {
 				currentTask = FailedTask (ex);
 			}
 
+			currentTask = currentIteration.Task;
 			return currentTask;
 
-			Task StartIteration ()
+			Iteration StartIteration ()
 			{
 				switch (State) {
 				case ConnectionState.None:
-					Start (ctx, false, cancellationToken);
-					State = ConnectionState.Listening;
-					return ServerReadyTask;
+					// Start (ctx, false, cancellationToken);
+					// State = ConnectionState.Listening;
+					// return ServerReadyTask;
+					return CreateIteration (Start, Accepted);
+#if FIXME
 				case ConnectionState.KeepAlive:
 					Start (ctx, true, cancellationToken);
 					State = ConnectionState.Accepted;
@@ -122,13 +126,73 @@ namespace Xamarin.WebTests.Server
 					return ServerInitTask;
 				case ConnectionState.Accepted:
 					return ServerStartTask;
+#endif
 				case ConnectionState.WaitingForRequest:
-					return RequestTask;
-				case ConnectionState.HasRequest:
-					return HandleRequest (ctx, cancellationToken);
+					return CreateIteration (ReadRequestHeader, GotRequest);
+;				case ConnectionState.HasRequest:
+					// return HandleRequest (ctx, cancellationToken);
 				default:
 					throw ctx.AssertFail (State);
 				}
+			}
+
+			Task<(bool complete, bool success)> Start ()
+			{
+				return Initialize (ctx, connection, false, null, cancellationToken);
+			}
+
+			void Accepted ((bool completed, bool success) result)
+			{
+				
+			}
+
+			Task<HttpRequest> ReadRequestHeader ()
+			{
+				return Connection.ReadRequestHeader (ctx, cancellationToken);
+			}
+
+			void GotRequest (HttpRequest request)
+			{
+				
+			}
+		}
+
+		static Iteration<T> CreateIteration<T> (Func<Task<T>> start, Action<T> continuation)
+		{
+			return new Iteration<T> (start, continuation);
+		}
+
+		abstract class Iteration
+		{
+			public abstract Task Task {
+				get;
+			}
+
+			public abstract void Continue ();
+		}
+
+		class Iteration<T> : Iteration
+		{
+			public Task<T> Start {
+				get;
+			}
+
+			public override Task Task => Start;
+
+			public Action<T> Continuation {
+				get;
+			}
+
+			public Iteration (Func<Task<T>> start, Action<T> continuation)
+			{
+				Start = start ();
+				Continuation = continuation;
+			}
+
+			public override void Continue ()
+			{
+				var result = Start.Result;
+				Continuation (result);
 			}
 		}
 
@@ -195,7 +259,10 @@ namespace Xamarin.WebTests.Server
 			}
 		}
 
-
+		void GotRequest (TestContext ctx, HttpRequest request, CancellationToken cancellationToken)
+		{
+			
+		}
 
 		public Task Start (TestContext ctx, bool reused, CancellationToken cancellationToken)
 		{
