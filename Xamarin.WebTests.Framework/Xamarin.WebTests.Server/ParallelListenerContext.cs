@@ -68,15 +68,6 @@ namespace Xamarin.WebTests.Server
 		Iteration currentIteration;
 		Task currentTask;
 
-#if FIXME
-		public void StartOperation (ParallelListenerOperation operation, HttpRequest request)
-		{
-			if (Interlocked.CompareExchange (ref currentOperation, operation, null) != null)
-				throw new InvalidOperationException ();
-			Request = request;
-		}
-#endif
-
 		public override void Continue ()
 		{
 			currentOperation = null;
@@ -115,26 +106,12 @@ namespace Xamarin.WebTests.Server
 			{
 				switch (State) {
 				case ConnectionState.None:
-					// Start (ctx, false, cancellationToken);
-					// State = ConnectionState.Listening;
-					// return ServerReadyTask;
 					return CreateIteration (Start, Accepted);
-
 				case ConnectionState.KeepAlive:
 					return CreateIteration (ReuseConnection, Accepted);
-#if FIXME
-				case ConnectionState.KeepAlive:
-					Start (ctx, true, cancellationToken);
-					State = ConnectionState.Accepted;
-					return ServerStartTask;
-				case ConnectionState.Listening:
-					return ServerInitTask;
-				case ConnectionState.Accepted:
-					return ServerStartTask;
-#endif
 				case ConnectionState.WaitingForRequest:
 					return CreateIteration (ReadRequestHeader, GotRequest);
-;				case ConnectionState.HasRequest:
+				case ConnectionState.HasRequest:
 					return CreateIteration (HandleRequest, RequestComplete);
 				default:
 					throw ctx.AssertFail (State);
@@ -166,8 +143,6 @@ namespace Xamarin.WebTests.Server
 				var operation = (ParallelListenerOperation)Listener.GetOperation (this, request);
 				if (operation == null) {
 					ctx.LogDebug (5, $"{me} INVALID REQUEST: {request.Path}");
-					// connections.Remove (context);
-					// context.Dispose ();
 					return ConnectionState.Closed;
 				}
 				currentOperation = operation;
@@ -185,22 +160,13 @@ namespace Xamarin.WebTests.Server
 			{
 				ctx.LogDebug (5, $"{me}: {keepAlive} {next?.ME}");
 
-				if (!keepAlive) {
-					// connections.Remove (context);
-					// context.Dispose ();
-					return ConnectionState.Closed;
-				}
-
 				if (next != null) {
 					throw new NotImplementedException ();
 				}
 
-				var newContext = new ParallelListenerContext (Listener, Connection);
-				newContext.State = ConnectionState.KeepAlive;
-				// connections.AddLast (newContext);
+				if (!keepAlive)
+					return ConnectionState.Closed;
 
-				// connections.Remove (context);
-				// context.Continue ();
 				return ConnectionState.KeepAlive;
 			}
 		}
@@ -222,60 +188,6 @@ namespace Xamarin.WebTests.Server
 
 			State = nextState;
 			return nextState != ConnectionState.Closed;
-
-			switch (State) {
-			case ConnectionState.Listening:
-				State = ConnectionState.Accepted;
-				break;
-			case ConnectionState.Accepted:
-				State = ConnectionState.WaitingForRequest;
-				break;
-			case ConnectionState.WaitingForRequest:
-				GotRequest ();
-				break;
-			case ConnectionState.HasRequest:
-				RequestComplete ();
-				break;
-			}
-
-			void GotRequest ()
-			{
-				var request = ((Task<HttpRequest>)task).Result;
-				var operation = (ParallelListenerOperation)Listener.GetOperation (this, request);
-				if (operation == null) {
-					ctx.LogDebug (5, $"{me} INVALID REQUEST: {request.Path}");
-					// connections.Remove (context);
-					// context.Dispose ();
-					return;
-				}
-				currentOperation = operation;
-				Request = request;
-				State = ConnectionState.HasRequest;
-				ctx.LogDebug (5, $"{me} GOT REQUEST");
-			}
-
-			void RequestComplete ()
-			{
-				var (keepAlive, next) = ((Task<(bool, ListenerOperation)>)task).Result;
-				ctx.LogDebug (5, $"{me}: {keepAlive} {next?.ME}");
-
-				if (!keepAlive) {
-					// connections.Remove (context);
-					// context.Dispose ();
-					return;
-				}
-
-				if (next != null) {
-					throw new NotImplementedException ();
-				}
-
-				var newContext = new ParallelListenerContext (Listener, Connection);
-				newContext.State = ConnectionState.KeepAlive;
-				// connections.AddLast (newContext);
-
-				// connections.Remove (context);
-				// context.Continue ();
-			}
 		}
 
 		static Iteration CreateIteration<T> (Func<Task<T>> start, Func<T, ConnectionState> continuation)
@@ -347,59 +259,6 @@ namespace Xamarin.WebTests.Server
 			}
 		}
 
-		void GotRequest (TestContext ctx, HttpRequest request, CancellationToken cancellationToken)
-		{
-			
-		}
-
-		public Task Start (TestContext ctx, bool reused, CancellationToken cancellationToken)
-		{
-			var me = $"{Listener.ME}({Connection.ME}) START";
-
-			var tcs = new TaskCompletionSource<HttpRequest> ();
-			if (Interlocked.CompareExchange (ref initialized, 1, 0) != 0)
-				throw new InternalErrorException ();
-
-			Start_inner ();
-			return ServerReadyTask;
-
-			async void Start_inner ()
-			{
-				try {
-					ctx.LogDebug (5, $"{me}");
-					cancellationToken.ThrowIfCancellationRequested ();
-					var (complete, success) = await Initialize (
-						ctx, connection, reused, null, cancellationToken).ConfigureAwait (false);
-				} catch (OperationCanceledException) {
-					OnCanceled ();
-					return;
-				} catch (Exception ex) {
-					OnError (ex);
-					return;
-				}
-
-				ctx.LogDebug (5, $"{me} #2: {connection.ME} {((SocketConnection)connection).RemoteEndPoint}");
-				return;
-
-				try {
-					var request = await Connection.ReadRequestHeader (ctx, cancellationToken).ConfigureAwait (false);
-					requestTask.TrySetResult (request);
-				} catch (OperationCanceledException) {
-					OnCanceled ();
-					return;
-				} catch (Exception ex) {
-					OnError (ex);
-					return;
-				}
-			}
-		}
-
-		public async Task<HttpRequest> ReadRequest (TestContext ctx, CancellationToken cancellationToken)
-		{
-			var request = await Connection.ReadRequestHeader (ctx, cancellationToken).ConfigureAwait (false);
-			return request;
-		}
-
 		protected override void OnCanceled ()
 		{
 			base.OnCanceled ();
@@ -410,11 +269,6 @@ namespace Xamarin.WebTests.Server
 		{
 			base.OnError (error);
 			requestTask.TrySetException (error);
-		}
-
-		public Task<(bool keepAlive, ListenerOperation next)> HandleRequest (TestContext ctx, CancellationToken cancellationToken)
-		{
-			return Operation.HandleRequest (ctx, this, Connection, Request, cancellationToken);
 		}
 
 		public override void PrepareRedirect (TestContext ctx, HttpConnection connection, bool keepAlive)
