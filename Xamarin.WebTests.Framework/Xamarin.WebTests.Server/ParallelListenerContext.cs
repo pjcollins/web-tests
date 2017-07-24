@@ -100,6 +100,8 @@ namespace Xamarin.WebTests.Server
 			if (currentTask != null)
 				return currentTask;
 
+			ctx.LogDebug (5, "${me}");
+
 			try {
 				currentIteration = StartIteration ();
 			} catch (Exception ex) {
@@ -141,9 +143,9 @@ namespace Xamarin.WebTests.Server
 				return Initialize (ctx, connection, false, null, cancellationToken);
 			}
 
-			void Accepted ((bool completed, bool success) result)
+			ConnectionState Accepted ((bool completed, bool success) result)
 			{
-				
+				return ConnectionState.Accepted;
 			}
 
 			Task<HttpRequest> ReadRequestHeader ()
@@ -151,48 +153,9 @@ namespace Xamarin.WebTests.Server
 				return Connection.ReadRequestHeader (ctx, cancellationToken);
 			}
 
-			void GotRequest (HttpRequest request)
+			ConnectionState GotRequest (HttpRequest request)
 			{
-				
-			}
-		}
-
-		static Iteration<T> CreateIteration<T> (Func<Task<T>> start, Action<T> continuation)
-		{
-			return new Iteration<T> (start, continuation);
-		}
-
-		abstract class Iteration
-		{
-			public abstract Task Task {
-				get;
-			}
-
-			public abstract void Continue ();
-		}
-
-		class Iteration<T> : Iteration
-		{
-			public Task<T> Start {
-				get;
-			}
-
-			public override Task Task => Start;
-
-			public Action<T> Continuation {
-				get;
-			}
-
-			public Iteration (Func<Task<T>> start, Action<T> continuation)
-			{
-				Start = start ();
-				Continuation = continuation;
-			}
-
-			public override void Continue ()
-			{
-				var result = Start.Result;
-				Continuation (result);
+				throw new NotImplementedException ();
 			}
 		}
 
@@ -203,6 +166,16 @@ namespace Xamarin.WebTests.Server
 			if (task != currentTask)
 				throw new InvalidOperationException ();
 			currentTask = null;
+
+			ctx.LogDebug (5, $"{me}: {State}");
+
+			var iteration = Interlocked.Exchange (ref currentIteration, null);
+			var nextState = iteration.Continue ();
+
+			ctx.LogDebug (5, $"{me} DONE: {State} -> {nextState}");
+
+			State = nextState;
+			return;
 
 			switch (State) {
 			case ConnectionState.Listening:
@@ -256,6 +229,45 @@ namespace Xamarin.WebTests.Server
 
 				// connections.Remove (context);
 				// context.Continue ();
+			}
+		}
+
+		static Iteration<T> CreateIteration<T> (Func<Task<T>> start, Func<T, ConnectionState> continuation)
+		{
+			return new Iteration<T> (start, continuation);
+		}
+
+		abstract class Iteration
+		{
+			public abstract Task Task {
+				get;
+			}
+
+			public abstract ConnectionState Continue ();
+		}
+
+		class Iteration<T> : Iteration
+		{
+			public Task<T> Start {
+				get;
+			}
+
+			public override Task Task => Start;
+
+			public Func<T, ConnectionState> Continuation {
+				get;
+			}
+
+			public Iteration (Func<Task<T>> start, Func<T, ConnectionState> continuation)
+			{
+				Start = start ();
+				Continuation = continuation;
+			}
+
+			public override ConnectionState Continue ()
+			{
+				var result = Start.Result;
+				return Continuation (result);
 			}
 		}
 
