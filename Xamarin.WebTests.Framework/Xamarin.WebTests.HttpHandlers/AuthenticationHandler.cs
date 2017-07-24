@@ -103,8 +103,9 @@ namespace Xamarin.WebTests.HttpHandlers
 					ctx.AssertFail ("Need either 'Transfer-Encoding' or 'Content-Length'");
 			}
 
+			var keepAlive = (effectiveFlags & (RequestFlags.KeepAlive | RequestFlags.CloseConnection)) == RequestFlags.KeepAlive;
 			if (response != null) {
-				// connection.Server.RegisterHandler (ctx, request.Path, this);
+				var targetUri = operation.RegisterRedirect (ctx, this, keepAlive, request.Path);
 				return response;
 			}
 

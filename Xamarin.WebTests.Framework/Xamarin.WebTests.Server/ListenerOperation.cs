@@ -113,14 +113,14 @@ namespace Xamarin.WebTests.Server
 		ListenerOperation redirectOperation;
 		int redirectRequested;
 
-		public Uri PrepareRedirect (TestContext ctx, Handler handler, bool keepAlive)
+		public Uri PrepareRedirect (TestContext ctx, Handler handler, bool keepAlive, string path)
 		{
 			lock (Listener) {
 				var me = $"{ME}({nameof (PrepareRedirect)}";
 				ctx.LogDebug (5, $"{me}: {handler.Value} {keepAlive}");
 				if (Interlocked.CompareExchange (ref redirectRequested, 1, 0) != 0)
 					throw new InvalidOperationException ();
-				var redirect = Listener.RegisterOperation (ctx, Operation, handler);
+				var redirect = Listener.RegisterOperation (ctx, Operation, handler, path);
 				if (keepAlive)
 					redirectOperation = redirect;
 				return redirect.Uri;

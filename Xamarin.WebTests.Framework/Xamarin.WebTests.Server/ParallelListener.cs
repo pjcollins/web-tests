@@ -124,7 +124,7 @@ namespace Xamarin.WebTests.Server
 					}
 
 					var context = connectionArray[idx];
-					Debug ($"MAIN LOOP #2: {context.State} {context.Connection.ME}");
+					Debug ($"MAIN LOOP #2: {context.State} {context?.Connection?.ME}");
 
 					if (finished.Status == TaskStatus.Canceled || finished.Status == TaskStatus.Faulted) {
 						Debug ($"MAIN LOOP #2 FAILED: {finished.Status} {finished.Exception?.Message}");
@@ -167,7 +167,7 @@ namespace Xamarin.WebTests.Server
 				var node = iter.Value;
 				iter = iter.Next;
 
-				node.Connection.Dispose ();
+				node.Dispose ();
 				connections.Remove (node);
 			}
 

@@ -177,7 +177,7 @@ namespace Xamarin.WebTests.HttpFramework
 
 			instrumentationListener = (InstrumentationListener)Server.Listener;
 
-			var operation = instrumentationListener.RegisterOperation (ctx, this, Handler);
+			var operation = instrumentationListener.RegisterOperation (ctx, this, Handler, null);
 			var request = CreateRequest (ctx, operation.Uri);
 
 			listenerOperation = operation;
@@ -336,7 +336,7 @@ namespace Xamarin.WebTests.HttpFramework
 
 			parallelListener = (ParallelListener)((BuiltinHttpServer)Server).Listener;
 
-			var operation = parallelListener.RegisterOperation (ctx, this, Handler);
+			var operation = parallelListener.RegisterOperation (ctx, this, Handler, null);
 			var request = CreateRequest (ctx, operation.Uri);
 
 			listenerOperation = operation;
@@ -413,9 +413,9 @@ namespace Xamarin.WebTests.HttpFramework
 			return response;
 		}
 
-		public Uri RegisterRedirect (TestContext ctx, Handler handler, bool keepAlive)
+		public Uri RegisterRedirect (TestContext ctx, Handler handler, bool keepAlive, string path = null)
 		{
-			return listenerOperation.PrepareRedirect (ctx, handler, keepAlive);
+			return listenerOperation.PrepareRedirect (ctx, handler, keepAlive, path);
 		}
 
 		protected abstract void Destroy ();
