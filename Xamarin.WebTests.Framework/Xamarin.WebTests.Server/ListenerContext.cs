@@ -197,6 +197,11 @@ namespace Xamarin.WebTests.Server
 
 		public abstract void PrepareRedirect (TestContext ctx, HttpConnection connection, bool keepAlive);
 
+		internal static Task FailedTask (Exception ex)
+		{
+			return Listener.FailedTask (ex);
+		}
+
 		protected abstract void Close ();
 
 		bool disposed;

@@ -36,6 +36,8 @@ namespace Xamarin.WebTests.Server
 
 	class ParallelListenerContext : ListenerContext
 	{
+		new public ParallelListener Listener => (ParallelListener)base.Listener;
+
 		public ParallelListenerContext (ParallelListener listener, HttpConnection connection)
 			: base (listener)
 		{
@@ -65,12 +67,14 @@ namespace Xamarin.WebTests.Server
 		HttpConnection connection;
 		Task currentTask;
 
+#if FIXME
 		public void StartOperation (ParallelListenerOperation operation, HttpRequest request)
 		{
 			if (Interlocked.CompareExchange (ref currentOperation, operation, null) != null)
 				throw new InvalidOperationException ();
 			Request = request;
 		}
+#endif
 
 		public override void Continue ()
 		{
@@ -98,7 +102,7 @@ namespace Xamarin.WebTests.Server
 			try {
 				currentTask = StartIteration ();
 			} catch (Exception ex) {
-				currentTask = Listener.FailedTask (ex);
+				currentTask = FailedTask (ex);
 			}
 
 			return currentTask;
@@ -134,9 +138,64 @@ namespace Xamarin.WebTests.Server
 
 			if (task != currentTask)
 				throw new InvalidOperationException ();
+			currentTask = null;
 
+			switch (State) {
+			case ConnectionState.Listening:
+				State = ConnectionState.Accepted;
+				break;
+			case ConnectionState.Accepted:
+				State = ConnectionState.WaitingForRequest;
+				break;
+			case ConnectionState.WaitingForRequest:
+				GotRequest ();
+				break;
+			case ConnectionState.HasRequest:
+				RequestComplete ();
+				break;
+			}
 
+			void GotRequest ()
+			{
+				var request = ((Task<HttpRequest>)task).Result;
+				var operation = (ParallelListenerOperation)Listener.GetOperation (this, request);
+				if (operation == null) {
+					ctx.LogDebug (5, $"{me} INVALID REQUEST: {request.Path}");
+					// connections.Remove (context);
+					// context.Dispose ();
+					return;
+				}
+				currentOperation = operation;
+				Request = request;
+				State = ConnectionState.HasRequest;
+				ctx.LogDebug (5, $"{me} GOT REQUEST");
+			}
+
+			void RequestComplete ()
+			{
+				var (keepAlive, next) = ((Task<(bool, ListenerOperation)>)task).Result;
+				ctx.LogDebug (5, $"{me}: {keepAlive} {next?.ME}");
+
+				if (!keepAlive) {
+					// connections.Remove (context);
+					// context.Dispose ();
+					return;
+				}
+
+				if (next != null) {
+					throw new NotImplementedException ();
+				}
+
+				var newContext = new ParallelListenerContext (Listener, Connection);
+				newContext.State = ConnectionState.KeepAlive;
+				// connections.AddLast (newContext);
+
+				// connections.Remove (context);
+				// context.Continue ();
+			}
 		}
+
+
 
 		public Task Start (TestContext ctx, bool reused, CancellationToken cancellationToken)
 		{

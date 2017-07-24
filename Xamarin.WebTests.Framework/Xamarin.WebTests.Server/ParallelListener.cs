@@ -135,6 +135,7 @@ namespace Xamarin.WebTests.Server
 
 					context.MainLoopIterationDone (TestContext, finished, cts.Token);
 
+#if FIXME
 					switch (context.State) {
 					case ConnectionState.Listening:
 						context.State = ConnectionState.Accepted;
@@ -149,9 +150,11 @@ namespace Xamarin.WebTests.Server
 						RequestComplete (context, finished);
 						break;
 					}
+#endif
 				}
 			}
 
+#if FIXME
 			void GotRequest (ParallelListenerContext context, Task task)
 			{
 				var me = $"{nameof (GotRequest)}({context.Connection.ME})";
@@ -193,6 +196,7 @@ namespace Xamarin.WebTests.Server
 				connections.Remove (context);
 				context.Continue ();
 			}
+#endif
 
 			void RunScheduler ()
 			{
