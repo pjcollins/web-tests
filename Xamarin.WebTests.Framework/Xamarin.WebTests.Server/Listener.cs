@@ -46,8 +46,10 @@ namespace Xamarin.WebTests.Server
 		AsyncManualResetEvent mainLoopEvent;
 
 		int requestParallelConnections;
+		TaskCompletionSource<object> finishedEvent;
 		Dictionary<string, ListenerOperation> registry;
 		volatile bool disposed;
+		volatile bool exited;
 
 		static int nextID;
 		static long nextRequestID;
@@ -80,6 +82,7 @@ namespace Xamarin.WebTests.Server
 
 			connections = new LinkedList<ListenerContext> ();
 			mainLoopEvent = new AsyncManualResetEvent (false);
+			finishedEvent = new TaskCompletionSource<object> ();
 			cts = new CancellationTokenSource ();
 		}
 
@@ -179,7 +182,24 @@ namespace Xamarin.WebTests.Server
 			}
 
 			Debug ($"MAIN LOOP COMPLETE");
-			cts.Dispose ();
+
+			lock (this) {
+				var iter = connections.First;
+				while (iter != null) {
+					var node = iter.Value;
+					iter = iter.Next;
+
+					node.Dispose ();
+					connections.Remove (node);
+				}
+
+				cts.Dispose ();
+				exited = true;
+			}
+
+			Debug ($"MAIN LOOP COMPLETE #1");
+
+			finishedEvent.SetResult (null);
 
 			void RunScheduler ()
 			{
@@ -243,18 +263,12 @@ namespace Xamarin.WebTests.Server
 
 		void Close ()
 		{
-			Debug ($"CLOSE");
+			if (closed)
+				return;
 			closed = true;
+
+			Debug ($"CLOSE");
 			cts.Cancel ();
-
-			var iter = connections.First;
-			while (iter != null) {
-				var node = iter.Value;
-				iter = iter.Next;
-
-				node.Dispose ();
-				connections.Remove (node);
-			}
 
 			mainLoopEvent.Set ();
 		}
@@ -312,6 +326,17 @@ namespace Xamarin.WebTests.Server
 			else
 				tcs.SetException (ex);
 			return tcs.Task;
+		}
+
+		public Task Shutdown ()
+		{
+			lock (this) {
+				if (!closed && !disposed && !exited) {
+					closed = true;
+					mainLoopEvent.Set ();
+				}
+				return finishedEvent.Task;
+			}
 		}
 
 		public void Dispose ()

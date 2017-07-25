@@ -104,21 +104,20 @@ namespace Xamarin.WebTests.HttpFramework {
 			return Handler.CompletedTask;
 		}
 
-		public override Task Stop (TestContext ctx, CancellationToken cancellationToken)
+		public override async Task Stop (TestContext ctx, CancellationToken cancellationToken)
 		{
-			return Task.Run (() => {
-				var listener = Interlocked.Exchange (ref currentListener, null);
-				if (listener == null || listener.TestContext != ctx)
-					throw new InternalErrorException ();
-				try {
-					listener.Dispose ();
-				} catch {
-					if ((Flags & HttpServerFlags.ExpectException) == 0)
-						throw;
-				} finally {
-					currentBackend = null;
-				}
-			});
+			var listener = Interlocked.Exchange (ref currentListener, null);
+			if (listener == null || listener.TestContext != ctx)
+				throw new InternalErrorException ();
+			try {
+				await listener.Shutdown ().ConfigureAwait (false);
+				listener.Dispose ();
+			} catch {
+				if ((Flags & HttpServerFlags.ExpectException) == 0)
+					throw;
+			} finally {
+				currentBackend = null;
+			}
 		}
 
 		internal override Listener Listener {
