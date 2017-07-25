@@ -77,7 +77,7 @@ namespace Xamarin.WebTests.Server
 
 		public Task ServerFinishedTask => serverFinishedTask.Task;
 
-		internal async Task<(HttpResponse response, ListenerOperation redirect, HttpConnection next)> HandleRequest (
+		internal async Task<HttpResponse> HandleRequest (
 			TestContext ctx, ListenerContext context, HttpConnection connection,
 			HttpRequest request, CancellationToken cancellationToken)
 		{
@@ -119,23 +119,16 @@ namespace Xamarin.WebTests.Server
 				throw;
 			}
 
-			ListenerOperation redirect;
-			HttpConnection next;
+			var redirect = Interlocked.Exchange (ref redirectOperation, null);
 
-			lock (Listener) {
-				redirect = Interlocked.Exchange (ref redirectOperation, null);
-				next = Interlocked.Exchange (ref redirectRequested, null);
-
-				ctx.LogDebug (2, $"{me} HANDLE REQUEST DONE #1: {redirect?.ME}");
-			}
+			ctx.LogDebug (2, $"{me} HANDLE REQUEST DONE #1: {redirect?.ME}");
 
 			finishedTask.TrySetResult (null);
-			return (response, redirect, next);
+			return response;
 		}
 
 		ListenerOperation parentOperation;
 		ListenerOperation redirectOperation;
-		HttpConnection redirectRequested;
 
 		public void PrepareRedirect (TestContext ctx, ListenerOperation redirect,
 		                             HttpConnection connection, bool keepAlive)
@@ -143,15 +136,6 @@ namespace Xamarin.WebTests.Server
 			lock (Listener) {
 				var me = $"{ME} PREPARE REDIRECT";
 				ctx.LogDebug (5, $"{me}: {redirect.ME} {keepAlive}");
-
-				HttpConnection next;
-				if (keepAlive)
-					next = connection;
-				else
-					next = Listener.Backend.CreateConnection ();
-
-				if (Interlocked.CompareExchange (ref redirectRequested, next, null) != null)
-					throw new InvalidOperationException ();
 
 				redirect.parentOperation = parentOperation ?? this;
 				redirectOperation = redirect;

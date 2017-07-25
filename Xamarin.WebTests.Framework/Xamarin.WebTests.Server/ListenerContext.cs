@@ -172,23 +172,24 @@ namespace Xamarin.WebTests.Server
 				return ConnectionState.HasRequest;
 			}
 
-			Task<(HttpResponse response, ListenerOperation redict, HttpConnection next)> HandleRequest ()
+			Task<HttpResponse> HandleRequest ()
 			{
 				return currentOperation.HandleRequest (ctx, this, Connection, currentRequest, cancellationToken);
 			}
 
-			ConnectionState RequestComplete (HttpResponse response, ListenerOperation redirect, HttpConnection next)
+			ConnectionState RequestComplete (HttpResponse response)
 			{
-				ctx.LogDebug (5, $"{me}: {response} {redirect?.ME}");
+				ctx.LogDebug (5, $"{me}: {response} {response.Redirect?.ME}");
 
 				currentResponse = response;
-				redirectRequested = redirect;
 				return ConnectionState.RequestComplete;
 			}
 
 			async Task<bool> WriteResponse ()
 			{
 				var response = Interlocked.Exchange (ref currentResponse, null);
+				redirectRequested = response.Redirect;
+
 				var keepAlive = (response.KeepAlive ?? false) && !response.CloseConnection;
 
 				await connection.WriteResponse (ctx, response, cancellationToken).ConfigureAwait (false);

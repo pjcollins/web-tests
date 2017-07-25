@@ -317,10 +317,10 @@ namespace Xamarin.WebTests.HttpFramework
 			return response;
 		}
 
-		public Uri RegisterRedirect (TestContext ctx, HttpConnection connection,
-		                             Handler handler, bool keepAlive, string path = null)
+		internal ListenerOperation RegisterRedirect (TestContext ctx, HttpConnection connection,
+		                                             Handler handler, bool keepAlive, string path = null)
 		{
-			return listener.PrepareRedirect (ctx, this, connection, handler, keepAlive, path);
+			return listener.RegisterOperation (ctx, this, handler, path);
 		}
 
 		protected abstract void Destroy ();
