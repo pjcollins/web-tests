@@ -36,8 +36,16 @@ namespace Xamarin.WebTests.Server
 	using HttpHandlers;
 	using TestFramework;
 
-	abstract class Listener : IDisposable
+	class Listener : IDisposable
 	{
+		LinkedList<NewListenerContext> connections;
+		bool closed;
+
+		int running;
+		CancellationTokenSource cts;
+		AsyncManualResetEvent mainLoopEvent;
+
+		int requestParallelConnections;
 		Dictionary<string, ListenerOperation> registry;
 		volatile bool disposed;
 
@@ -69,6 +77,208 @@ namespace Xamarin.WebTests.Server
 			Backend = backend;
 			ME = $"{GetType ().Name}({ID})";
 			registry = new Dictionary<string, ListenerOperation> ();
+
+			connections = new LinkedList<NewListenerContext> ();
+			mainLoopEvent = new AsyncManualResetEvent (false);
+			cts = new CancellationTokenSource ();
+		}
+
+		public bool UsingInstrumentation {
+			get;
+			private set;
+		}
+
+		public void StartParallel (int parallelConnections)
+		{
+			lock (this) {
+				if (Interlocked.CompareExchange (ref running, 1, 0) != 0)
+					throw new InvalidOperationException ();
+
+				requestParallelConnections = parallelConnections;
+				mainLoopEvent.Set ();
+				MainLoop ();
+			}
+		}
+
+		public void StartInstrumentation ()
+		{
+			lock (this) {
+				if (Interlocked.CompareExchange (ref running, 1, 0) != 0)
+					throw new InvalidOperationException ();
+
+				UsingInstrumentation = true;
+				requestParallelConnections = -1;
+				mainLoopEvent.Set ();
+				MainLoop ();
+			}
+		}
+
+		async void MainLoop ()
+		{
+			while (!closed) {
+				Debug ($"MAIN LOOP");
+
+				var taskList = new List<Task> ();
+				var connectionArray = new List<NewListenerContext> ();
+				lock (this) {
+					RunScheduler ();
+
+					taskList.Add (mainLoopEvent.WaitAsync ());
+					foreach (var context in connections) {
+						Task task = null;
+						Debug ($"  MAIN LOOP #0: {context.ME} {context.State}");
+						try {
+							task = context.MainLoopIteration (TestContext, cts.Token);
+						} catch (Exception ex) {
+							task = FailedTask (ex);
+						}
+						if (task != null) {
+							connectionArray.Add (context);
+							taskList.Add (task);
+						}
+					}
+
+					Debug ($"MAIN LOOP #0: {connectionArray.Count} {taskList.Count}");
+				}
+
+				var finished = await Task.WhenAny (taskList).ConfigureAwait (false);
+				Debug ($"MAIN LOOP #1: {finished.Status} {finished == taskList[0]} {taskList[0].Status}");
+
+				lock (this) {
+					if (closed)
+						break;
+					if (finished == taskList[0]) {
+						mainLoopEvent.Reset ();
+						continue;
+					}
+
+					int idx = -1;
+					for (int i = 0; i < connectionArray.Count; i++) {
+						if (finished == taskList[i + 1]) {
+							idx = i;
+							break;
+						}
+					}
+
+					var context = connectionArray[idx];
+					Debug ($"MAIN LOOP #2: {idx} {context.State} {context?.Connection?.ME}");
+
+					if (finished.Status == TaskStatus.Canceled || finished.Status == TaskStatus.Faulted) {
+						Debug ($"MAIN LOOP #2 FAILED: {finished.Status} {finished.Exception?.Message}");
+						connections.Remove (context);
+						context.Dispose ();
+						continue;
+					}
+
+					if (!context.MainLoopIterationDone (TestContext, finished, cts.Token)) {
+						connections.Remove (context);
+						context.Dispose ();
+						continue;
+					}
+				}
+			}
+
+			Debug ($"MAIN LOOP COMPLETE");
+			cts.Dispose ();
+
+			void RunScheduler ()
+			{
+				while (connections.Count < requestParallelConnections) {
+					Debug ($"RUN SCHEDULER: {connections.Count}");
+					var connection = Backend.CreateConnection ();
+					connections.AddLast (new NewListenerContext (this, connection));
+					Debug ($"RUN SCHEDULER #1: {connection.ME}");
+				}
+			}
+		}
+
+		(ListenerContext context, bool reused) FindOrCreateContext (HttpOperation operation, bool reuse)
+		{
+			lock (this) {
+				var iter = connections.First;
+				while (reuse && iter != null) {
+					var node = iter.Value;
+					iter = iter.Next;
+
+					if (node.StartOperation (operation))
+						return (node, true);
+				}
+
+				var connection = Backend.CreateConnection ();
+				var context = new NewListenerContext (this, connection);
+				context.StartOperation (operation);
+				connections.AddLast (context);
+				mainLoopEvent.Set ();
+				return (context, false);
+			}
+		}
+
+		public ListenerContext CreateContext (TestContext ctx, HttpOperation operation, bool reusing)
+		{
+			var (context, _) = FindOrCreateContext (operation, reusing);
+			return context;
+		}
+
+		public async Task<ListenerContext> CreateContext (
+			TestContext ctx, HttpOperation operation, CancellationToken cancellationToken)
+		{
+			var reusing = !operation.HasAnyFlags (HttpOperationFlags.DontReuseConnection);
+			var (context, reused) = FindOrCreateContext (operation, reusing);
+
+			if (reused && operation.HasAnyFlags (HttpOperationFlags.ClientUsesNewConnection)) {
+				try {
+					await context.Connection.ReadRequest (ctx, cancellationToken).ConfigureAwait (false);
+					throw ctx.AssertFail ("Expected client to use a new connection.");
+				} catch (OperationCanceledException) {
+					throw;
+				} catch (Exception ex) {
+					ctx.LogDebug (2, $"{ME} EXPECTED EXCEPTION: {ex.GetType ()} {ex.Message}");
+				}
+				context.Dispose ();
+				(context, reused) = FindOrCreateContext (operation, false);
+			}
+
+			return context;
+		}
+
+		public Uri PrepareRedirect (TestContext ctx, HttpOperation operation, HttpConnection connection,
+					    Handler handler, bool keepAlive, string path)
+		{
+			lock (this) {
+				var redirect = RegisterOperation (ctx, operation, handler, path);
+
+				var iter = connections.First;
+				while (iter != null) {
+					var node = iter.Value;
+					iter = iter.Next;
+
+					if (node.Connection != connection)
+						continue;
+
+					node.Operation.PrepareRedirect (ctx, redirect, connection, keepAlive);
+					return redirect.Uri;
+				}
+
+				throw new InvalidOperationException ();
+			}
+		}
+
+		void Close ()
+		{
+			Debug ($"CLOSE");
+			closed = true;
+			cts.Cancel ();
+
+			var iter = connections.First;
+			while (iter != null) {
+				var node = iter.Value;
+				iter = iter.Next;
+
+				node.Dispose ();
+				connections.Remove (node);
+			}
+
+			mainLoopEvent.Set ();
 		}
 
 		protected internal string FormatConnection (HttpConnection connection)
@@ -123,8 +333,6 @@ namespace Xamarin.WebTests.Server
 				tcs.SetException (ex);
 			return tcs.Task;
 		}
-
-		protected abstract void Close ();
 
 		public void Dispose ()
 		{

@@ -36,16 +36,14 @@ namespace Xamarin.WebTests.Server
 
 	class NewListenerContext : ListenerContext
 	{
-		new public ParallelListener Listener => (ParallelListener)base.Listener;
-
-		public NewListenerContext (ParallelListener listener, HttpConnection connection)
+		public NewListenerContext (Listener listener, HttpConnection connection)
 			: base (listener)
 		{
 			this.connection = connection;
 			State = ConnectionState.Listening;
 		}
 
-		protected NewListenerContext (ParallelListener listener)
+		protected NewListenerContext (Listener listener)
 			: base (listener)
 		{
 		}

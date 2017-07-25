@@ -111,7 +111,7 @@ namespace Xamarin.WebTests.HttpFramework
 		ServicePoint servicePoint;
 		ListenerContext listenerContext;
 		ListenerOperation listenerOperation;
-		ParallelListener parallelListener;
+		Listener listener;
 		TaskCompletionSource<Request> requestTask;
 		TaskCompletionSource<Response> requestDoneTask;
 		CancellationTokenSource cts;
@@ -231,9 +231,9 @@ namespace Xamarin.WebTests.HttpFramework
 			var me = $"{ME} NEW LISTENER";
 			ctx.LogDebug (1, me);
 
-			parallelListener = (ParallelListener)((BuiltinHttpServer)Server).Listener;
+			listener = ((BuiltinHttpServer)Server).Listener;
 
-			var operation = parallelListener.RegisterOperation (ctx, this, Handler, null);
+			var operation = listener.RegisterOperation (ctx, this, Handler, null);
 			var request = CreateRequest (ctx, operation.Uri);
 
 			listenerOperation = operation;
@@ -250,7 +250,7 @@ namespace Xamarin.WebTests.HttpFramework
 
 			if ((Server.Flags & HttpServerFlags.InstrumentationListener) != 0) {
 				ctx.LogDebug (2, $"{me} INSTRUMENTATION");
-				listenerContext = await parallelListener.CreateContext (ctx, this, cancellationToken).ConfigureAwait (false);
+				listenerContext = await listener.CreateContext (ctx, this, cancellationToken).ConfigureAwait (false);
 
 				await listenerContext.ServerStartTask.ConfigureAwait (false);
 			}
@@ -320,7 +320,7 @@ namespace Xamarin.WebTests.HttpFramework
 		public Uri RegisterRedirect (TestContext ctx, HttpConnection connection,
 		                             Handler handler, bool keepAlive, string path = null)
 		{
-			return parallelListener.PrepareRedirect (ctx, this, connection, handler, keepAlive, path);
+			return listener.PrepareRedirect (ctx, this, connection, handler, keepAlive, path);
 		}
 
 		protected abstract void Destroy ();

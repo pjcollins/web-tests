@@ -101,7 +101,7 @@ namespace Xamarin.WebTests.HttpFramework {
 			var backend = new ProxyBackend (ctx, this);
 			if (Interlocked.CompareExchange (ref currentBackend, backend, null) != null)
 				throw new InternalErrorException ();
-			var listener = new ParallelListener (ctx, this, backend);
+			var listener = new Listener (ctx, this, backend);
 			listener.StartInstrumentation ();
 			currentListener = listener;
 			if (AuthenticationType != AuthenticationType.None)
