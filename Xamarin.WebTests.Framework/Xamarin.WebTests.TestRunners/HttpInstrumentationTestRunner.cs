@@ -95,7 +95,7 @@ namespace Xamarin.WebTests.TestRunners
 			ME = $"{GetType ().Name}({EffectiveType})";
 		}
 
-		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.SimpleNtlm;
+		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.NtlmClosesConnection;
 
 		static readonly HttpInstrumentationTestType[] WorkingTests = {
 			HttpInstrumentationTestType.Simple,
@@ -1205,8 +1205,9 @@ namespace Xamarin.WebTests.TestRunners
 				await TestRunner.HandleRequest (
 					ctx, this, connection, request, state, cancellationToken).ConfigureAwait (false);
 
+				var keepAlive = !CloseConnection && (effectiveFlags & (RequestFlags.KeepAlive | RequestFlags.CloseConnection)) == RequestFlags.KeepAlive;
 				if (response != null) {
-					operation.RegisterRedirect (ctx, connection, this, true, request.Path);
+					operation.RegisterRedirect (ctx, connection, this, keepAlive, request.Path);
 					return response;
 				}
 

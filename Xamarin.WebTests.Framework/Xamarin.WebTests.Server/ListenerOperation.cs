@@ -127,7 +127,7 @@ namespace Xamarin.WebTests.Server
 		                             HttpConnection connection, bool keepAlive)
 		{
 			lock (Listener) {
-				var me = $"{ME}({nameof (PrepareRedirect)}";
+				var me = $"{ME} PREPARE REDIRECT";
 				ctx.LogDebug (5, $"{me}: {redirect.ME} {keepAlive}");
 
 				HttpConnection next;
