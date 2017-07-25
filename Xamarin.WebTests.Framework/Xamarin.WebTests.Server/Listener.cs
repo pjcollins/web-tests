@@ -81,8 +81,6 @@ namespace Xamarin.WebTests.Server
 			TestContext.LogDebug (5, $"{ME}: {message}");
 		}
 
-		protected abstract ListenerOperation CreateOperation (HttpOperation operation, Handler handler, Uri uri);
-
 		public ListenerOperation RegisterOperation (TestContext ctx, HttpOperation operation, Handler handler, string path)
 		{
 			lock (this) {
@@ -93,7 +91,7 @@ namespace Xamarin.WebTests.Server
 				var me = $"{nameof (RegisterOperation)}({handler.Value})";
 				Debug ($"{me} {path}");
 				var uri = new Uri (Server.TargetUri, path);
-				var listenerOperation = CreateOperation (operation, handler, uri);
+				var listenerOperation = new ListenerOperation (this, operation, handler, uri);
 				registry.Add (path, listenerOperation);
 				return listenerOperation;
 			}

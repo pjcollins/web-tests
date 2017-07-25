@@ -33,7 +33,7 @@ namespace Xamarin.WebTests.Server
 	using HttpFramework;
 	using HttpHandlers;
 
-	abstract class ListenerOperation
+	class ListenerOperation
 	{
 		public Listener Listener {
 			get;

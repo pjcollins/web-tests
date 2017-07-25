@@ -59,7 +59,7 @@ namespace Xamarin.WebTests.Server
 		}
 
 		HttpRequest currentRequest;
-		ParallelListenerOperation currentOperation;
+		ListenerOperation currentOperation;
 		HttpOperation currentInstrumentation;
 		HttpConnection connection;
 		Iteration currentIteration;
@@ -145,7 +145,7 @@ namespace Xamarin.WebTests.Server
 
 			ConnectionState GotRequest (HttpRequest request)
 			{
-				var operation = (ParallelListenerOperation)Listener.GetOperation (this, request);
+				var operation = Listener.GetOperation (this, request);
 				if (operation == null) {
 					ctx.LogDebug (5, $"{me} INVALID REQUEST: {request.Path}");
 					return ConnectionState.Closed;
@@ -175,7 +175,7 @@ namespace Xamarin.WebTests.Server
 				if (redirect == null)
 					return keepAlive ? ConnectionState.KeepAlive : ConnectionState.Closed;
 
-				currentOperation = (ParallelListenerOperation)redirect;
+				currentOperation = redirect;
 				if (!keepAlive) {
 					connection = next;
 					return ConnectionState.Listening;

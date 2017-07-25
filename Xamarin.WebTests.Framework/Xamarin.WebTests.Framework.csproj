@@ -220,8 +220,6 @@
     <Compile Include="Xamarin.WebTests.Server\ParallelListenerContext.cs" />
     <Compile Include="Xamarin.WebTests.Server\ConnectionState.cs" />
     <Compile Include="Xamarin.WebTests.Server\ListenerOperation.cs" />
-    <Compile Include="Xamarin.WebTests.Server\ParallelListenerOperation.cs" />
-    <Compile Include="Xamarin.WebTests.Server\InstrumentationListenerOperation.cs" />
     <Compile Include="Xamarin.WebTests.Server\NewListenerContext.cs" />
     <Compile Include="Xamarin.WebTests.Server\NewInstrumentationListenerContext.cs" />
   </ItemGroup>

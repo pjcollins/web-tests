@@ -165,11 +165,6 @@ namespace Xamarin.WebTests.Server
 			}
 		}
 
-		protected override ListenerOperation CreateOperation (HttpOperation operation, Handler handler, Uri uri)
-		{
-			return new ParallelListenerOperation (this, operation, handler, uri);
-		}
-
 		(ListenerContext context, bool reused) FindOrCreateContext (HttpOperation operation, bool reuse)
 		{
 			lock (this) {

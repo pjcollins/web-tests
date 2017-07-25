@@ -104,11 +104,6 @@ namespace Xamarin.WebTests.Server
 			return context;
 		}
 
-		protected override ListenerOperation CreateOperation (HttpOperation operation, Handler handler, Uri uri)
-		{
-			return new InstrumentationListenerOperation (this, operation, handler, uri);
-		}
-
 		protected override void Close ()
 		{
 			TestContext.LogDebug (5, $"{ME}: CLOSE ALL");
