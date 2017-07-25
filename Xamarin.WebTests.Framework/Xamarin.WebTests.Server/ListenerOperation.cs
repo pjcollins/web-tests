@@ -77,16 +77,28 @@ namespace Xamarin.WebTests.Server
 
 		public Task ServerFinishedTask => serverFinishedTask.Task;
 
-		internal async Task<(bool keepAlive, ListenerOperation redirect, HttpConnection next)> HandleRequest (
+		internal async Task<(HttpResponse response, ListenerOperation redirect, HttpConnection next)> HandleRequest (
 			TestContext ctx, ListenerContext context, HttpConnection connection,
 			HttpRequest request, CancellationToken cancellationToken)
 		{
 			var me = $"{ME} HANDLE REQUEST";
 			ctx.LogDebug (2, $"{me} {connection.ME} {request}");
 
-			serverInitTask.TrySetResult (null);
+			TaskCompletionSource<object> initTask;
+			TaskCompletionSource<object> finishedTask;
+			lock (Listener) {
+				if (parentOperation != null) {
+					initTask = parentOperation.serverInitTask;
+					finishedTask = parentOperation.serverFinishedTask;
+				} else {
+					initTask = serverInitTask;
+					finishedTask = serverFinishedTask;
+				}
+			}
 
-			bool keepAlive;
+			initTask.TrySetResult (null);
+
+			HttpResponse response;
 
 			try {
 				cancellationToken.ThrowIfCancellationRequested ();
@@ -94,21 +106,22 @@ namespace Xamarin.WebTests.Server
 
 				ctx.LogDebug (2, $"{me} REQUEST FULLY READ");
 
-				keepAlive = await Listener.Server.HandleConnection (
-					ctx, Operation, connection, request, Handler, cancellationToken).ConfigureAwait (false);
+				response = await Handler.NewHandleRequest (
+					ctx, Operation, connection, request, cancellationToken).ConfigureAwait (false);
 
-				ctx.LogDebug (2, $"{me} HANDLE REQUEST DONE: {keepAlive}");
+				ctx.LogDebug (2, $"{me} HANDLE REQUEST DONE: {response}");
 
 			} catch (OperationCanceledException) {
-				serverFinishedTask.TrySetCanceled ();
+				finishedTask.TrySetCanceled ();
 				throw;
 			} catch (Exception ex) {
-				serverFinishedTask.TrySetException (ex);
+				finishedTask.TrySetException (ex);
 				throw;
 			}
 
 			ListenerOperation redirect;
 			HttpConnection next;
+
 			lock (Listener) {
 				redirect = Interlocked.Exchange (ref redirectOperation, null);
 				next = Interlocked.Exchange (ref redirectRequested, null);
@@ -116,10 +129,11 @@ namespace Xamarin.WebTests.Server
 				ctx.LogDebug (2, $"{me} HANDLE REQUEST DONE #1: {redirect?.ME}");
 			}
 
-			serverFinishedTask.TrySetResult (null);
-			return (keepAlive, redirect, next);
+			finishedTask.TrySetResult (null);
+			return (response, redirect, next);
 		}
 
+		ListenerOperation parentOperation;
 		ListenerOperation redirectOperation;
 		HttpConnection redirectRequested;
 
@@ -139,6 +153,7 @@ namespace Xamarin.WebTests.Server
 				if (Interlocked.CompareExchange (ref redirectRequested, next, null) != null)
 					throw new InvalidOperationException ();
 
+				redirect.parentOperation = parentOperation ?? this;
 				redirectOperation = redirect;
 			}
 		}

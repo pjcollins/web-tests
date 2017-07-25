@@ -63,6 +63,15 @@ namespace Xamarin.WebTests.HttpFramework
 			}
 		}
 
+		public bool CloseConnection {
+			get { return closeConnection; }
+			set {
+				if (responseWritten)
+					throw new InvalidOperationException ();
+				closeConnection = value;
+			}
+		}
+
 		public bool WriteAsBlob {
 			get { return writeAsBlob; }
 			set {
@@ -82,6 +91,7 @@ namespace Xamarin.WebTests.HttpFramework
 		}
 
 		bool? keepAlive;
+		bool closeConnection;
 		bool responseWritten;
 		bool writeAsBlob;
 		bool noContentLength;

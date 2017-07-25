@@ -78,6 +78,8 @@ namespace Xamarin.WebTests.Server
 		}
 
 		HttpRequest currentRequest;
+		HttpResponse currentResponse;
+		ListenerOperation redirectRequested;
 		ListenerOperation currentOperation;
 		HttpOperation currentInstrumentation;
 		HttpConnection connection;
@@ -130,6 +132,8 @@ namespace Xamarin.WebTests.Server
 					return CreateIteration (ReadRequestHeader, GotRequest);
 				case ConnectionState.HasRequest:
 					return CreateIteration (HandleRequest, RequestComplete);
+				case ConnectionState.RequestComplete:
+					return CreateIteration (WriteResponse, ResponseWritten);
 				default:
 					throw ctx.AssertFail (State);
 				}
@@ -168,16 +172,34 @@ namespace Xamarin.WebTests.Server
 				return ConnectionState.HasRequest;
 			}
 
-			Task<(bool keepAlive, ListenerOperation redict, HttpConnection next)> HandleRequest ()
+			Task<(HttpResponse response, ListenerOperation redict, HttpConnection next)> HandleRequest ()
 			{
 				return currentOperation.HandleRequest (ctx, this, Connection, currentRequest, cancellationToken);
 			}
 
-			ConnectionState RequestComplete (bool keepAlive, ListenerOperation redirect, HttpConnection next)
+			ConnectionState RequestComplete (HttpResponse response, ListenerOperation redirect, HttpConnection next)
 			{
-				ctx.LogDebug (5, $"{me}: {keepAlive} {redirect?.ME}");
+				ctx.LogDebug (5, $"{me}: {response} {redirect?.ME}");
 
-				CompleteOperation ();
+				currentResponse = response;
+				redirectRequested = redirect;
+				return ConnectionState.RequestComplete;
+			}
+
+			async Task<bool> WriteResponse ()
+			{
+				var response = Interlocked.Exchange (ref currentResponse, null);
+				var keepAlive = (response.KeepAlive ?? false) && !response.CloseConnection;
+
+				await connection.WriteResponse (ctx, response, cancellationToken).ConfigureAwait (false);
+				return keepAlive;
+			}
+
+			ConnectionState ResponseWritten (bool keepAlive)
+			{
+				var request = Interlocked.Exchange (ref currentRequest, null);
+				var operation = Interlocked.Exchange (ref currentOperation, null);
+				var redirect = Interlocked.Exchange (ref redirectRequested, null);
 
 				if (!keepAlive) {
 					connection.Dispose ();
@@ -189,17 +211,11 @@ namespace Xamarin.WebTests.Server
 
 				currentOperation = redirect;
 				if (!keepAlive) {
-					connection = next;
+					connection = Listener.Backend.CreateConnection ();
 					return ConnectionState.Listening;
 				}
 
 				return ConnectionState.WaitingForRequest;
-			}
-
-			void CompleteOperation ()
-			{
-				currentOperation = null;
-				currentRequest = null;
 			}
 		}
 

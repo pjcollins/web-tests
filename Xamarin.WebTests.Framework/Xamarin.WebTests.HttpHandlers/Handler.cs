@@ -78,7 +78,6 @@ namespace Xamarin.WebTests.HttpHandlers
 
 		bool hasRequest;
 		RequestFlags flags;
-		TaskCompletionSource<HttpResponse> serverTask;
 
 		protected void WantToModify ()
 		{
@@ -124,6 +123,61 @@ namespace Xamarin.WebTests.HttpHandlers
 			ctx.LogDebug (2, sb.ToString ());
 		}
 
+		public async Task<HttpResponse> NewHandleRequest (TestContext ctx, HttpOperation operation,
+		                                                  HttpConnection connection, HttpRequest request,
+		                                                  CancellationToken cancellationToken)
+		{
+			Exception originalError;
+			HttpResponse response;
+
+			if (operation == null)
+				throw new ArgumentNullException (nameof (operation));
+			if (connection == null)
+				throw new ArgumentNullException (nameof (connection));
+
+			var expectServerError = operation.HasAnyFlags (HttpOperationFlags.ExpectServerException);
+
+			try {
+				Debug (ctx, 1, $"HANDLE REQUEST: {connection.RemoteEndPoint}");
+				DumpHeaders (ctx, request);
+				connection.Server.CheckEncryption (ctx, connection.SslStream);
+				response = await HandleRequest (ctx, operation, connection, request, Flags, cancellationToken);
+
+				if (response == null)
+					response = HttpResponse.CreateSuccess ();
+				if ((Flags & RequestFlags.CloseConnection) != 0)
+					response.CloseConnection = true;
+				if (!response.KeepAlive.HasValue && ((Flags & RequestFlags.KeepAlive) != 0))
+					response.KeepAlive = true;
+
+				Debug (ctx, 1, $"HANDLE REQUEST DONE: {connection.RemoteEndPoint}", response);
+				DumpHeaders (ctx, response);
+				return response;
+			} catch (AssertionException ex) {
+				originalError = ex;
+				response = HttpResponse.CreateError (ex.Message);
+			} catch (OperationCanceledException) {
+				throw;
+			} catch (Exception ex) {
+				originalError = ex;
+				response = HttpResponse.CreateError ("Caught unhandled exception", ex);
+			}
+
+			if (ctx.IsCanceled || cancellationToken.IsCancellationRequested) {
+				Debug (ctx, 1, "HANDLE REQUEST - CANCELED");
+				throw new OperationCanceledException ();
+			}
+
+			if (originalError is AssertionException)
+				Debug (ctx, 1, "HANDLE REQUEST - ASSERTION FAILED", originalError);
+			else if (expectServerError)
+				Debug (ctx, 1, "HANDLE REQUEST - EXPECTED ERROR", originalError.GetType ());
+			else
+				Debug (ctx, 1, "HANDLE REQUEST - ERROR", originalError);
+
+			return response;
+		}
+
 		public async Task<bool> HandleRequest (TestContext ctx, HttpOperation operation,
 		                                       HttpConnection connection, HttpRequest request,
 		                                       CancellationToken cancellationToken)
@@ -155,13 +209,11 @@ namespace Xamarin.WebTests.HttpHandlers
 
 				Debug (ctx, 1, $"HANDLE REQUEST DONE: {connection.RemoteEndPoint} {keepAlive}", response);
 				DumpHeaders (ctx, response);
-				serverTask?.TrySetResult (response);
 				return keepAlive;
 			} catch (AssertionException ex) {
 				originalError = ex;
 				response = HttpResponse.CreateError (ex.Message);
 			} catch (OperationCanceledException) {
-				serverTask?.TrySetCanceled ();
 				throw;
 			} catch (Exception ex) {
 				originalError = ex;
@@ -170,7 +222,6 @@ namespace Xamarin.WebTests.HttpHandlers
 
 			if (ctx.IsCanceled || cancellationToken.IsCancellationRequested) {
 				Debug (ctx, 1, "HANDLE REQUEST - CANCELED");
-				serverTask?.TrySetCanceled ();
 				return false;
 			}
 
@@ -184,17 +235,13 @@ namespace Xamarin.WebTests.HttpHandlers
 			try {
 				cancellationToken.ThrowIfCancellationRequested ();
 				await connection.WriteResponse (ctx, response, cancellationToken);
-				serverTask?.TrySetResult (response);
 				return false;
 			} catch (OperationCanceledException) {
-				serverTask?.TrySetCanceled ();
 				throw;
 			} catch (Exception ex) {
 				if (!expectServerError)
 					Debug (ctx, 1, "FAILED TO SEND ERROR RESPONSE", originalError, ex);
-				var newError = new AggregateException ("Failed to send error response", originalError, ex);
-				serverTask?.TrySetException (newError);
-				throw newError;
+				throw new AggregateException ("Failed to send error response", originalError, ex);
 			}
 		}
 
@@ -211,15 +258,9 @@ namespace Xamarin.WebTests.HttpHandlers
 				if (hasRequest)
 					throw new InvalidOperationException ();
 				hasRequest = true;
-				serverTask = new TaskCompletionSource<HttpResponse> ();
 
 				return server.RegisterHandler (ctx, this);
 			}
-		}
-
-		public Task<HttpResponse> WaitForCompletion ()
-		{
-			return serverTask.Task;
 		}
 
 		public virtual void ConfigureRequest (Request request, Uri uri)
