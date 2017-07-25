@@ -60,11 +60,6 @@ namespace Xamarin.WebTests.Server
 			return base.Initialize (ctx, operation, cancellationToken);
 		}
 
-		internal async Task RunTarget (TestContext ctx, HttpOperation operation, CancellationToken cancellationToken)
-		{
-			await targetContext.Run (ctx, cancellationToken).ConfigureAwait (false);
-		}
-
 		protected override void Close ()
 		{
 			if (targetContext != null) {

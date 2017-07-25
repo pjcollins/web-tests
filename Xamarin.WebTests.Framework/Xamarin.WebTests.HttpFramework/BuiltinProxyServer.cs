@@ -144,7 +144,7 @@ namespace Xamarin.WebTests.HttpFramework {
 
 			ctx.LogDebug (5, $"{ME} HANDLE CONNECTION: {remoteAddress}");
 
-			proxyConnection.TargetListener.RegisterOperation (ctx, operation, handler, request.Path);
+			var targetOperation = proxyConnection.TargetListener.RegisterOperation (ctx, operation, handler, request.Path);
 
 			if (AuthenticationManager != null) {
 				AuthenticationState state;
@@ -158,7 +158,7 @@ namespace Xamarin.WebTests.HttpFramework {
 				request.AddHeader ("X-Mono-Redirected", "true");
 			}
 
-			var serverTask = proxyConnection.RunTarget (ctx, operation, cancellationToken);
+			var serverTask = targetOperation.ServerFinishedTask;
 			var proxyTask = HandleConnection (ctx, operation, proxyConnection, request, cancellationToken);
 
 			bool serverFinished = false, proxyFinished = false;
@@ -187,21 +187,7 @@ namespace Xamarin.WebTests.HttpFramework {
 		                             ProxyConnection connection, HttpRequest request,
 		                             CancellationToken cancellationToken)
 		{
-			cancellationToken.ThrowIfCancellationRequested ();
-			// var remoteAddress = connection.RemoteEndPoint.Address;
-			// request.AddHeader ("X-Forwarded-For", remoteAddress);
-
-			if (false && AuthenticationManager != null) {
-				AuthenticationState state;
-				var response = AuthenticationManager.HandleAuthentication (ctx, connection, request, out state);
-				if (response != null) {
-					await connection.WriteResponse (ctx, response, cancellationToken);
-					return;
-				}
-
-				// HACK: Mono rewrites chunked requests into non-chunked.
-				request.AddHeader ("X-Mono-Redirected", "true");
-			}
+			cancellationToken.ThrowIfCancellationRequested (); 
 
 			if (request.Method.Equals ("CONNECT")) {
 				await CreateTunnel (ctx, connection, connection.Stream, request, cancellationToken);

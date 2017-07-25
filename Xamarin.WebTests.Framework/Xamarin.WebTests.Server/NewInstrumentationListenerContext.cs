@@ -40,9 +40,5 @@ namespace Xamarin.WebTests.Server
 			: base (listener, connection)
 		{
 		}
-
-		public override async Task Run (TestContext ctx, CancellationToken cancellationToken)
-		{
-		}
 	}
 }

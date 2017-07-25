@@ -69,12 +69,6 @@ namespace Xamarin.WebTests.Server
 		TaskCompletionSource<object> serverReadyTask;
 		TaskCompletionSource<object> serverStartTask;
 
-		public abstract void Continue ();
-
-		public abstract Task ServerInitTask {
-			get;
-		}
-
 		public Task ServerStartTask => serverStartTask.Task;
 
 		public Task ServerReadyTask => serverReadyTask.Task;
@@ -192,8 +186,6 @@ namespace Xamarin.WebTests.Server
 			ctx.LogDebug (2, $"{me} DONE");
 			return true;
 		}
-
-		public abstract Task Run (TestContext ctx, CancellationToken cancellationToken);
 
 		internal static Task FailedTask (Exception ex)
 		{
