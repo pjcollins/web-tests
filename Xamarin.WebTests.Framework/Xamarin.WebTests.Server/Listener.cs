@@ -38,7 +38,7 @@ namespace Xamarin.WebTests.Server
 
 	class Listener : IDisposable
 	{
-		LinkedList<NewListenerContext> connections;
+		LinkedList<ListenerContext> connections;
 		bool closed;
 
 		int running;
@@ -78,7 +78,7 @@ namespace Xamarin.WebTests.Server
 			ME = $"{GetType ().Name}({ID})";
 			registry = new Dictionary<string, ListenerOperation> ();
 
-			connections = new LinkedList<NewListenerContext> ();
+			connections = new LinkedList<ListenerContext> ();
 			mainLoopEvent = new AsyncManualResetEvent (false);
 			cts = new CancellationTokenSource ();
 		}
@@ -119,7 +119,7 @@ namespace Xamarin.WebTests.Server
 				Debug ($"MAIN LOOP");
 
 				var taskList = new List<Task> ();
-				var connectionArray = new List<NewListenerContext> ();
+				var connectionArray = new List<ListenerContext> ();
 				lock (this) {
 					RunScheduler ();
 
@@ -186,7 +186,7 @@ namespace Xamarin.WebTests.Server
 				while (connections.Count < requestParallelConnections) {
 					Debug ($"RUN SCHEDULER: {connections.Count}");
 					var connection = Backend.CreateConnection ();
-					connections.AddLast (new NewListenerContext (this, connection));
+					connections.AddLast (new ListenerContext (this, connection));
 					Debug ($"RUN SCHEDULER #1: {connection.ME}");
 				}
 			}
@@ -205,7 +205,7 @@ namespace Xamarin.WebTests.Server
 				}
 
 				var connection = Backend.CreateConnection ();
-				var context = new NewListenerContext (this, connection);
+				var context = new ListenerContext (this, connection);
 				context.StartOperation (operation);
 				connections.AddLast (context);
 				mainLoopEvent.Set ();
