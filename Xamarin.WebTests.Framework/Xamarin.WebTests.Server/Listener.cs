@@ -281,12 +281,7 @@ namespace Xamarin.WebTests.Server
 			mainLoopEvent.Set ();
 		}
 
-		protected internal string FormatConnection (HttpConnection connection)
-		{
-			return $"[{ME}:{connection.ME}]";
-		}
-
-		protected void Debug (string message)
+		void Debug (string message)
 		{
 			TestContext.LogDebug (5, $"{ME}: {message}");
 		}
@@ -307,7 +302,7 @@ namespace Xamarin.WebTests.Server
 			}
 		}
 
-		protected internal ListenerOperation GetOperation (ListenerContext context, HttpRequest request)
+		internal ListenerOperation GetOperation (ListenerContext context, HttpRequest request)
 		{
 			lock (this) {
 				var me = $"{nameof (GetOperation)}({context.Connection.ME})";

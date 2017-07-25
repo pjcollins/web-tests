@@ -42,7 +42,7 @@ namespace Xamarin.WebTests.Server
 
 		public ConnectionState State {
 			get;
-			internal set;
+			private set;
 		}
 
 		static int nextID;
@@ -137,12 +137,12 @@ namespace Xamarin.WebTests.Server
 
 			Task<(bool complete, bool success)> Start ()
 			{
-				return Initialize (ctx, connection, false, instrumentation, cancellationToken);
+				return Initialize (ctx, false, instrumentation, cancellationToken);
 			}
 
 			Task<(bool complete, bool success)> ReuseConnection ()
 			{
-				return Initialize (ctx, connection, true, instrumentation, cancellationToken);
+				return Initialize (ctx, true, instrumentation, cancellationToken);
 			}
 
 			ConnectionState Accepted (bool completed, bool success)
@@ -228,19 +228,18 @@ namespace Xamarin.WebTests.Server
 
 		public Task ServerReadyTask => serverReadyTask.Task;
 
-		protected async Task<(bool complete, bool success)> Initialize (
-			TestContext ctx, HttpConnection connection, bool reused,
-			HttpOperation operation, CancellationToken cancellationToken)
+		async Task<(bool complete, bool success)> Initialize (
+			TestContext ctx, bool reused, HttpOperation operation, CancellationToken cancellationToken)
 		{
 			try {
 				(bool complete, bool success) result;
 				if (reused) {
-					if (await ReuseConnection (ctx, connection, cancellationToken).ConfigureAwait (false))
+					if (await ReuseConnection (ctx, cancellationToken).ConfigureAwait (false))
 						result = (true, true);
 					else
 						result = (false, false);
 				} else {
-					if (await InitConnection (ctx, operation, connection, cancellationToken).ConfigureAwait (false))
+					if (await InitConnection (ctx, operation, cancellationToken).ConfigureAwait (false))
 						result = (true, true);
 					else
 						result = (true, false);
@@ -256,19 +255,19 @@ namespace Xamarin.WebTests.Server
 			}
 		}
 
-		protected virtual void OnCanceled ()
+		void OnCanceled ()
 		{
 			serverStartTask.TrySetCanceled ();
 			serverReadyTask.TrySetCanceled ();
 		}
 
-		protected virtual void OnError (Exception error)
+		void OnError (Exception error)
 		{
 			serverStartTask.TrySetException (error);
 			serverReadyTask.TrySetResult (error);
 		}
 
-		async Task<bool> ReuseConnection (TestContext ctx, HttpConnection connection, CancellationToken cancellationToken)
+		async Task<bool> ReuseConnection (TestContext ctx, CancellationToken cancellationToken)
 		{
 			var me = $"{ME}({connection.ME}) REUSE";
 			ctx.LogDebug (2, $"{me}");
@@ -282,8 +281,7 @@ namespace Xamarin.WebTests.Server
 			return reusable;
 		}
 
-		async Task<bool> InitConnection (TestContext ctx, HttpOperation operation,
-		                                 HttpConnection connection, CancellationToken cancellationToken)
+		async Task<bool> InitConnection (TestContext ctx, HttpOperation operation, CancellationToken cancellationToken)
 		{
 			var me = $"{ME}({connection.ME}) INIT";
 			ctx.LogDebug (2, $"{me}");
