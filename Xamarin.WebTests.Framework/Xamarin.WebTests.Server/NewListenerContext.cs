@@ -36,14 +36,16 @@ namespace Xamarin.WebTests.Server
 
 	abstract class NewListenerContext : ListenerContext
 	{
-		public NewListenerContext (Listener listener, HttpConnection connection)
+		new public ParallelListener Listener => (ParallelListener)base.Listener;
+
+		public NewListenerContext (ParallelListener listener, HttpConnection connection)
 			: base (listener)
 		{
 			this.connection = connection;
 			serverInitTask = new TaskCompletionSource<object> ();
 		}
 
-		protected NewListenerContext (Listener listener)
+		protected NewListenerContext (ParallelListener listener)
 			: base (listener)
 		{
 		}
@@ -56,10 +58,16 @@ namespace Xamarin.WebTests.Server
 
 		HttpRequest currentRequest;
 		ParallelListenerOperation currentOperation;
+		HttpOperation currentInstrumentation;
 		HttpConnection connection;
 		Iteration currentIteration;
 
-		public abstract bool StartOperation (HttpOperation operation);
+		public bool StartOperation (HttpOperation operation)
+		{
+			if (!Listener.UsingInstrumentation)
+				throw new InvalidOperationException ();
+			return Interlocked.CompareExchange (ref currentInstrumentation, operation, null) == null;
+		}
 
 		public override void Continue ()
 		{
@@ -72,8 +80,15 @@ namespace Xamarin.WebTests.Server
 		{
 			var me = $"{Listener.ME}({Connection.ME}) ITERATION";
 
-			if (currentIteration != null)
-				return currentIteration.Task;
+			HttpOperation instrumentation;
+			lock (Listener) {
+				if (currentIteration != null)
+					return currentIteration.Task;
+
+				instrumentation = currentInstrumentation;
+				if (Listener.UsingInstrumentation && instrumentation == null)
+					throw new InvalidOperationException ();
+			}
 
 			ctx.LogDebug (5, $"{me}");
 
@@ -103,12 +118,12 @@ namespace Xamarin.WebTests.Server
 
 			Task<(bool complete, bool success)> Start ()
 			{
-				return Initialize (ctx, connection, false, null, cancellationToken);
+				return Initialize (ctx, connection, false, instrumentation, cancellationToken);
 			}
 
 			Task<(bool complete, bool success)> ReuseConnection ()
 			{
-				return Initialize (ctx, connection, true, null, cancellationToken);
+				return Initialize (ctx, connection, true, instrumentation, cancellationToken);
 			}
 
 			ConnectionState Accepted (bool completed, bool success)
