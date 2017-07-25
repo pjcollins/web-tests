@@ -46,18 +46,6 @@ namespace Xamarin.WebTests.Server
 
 		int requestParallelConnections;
 
-		internal int RequestParallelConnections {
-			get { return requestParallelConnections; }
-			set {
-				lock (this) {
-					if (requestParallelConnections == value)
-						return;
-					requestParallelConnections = value;
-					Run ();
-				}
-			}
-		}
-
 		public ParallelListener (TestContext ctx, HttpServer server, ListenerBackend backend)
 			: base (ctx, server, backend)
 		{
@@ -68,13 +56,26 @@ namespace Xamarin.WebTests.Server
 			ctx.LogDebug (5, $"{ME} TEST: {ctx.Result}");
 		}
 
-		public void Run ()
+		public void StartParallel (int parallelConnections)
 		{
 			lock (this) {
-				if (Interlocked.CompareExchange (ref running, 1, 0) == 0)
-					MainLoop ();
+				if (Interlocked.CompareExchange (ref running, 1, 0) != 0)
+					throw new InvalidOperationException ();
+
+				requestParallelConnections = parallelConnections;
+				mainLoopEvent.Set ();
+				MainLoop ();
+			}
+		}
+
+		public void StartInstrumentation ()
+		{
+			lock (this) {
+				if (Interlocked.CompareExchange (ref running, 1, 0) != 0)
+					throw new InvalidOperationException ();
 
 				mainLoopEvent.Set ();
+				MainLoop ();
 			}
 		}
 

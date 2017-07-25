@@ -145,8 +145,8 @@ namespace Xamarin.WebTests.HttpFramework
 			var linkedCts = CancellationTokenSource.CreateLinkedTokenSource (cts.Token, cancellationToken);
 			try {
 				Response response;
-				if ((Server.Flags & HttpServerFlags.NewListener) != 0)
-					response = await RunNewListener (ctx, linkedCts.Token).ConfigureAwait (false);
+				if ((Server.Flags & HttpServerFlags.ParallelListener) != 0)
+					response = await RunParallelListener (ctx, linkedCts.Token).ConfigureAwait (false);
 				else
 					response = await RunListener (ctx, linkedCts.Token).ConfigureAwait (false);
 				requestDoneTask.TrySetResult (response);
@@ -329,7 +329,7 @@ namespace Xamarin.WebTests.HttpFramework
 				Debug (ctx, 5, "GOT RESPONSE BODY", response.Content);
 		}
 
-		async Task<Response> RunNewListener (TestContext ctx, CancellationToken cancellationToken)
+		async Task<Response> RunParallelListener (TestContext ctx, CancellationToken cancellationToken)
 		{
 			var me = $"{ME} NEW LISTENER";
 			ctx.LogDebug (1, me);
@@ -350,6 +350,14 @@ namespace Xamarin.WebTests.HttpFramework
 			requestTask.SetResult (request);
 
 			ctx.LogDebug (2, $"{me} #1: {operation.Uri} {request}");
+
+			if ((Server.Flags & HttpServerFlags.InstrumentationListener) != 0) {
+				ctx.LogDebug (2, $"{me} INSTRUMENTATION");
+				listenerContext = await instrumentationListener.CreateContext (ctx, this, cancellationToken).ConfigureAwait (false);
+
+				var serverTask = listenerContext.Run (ctx, cancellationToken);
+				await listenerContext.ServerStartTask.ConfigureAwait (false);
+			}
 
 			var clientTask = RunInner (ctx, request, cancellationToken);
 

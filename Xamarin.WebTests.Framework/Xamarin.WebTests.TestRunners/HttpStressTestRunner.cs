@@ -87,7 +87,7 @@ namespace Xamarin.WebTests.TestRunners
 			: base (endpoint, parameters)
 		{
 			Provider = provider;
-			ServerFlags = flags | HttpServerFlags.NewListener;
+			ServerFlags = flags | HttpServerFlags.ParallelListener;
 			Uri = uri;
 
 			Server = new BuiltinHttpServer (uri, endpoint, ServerFlags, parameters, null);
@@ -168,7 +168,7 @@ namespace Xamarin.WebTests.TestRunners
 				Flags = RequestFlags.KeepAlive
 			};
 			var redirect = new RedirectHandler (helloKeepAlive, HttpStatusCode.Redirect);
-			var auth = new AuthenticationHandler (AuthenticationType.Basic, helloKeepAlive);
+			var auth = new AuthenticationHandler (AuthenticationType.NTLM, helloKeepAlive);
 
 			var operation = new TraditionalOperation (Server, auth, true);
 			await operation.Run (ctx, cancellationToken).ConfigureAwait (false);

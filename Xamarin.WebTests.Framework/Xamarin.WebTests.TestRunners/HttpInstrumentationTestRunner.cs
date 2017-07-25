@@ -43,6 +43,7 @@ namespace Xamarin.WebTests.TestRunners
 	using HttpHandlers;
 	using TestFramework;
 	using Resources;
+	using Xamarin.WebTests.Server;
 
 	[HttpInstrumentationTestRunner]
 	public class HttpInstrumentationTestRunner : AbstractConnection
@@ -85,15 +86,16 @@ namespace Xamarin.WebTests.TestRunners
 			: base (endpoint, parameters)
 		{
 			Provider = provider;
-			ServerFlags = flags;
 			Uri = uri;
+
+			ServerFlags = flags | HttpServerFlags.ParallelListener | HttpServerFlags.InstrumentationListener;
 
 			Server = new BuiltinHttpServer (uri, endpoint, ServerFlags, parameters, null);
 
 			ME = $"{GetType ().Name}({EffectiveType})";
 		}
 
-		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.SimpleNtlm;
+		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.Simple;
 
 		static readonly HttpInstrumentationTestType[] WorkingTests = {
 			HttpInstrumentationTestType.Simple,
