@@ -264,8 +264,6 @@ namespace Xamarin.WebTests.HttpFramework
 		internal void PrepareRedirect (TestContext ctx, HttpConnection connection, bool keepAlive)
 		{
 			listenerContext?.PrepareRedirect (ctx, connection, keepAlive);
-
-			listenerOperation?.PrepareRedirect (ctx, connection, keepAlive);
 		}
 
 		protected abstract Task<Response> RunInner (TestContext ctx, Request request, CancellationToken cancellationToken);

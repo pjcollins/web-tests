@@ -142,7 +142,5 @@ namespace Xamarin.WebTests.Server
 				redirectOperation = redirect;
 			}
 		}
-
-		public abstract void PrepareRedirect (TestContext ctx, HttpConnection connection, bool keepAlive);
 	}
 }

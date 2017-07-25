@@ -40,23 +40,5 @@ namespace Xamarin.WebTests.Server
 		{
 		}
 
-		HttpConnection redirectRequested;
-
-		public override void PrepareRedirect (TestContext ctx, HttpConnection connection, bool keepAlive)
-		{
-			lock (Listener) {
-				var me = $"{Listener.FormatConnection (connection)} PREPARE REDIRECT";
-				ctx.LogDebug (5, $"{me}: {keepAlive}");
-				return;
-				HttpConnection next;
-				if (keepAlive)
-					next = connection;
-				else
-					next = Listener.Backend.CreateConnection ();
-
-				if (Interlocked.CompareExchange (ref redirectRequested, next, null) != null)
-					throw new InvalidOperationException ();
-			}
-		}
 	}
 }
