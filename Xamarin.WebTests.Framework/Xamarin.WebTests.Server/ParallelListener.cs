@@ -56,6 +56,11 @@ namespace Xamarin.WebTests.Server
 			ctx.LogDebug (5, $"{ME} TEST: {ctx.Result}");
 		}
 
+		public bool UsingInstrumentation {
+			get;
+			private set;
+		}
+
 		public void StartParallel (int parallelConnections)
 		{
 			lock (this) {
@@ -74,6 +79,7 @@ namespace Xamarin.WebTests.Server
 				if (Interlocked.CompareExchange (ref running, 1, 0) != 0)
 					throw new InvalidOperationException ();
 
+				UsingInstrumentation = true;
 				mainLoopEvent.Set ();
 				MainLoop ();
 			}
@@ -161,6 +167,53 @@ namespace Xamarin.WebTests.Server
 		protected override ListenerOperation CreateOperation (HttpOperation operation, Handler handler, Uri uri)
 		{
 			return new ParallelListenerOperation (this, operation, handler, uri);
+		}
+
+		(ListenerContext context, bool reused) FindOrCreateContext (HttpOperation operation, bool reuse)
+		{
+			lock (this) {
+				var iter = connections.First;
+				while (reuse && iter != null) {
+					var node = iter.Value;
+					iter = iter.Next;
+
+					if (node.StartOperation (operation))
+						return (node, true);
+				}
+
+				var context = new ParallelListenerContext (this);
+				context.StartOperation (operation);
+				connections.AddLast (context);
+				return (context, false);
+			}
+		}
+
+		public ListenerContext CreateContext (TestContext ctx, HttpOperation operation, bool reusing)
+		{
+			var (context, _) = FindOrCreateContext (operation, reusing);
+			return context;
+		}
+
+		public async Task<ListenerContext> CreateContext (
+			TestContext ctx, HttpOperation operation, CancellationToken cancellationToken)
+		{
+			var reusing = !operation.HasAnyFlags (HttpOperationFlags.DontReuseConnection);
+			var (context, reused) = FindOrCreateContext (operation, reusing);
+
+			if (reused && operation.HasAnyFlags (HttpOperationFlags.ClientUsesNewConnection)) {
+				try {
+					await context.Connection.ReadRequest (ctx, cancellationToken).ConfigureAwait (false);
+					throw ctx.AssertFail ("Expected client to use a new connection.");
+				} catch (OperationCanceledException) {
+					throw;
+				} catch (Exception ex) {
+					ctx.LogDebug (2, $"{ME} EXPECTED EXCEPTION: {ex.GetType ()} {ex.Message}");
+				}
+				context.Dispose ();
+				(context, reused) = FindOrCreateContext (operation, false);
+			}
+
+			return context;
 		}
 
 		protected override void Close ()

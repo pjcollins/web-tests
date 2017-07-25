@@ -353,7 +353,7 @@ namespace Xamarin.WebTests.HttpFramework
 
 			if ((Server.Flags & HttpServerFlags.InstrumentationListener) != 0) {
 				ctx.LogDebug (2, $"{me} INSTRUMENTATION");
-				listenerContext = await instrumentationListener.CreateContext (ctx, this, cancellationToken).ConfigureAwait (false);
+				listenerContext = await parallelListener.CreateContext (ctx, this, cancellationToken).ConfigureAwait (false);
 
 				var serverTask = listenerContext.Run (ctx, cancellationToken);
 				await listenerContext.ServerStartTask.ConfigureAwait (false);

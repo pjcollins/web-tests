@@ -45,6 +45,13 @@ namespace Xamarin.WebTests.Server
 			serverInitTask = new TaskCompletionSource<object> ();
 		}
 
+		public ParallelListenerContext (ParallelListener listener)
+			: base (listener)
+		{
+			if (!listener.UsingInstrumentation)
+				throw new InvalidOperationException ();
+		}
+
 		TaskCompletionSource<object> serverInitTask;
 
 		public override HttpConnection Connection {
@@ -53,8 +60,16 @@ namespace Xamarin.WebTests.Server
 
 		HttpRequest currentRequest;
 		ParallelListenerOperation currentOperation;
+		HttpOperation currentInstrumentation;
 		HttpConnection connection;
 		Iteration currentIteration;
+
+		public bool StartOperation (HttpOperation operation)
+		{
+			if (!Listener.UsingInstrumentation)
+				throw new InvalidOperationException ();
+			return Interlocked.CompareExchange (ref currentInstrumentation, operation, null) == null;
+		}
 
 		public override void Continue ()
 		{
