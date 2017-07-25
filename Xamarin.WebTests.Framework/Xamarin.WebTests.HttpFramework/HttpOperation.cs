@@ -426,6 +426,9 @@ namespace Xamarin.WebTests.HttpFramework
 		public Uri RegisterRedirect (TestContext ctx, HttpConnection connection,
 		                             Handler handler, bool keepAlive, string path = null)
 		{
+			if (parallelListener != null) {
+				return parallelListener.PrepareRedirect (ctx, connection, handler, keepAlive, path);
+			}
 			return listenerOperation.PrepareRedirect (ctx, connection, handler, keepAlive, path);
 		}
 

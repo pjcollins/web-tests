@@ -54,6 +54,10 @@ namespace Xamarin.WebTests.Server
 			get { return connection; }
 		}
 
+		public ListenerOperation Operation {
+			get { return currentOperation; }
+		}
+
 		HttpRequest currentRequest;
 		ParallelListenerOperation currentOperation;
 		HttpOperation currentInstrumentation;
