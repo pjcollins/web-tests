@@ -258,11 +258,6 @@ namespace Xamarin.WebTests.Server
 			}
 		}
 
-		public override void PrepareRedirect (TestContext ctx, HttpConnection connection, bool keepAlive)
-		{
-			// throw new NotImplementedException ();
-		}
-
 		protected override void Close ()
 		{
 			if (connection != null) {

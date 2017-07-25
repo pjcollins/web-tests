@@ -195,8 +195,6 @@ namespace Xamarin.WebTests.Server
 
 		public abstract Task Run (TestContext ctx, CancellationToken cancellationToken);
 
-		public abstract void PrepareRedirect (TestContext ctx, HttpConnection connection, bool keepAlive);
-
 		internal static Task FailedTask (Exception ex)
 		{
 			return Listener.FailedTask (ex);

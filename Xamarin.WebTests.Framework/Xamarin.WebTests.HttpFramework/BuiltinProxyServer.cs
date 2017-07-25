@@ -151,7 +151,6 @@ namespace Xamarin.WebTests.HttpFramework {
 				var response = AuthenticationManager.HandleAuthentication (ctx, connection, request, out state);
 				if (response != null) {
 					await connection.WriteResponse (ctx, response, cancellationToken);
-					operation.PrepareRedirect (ctx, connection, false);
 					return false;
 				}
 
