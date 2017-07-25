@@ -52,20 +52,16 @@ namespace Xamarin.WebTests.Server
 			get;
 		}
 
-		public ListenerContext (Listener listener)
+		public ListenerContext (Listener listener, HttpConnection connection)
 		{
+			this.connection = connection;
+
 			Listener = listener;
 			State = ConnectionState.None;
 			ME = $"[{ID}:{GetType ().Name}:{listener.ME}]";
 
 			serverStartTask = new TaskCompletionSource<object> ();
 			serverReadyTask = new TaskCompletionSource<object> ();
-		}
-
-		public ListenerContext (Listener listener, HttpConnection connection)
-			: this (listener)
-		{
-			this.connection = connection;
 			State = ConnectionState.Listening;
 		}
 
@@ -126,7 +122,7 @@ namespace Xamarin.WebTests.Server
 				switch (State) {
 				case ConnectionState.Listening:
 					return CreateIteration (Start, Accepted);
-				case ConnectionState.KeepAlive:
+				case ConnectionState.ReuseConnection:
 					return CreateIteration (ReuseConnection, Accepted);
 				case ConnectionState.WaitingForRequest:
 					return CreateIteration (ReadRequestHeader, GotRequest);
@@ -208,7 +204,7 @@ namespace Xamarin.WebTests.Server
 				}
 
 				if (redirect == null)
-					return keepAlive ? ConnectionState.KeepAlive : ConnectionState.Closed;
+					return keepAlive ? ConnectionState.ReuseConnection : ConnectionState.Closed;
 
 				currentOperation = redirect;
 				if (!keepAlive) {
@@ -220,22 +216,34 @@ namespace Xamarin.WebTests.Server
 			}
 		}
 
-		public bool MainLoopIterationDone (TestContext ctx, Task task, CancellationToken cancellationToken)
+		public ConnectionState MainLoopIterationDone (TestContext ctx, Task task, CancellationToken cancellationToken)
 		{
 			var me = $"{Listener.ME}({Connection.ME}) ITERATION DONE";
+
+			ctx.LogDebug (5, $"{me}: {task.Status} {State}");
+
+			if (task.Status == TaskStatus.Canceled) {
+				OnCanceled ();
+				State = ConnectionState.Closed;
+				return ConnectionState.Closed;
+			}
+
+			if (task.Status == TaskStatus.Faulted) {
+				OnError (task.Exception);
+				State = ConnectionState.Closed;
+				return ConnectionState.Closed;
+			}
 
 			var iteration = Interlocked.Exchange (ref currentIteration, null);
 			if (task != iteration.Task)
 				throw new InvalidOperationException ();
-
-			ctx.LogDebug (5, $"{me}: {State}");
 
 			var nextState = iteration.Continue ();
 
 			ctx.LogDebug (5, $"{me} DONE: {State} -> {nextState}");
 
 			State = nextState;
-			return nextState != ConnectionState.Closed;
+			return nextState;
 		}
 
 		TaskCompletionSource<object> serverReadyTask;
@@ -370,6 +378,18 @@ namespace Xamarin.WebTests.Server
 				connection.Dispose ();
 				connection = null;
 			}
+		}
+
+		public ListenerContext ReuseConnection ()
+		{
+			disposed = true;
+			var oldConnection = Interlocked.Exchange (ref connection, null);
+			if (oldConnection == null)
+				throw new InvalidOperationException ();
+			var newContext = new ListenerContext (Listener, oldConnection);
+			newContext.State = ConnectionState.WaitingForRequest;
+			newContext.currentInstrumentation = currentInstrumentation;
+			return newContext;
 		}
 
 		public void Dispose ()

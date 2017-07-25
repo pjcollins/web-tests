@@ -166,17 +166,14 @@ namespace Xamarin.WebTests.Server
 					var context = connectionArray[idx];
 					Debug ($"MAIN LOOP #2: {idx} {context.State} {context?.Connection?.ME}");
 
-					if (finished.Status == TaskStatus.Canceled || finished.Status == TaskStatus.Faulted) {
-						Debug ($"MAIN LOOP #2 FAILED: {finished.Status} {finished.Exception?.Message}");
+					var state = context.MainLoopIterationDone (TestContext, finished, cts.Token);
+					if (state == ConnectionState.Closed) {
 						connections.Remove (context);
 						context.Dispose ();
-						continue;
-					}
-
-					if (!context.MainLoopIterationDone (TestContext, finished, cts.Token)) {
+					} else if (state == ConnectionState.ReuseConnection) {
 						connections.Remove (context);
-						context.Dispose ();
-						continue;
+						var newContext = context.ReuseConnection ();
+						connections.AddLast (newContext);
 					}
 				}
 			}

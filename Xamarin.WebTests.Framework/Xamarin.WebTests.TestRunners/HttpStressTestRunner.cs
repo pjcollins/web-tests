@@ -170,12 +170,12 @@ namespace Xamarin.WebTests.TestRunners
 			var redirect = new RedirectHandler (helloKeepAlive, HttpStatusCode.Redirect);
 			var auth = new AuthenticationHandler (AuthenticationType.NTLM, helloKeepAlive);
 
-			var operation = new TraditionalOperation (Server, auth, true);
+			var operation = new TraditionalOperation (Server, helloKeepAlive, true);
 			await operation.Run (ctx, cancellationToken).ConfigureAwait (false);
 
 			ctx.LogDebug (2, $"{me} first operation done.");
 
-			var secondOperation = new TraditionalOperation (Server, redirect, true);
+			var secondOperation = new TraditionalOperation (Server, helloKeepAlive, true);
 			await secondOperation.Run (ctx, cancellationToken);
 
 			ctx.LogDebug (2, $"{me} second operation done.");
