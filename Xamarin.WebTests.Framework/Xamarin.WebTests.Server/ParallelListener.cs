@@ -159,7 +159,7 @@ namespace Xamarin.WebTests.Server
 				while (connections.Count < requestParallelConnections) {
 					Debug ($"RUN SCHEDULER: {connections.Count}");
 					var connection = Backend.CreateConnection ();
-					connections.AddLast (new ParallelListenerContext (this, connection));
+					connections.AddLast (new NewListenerContext (this, connection));
 					Debug ($"RUN SCHEDULER #1: {connection.ME}");
 				}
 			}
@@ -178,7 +178,7 @@ namespace Xamarin.WebTests.Server
 				}
 
 				var connection = Backend.CreateConnection ();
-				var context = new NewInstrumentationListenerContext (this, connection);
+				var context = new NewListenerContext (this, connection);
 				context.StartOperation (operation);
 				connections.AddLast (context);
 				mainLoopEvent.Set ();

@@ -34,7 +34,7 @@ namespace Xamarin.WebTests.Server
 	using ConnectionFramework;
 	using HttpFramework;
 
-	abstract class NewListenerContext : ListenerContext
+	class NewListenerContext : ListenerContext
 	{
 		new public ParallelListener Listener => (ParallelListener)base.Listener;
 
