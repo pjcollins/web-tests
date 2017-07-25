@@ -80,6 +80,7 @@ namespace Xamarin.WebTests.Server
 					throw new InvalidOperationException ();
 
 				UsingInstrumentation = true;
+				requestParallelConnections = -1;
 				mainLoopEvent.Set ();
 				MainLoop ();
 			}
@@ -181,9 +182,11 @@ namespace Xamarin.WebTests.Server
 						return (node, true);
 				}
 
-				var context = new NewInstrumentationListenerContext (this);
+				var connection = Backend.CreateConnection ();
+				var context = new NewInstrumentationListenerContext (this, connection);
 				context.StartOperation (operation);
 				connections.AddLast (context);
+				mainLoopEvent.Set ();
 				return (context, false);
 			}
 		}

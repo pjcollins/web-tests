@@ -45,5 +45,10 @@ namespace Xamarin.WebTests.Server
 		{
 			throw new InvalidOperationException ();
 		}
+
+		public override Task Run (TestContext ctx, CancellationToken cancellationToken)
+		{
+			throw new InvalidOperationException ();
+		}
 	}
 }

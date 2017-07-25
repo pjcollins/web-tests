@@ -356,6 +356,8 @@ namespace Xamarin.WebTests.HttpFramework
 				listenerContext = await parallelListener.CreateContext (ctx, this, cancellationToken).ConfigureAwait (false);
 
 				var serverTask = listenerContext.Run (ctx, cancellationToken);
+				ctx.LogDebug (2, $"{me} INSTRUMENTATION #1");
+
 				await listenerContext.ServerStartTask.ConfigureAwait (false);
 			}
 

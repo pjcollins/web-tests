@@ -36,16 +36,41 @@ namespace Xamarin.WebTests.Server
 
 	class NewInstrumentationListenerContext : NewListenerContext
 	{
-		public NewInstrumentationListenerContext (Listener listener)
-			: base (listener)
+		public NewInstrumentationListenerContext (Listener listener, HttpConnection connection)
+			: base (listener, connection)
 		{
 		}
 
 		HttpOperation currentOperation;
+		HttpConnection currentConnection;
 
 		public override bool StartOperation (HttpOperation operation)
 		{
 			return Interlocked.CompareExchange (ref currentOperation, operation, null) == null;
+		}
+
+		public override async Task Run (TestContext ctx, CancellationToken cancellationToken)
+		{
+			cancellationToken.ThrowIfCancellationRequested ();
+
+			bool reused;
+			HttpConnection connection;
+			HttpOperation operation;
+
+			lock (Listener) {
+				operation = currentOperation;
+				if (operation == null)
+					throw new InvalidOperationException ();
+
+				connection = currentConnection;
+				if (connection == null) {
+					connection = Listener.Backend.CreateConnection ();
+					reused = false;
+				} else {
+					reused = true;
+				}
+			}
+
 		}
 	}
 }

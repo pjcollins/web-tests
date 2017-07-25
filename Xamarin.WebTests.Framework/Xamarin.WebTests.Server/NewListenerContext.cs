@@ -68,11 +68,6 @@ namespace Xamarin.WebTests.Server
 
 		public override Task ServerInitTask => ServerReadyTask;
 
-		public override Task Run (TestContext ctx, CancellationToken cancellationToken)
-		{
-			throw new NotImplementedException ();
-		}
-
 		public Task MainLoopIteration (TestContext ctx, CancellationToken cancellationToken)
 		{
 			var me = $"{Listener.ME}({Connection.ME}) ITERATION";
