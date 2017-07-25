@@ -60,6 +60,7 @@ namespace Xamarin.WebTests.Server
 
 		TaskCompletionSource<object> serverInitTask;
 		TaskCompletionSource<object> serverFinishedTask;
+		ListenerOperation parentOperation;
 
 		public ListenerOperation (Listener listener, HttpOperation operation, Handler handler, Uri uri)
 		{
@@ -84,19 +85,7 @@ namespace Xamarin.WebTests.Server
 			var me = $"{ME} HANDLE REQUEST";
 			ctx.LogDebug (2, $"{me} {connection.ME} {request}");
 
-			TaskCompletionSource<object> initTask;
-			TaskCompletionSource<object> finishedTask;
-			lock (Listener) {
-				if (parentOperation != null) {
-					initTask = parentOperation.serverInitTask;
-					finishedTask = parentOperation.serverFinishedTask;
-				} else {
-					initTask = serverInitTask;
-					finishedTask = serverFinishedTask;
-				}
-			}
-
-			initTask.TrySetResult (null);
+			OnInit ();
 
 			HttpResponse response;
 
@@ -112,34 +101,46 @@ namespace Xamarin.WebTests.Server
 				ctx.LogDebug (2, $"{me} HANDLE REQUEST DONE: {response}");
 
 			} catch (OperationCanceledException) {
-				finishedTask.TrySetCanceled ();
+				OnCanceled ();
 				throw;
 			} catch (Exception ex) {
-				finishedTask.TrySetException (ex);
+				OnError (ex);
 				throw;
 			}
 
-			var redirect = Interlocked.Exchange (ref redirectOperation, null);
+			if (response.Redirect != null) {
+				response.Redirect.parentOperation = this;
+			} else {
+				OnFinished ();
+			}
 
-			ctx.LogDebug (2, $"{me} HANDLE REQUEST DONE #1: {redirect?.ME}");
-
-			finishedTask.TrySetResult (null);
 			return response;
 		}
 
-		ListenerOperation parentOperation;
-		ListenerOperation redirectOperation;
-
-		public void PrepareRedirect (TestContext ctx, ListenerOperation redirect,
-		                             HttpConnection connection, bool keepAlive)
+		void OnInit ()
 		{
-			lock (Listener) {
-				var me = $"{ME} PREPARE REDIRECT";
-				ctx.LogDebug (5, $"{me}: {redirect.ME} {keepAlive}");
+			serverInitTask.TrySetResult (null);
+			parentOperation?.OnInit ();
+		}
 
-				redirect.parentOperation = parentOperation ?? this;
-				redirectOperation = redirect;
-			}
+		void OnFinished ()
+		{
+			serverFinishedTask.TrySetResult (null);
+			parentOperation?.OnFinished ();
+		}
+
+		void OnCanceled ()
+		{
+			serverInitTask.TrySetCanceled ();
+			serverFinishedTask.TrySetCanceled ();
+			parentOperation?.OnCanceled ();
+		}
+
+		void OnError (Exception error)
+		{
+			serverInitTask.TrySetException (error);
+			serverFinishedTask.TrySetException (error);
+			parentOperation?.OnCanceled ();
 		}
 	}
 }
