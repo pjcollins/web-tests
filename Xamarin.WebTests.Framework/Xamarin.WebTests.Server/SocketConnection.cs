@@ -217,7 +217,8 @@ namespace Xamarin.WebTests.Server
 			}
 			if (Socket != null) {
 				try {
-					Socket.Shutdown (SocketShutdown.Both);
+					if (Socket.Connected)
+						Socket.Shutdown (SocketShutdown.Both);
 				} catch {
 					;
 				} finally {

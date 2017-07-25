@@ -297,6 +297,13 @@ namespace Xamarin.WebTests.Server
 			}
 		}
 
+		internal void UnregisterOperation (ListenerOperation redirect)
+		{
+			lock (this) {
+				registry.Remove (redirect.Uri.LocalPath);
+			}
+		}
+
 		internal static Task FailedTask (Exception ex)
 		{
 			var tcs = new TaskCompletionSource<object> ();

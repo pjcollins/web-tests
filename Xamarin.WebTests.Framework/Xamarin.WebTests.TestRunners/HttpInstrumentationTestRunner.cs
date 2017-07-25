@@ -1207,7 +1207,7 @@ namespace Xamarin.WebTests.TestRunners
 
 				var keepAlive = !CloseConnection && (effectiveFlags & (RequestFlags.KeepAlive | RequestFlags.CloseConnection)) == RequestFlags.KeepAlive;
 				if (response != null) {
-					response.Redirect = operation.RegisterRedirect (ctx, connection, this, keepAlive, request.Path);
+					response.Redirect = operation.RegisterRedirect (ctx, this, request.Path);
 					return response;
 				}
 
@@ -1303,7 +1303,7 @@ namespace Xamarin.WebTests.TestRunners
 					return new HttpResponse (HttpStatusCode.OK, Content);
 
 				case HttpInstrumentationTestType.RedirectNoLength:
-					var redirect = operation.RegisterRedirect (ctx, connection, Target, false);
+					var redirect = operation.RegisterRedirect (ctx, Target);
 					response = HttpResponse.CreateRedirect (HttpStatusCode.Redirect, redirect);
 					response.NoContentLength = true;
 					return response;

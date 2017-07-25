@@ -317,8 +317,7 @@ namespace Xamarin.WebTests.HttpFramework
 			return response;
 		}
 
-		internal ListenerOperation RegisterRedirect (TestContext ctx, HttpConnection connection,
-		                                             Handler handler, bool keepAlive, string path = null)
+		internal ListenerOperation RegisterRedirect (TestContext ctx, Handler handler, string path = null)
 		{
 			return listener.RegisterOperation (ctx, this, handler, path);
 		}

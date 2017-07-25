@@ -108,10 +108,17 @@ namespace Xamarin.WebTests.Server
 				throw;
 			}
 
-			if (response.Redirect != null) {
-				response.Redirect.parentOperation = this;
-			} else {
+			if (response.Redirect == null) {
 				OnFinished ();
+				return response;
+			}
+
+			if (Operation.HasAnyFlags (HttpOperationFlags.ClientDoesNotSendRedirect)) {
+				Listener.UnregisterOperation (response.Redirect);
+				response.Redirect = null;
+				OnFinished ();
+			} else {
+				response.Redirect.parentOperation = this;
 			}
 
 			return response;
