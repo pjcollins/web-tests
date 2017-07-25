@@ -123,12 +123,12 @@ namespace Xamarin.WebTests.Server
 		ListenerOperation redirectOperation;
 		HttpConnection redirectRequested;
 
-		public Uri PrepareRedirect (TestContext ctx, HttpConnection connection, Handler handler, bool keepAlive, string path)
+		public void PrepareRedirect (TestContext ctx, ListenerOperation redirect,
+		                             HttpConnection connection, bool keepAlive)
 		{
 			lock (Listener) {
 				var me = $"{ME}({nameof (PrepareRedirect)}";
-				ctx.LogDebug (5, $"{me}: {handler.Value} {keepAlive}");
-				var redirect = Listener.RegisterOperation (ctx, Operation, handler, path);
+				ctx.LogDebug (5, $"{me}: {redirect.ME} {keepAlive}");
 
 				HttpConnection next;
 				if (keepAlive)
@@ -140,8 +140,6 @@ namespace Xamarin.WebTests.Server
 					throw new InvalidOperationException ();
 
 				redirectOperation = redirect;
-
-				return redirect.Uri;
 			}
 		}
 

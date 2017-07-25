@@ -219,9 +219,12 @@ namespace Xamarin.WebTests.Server
 			return context;
 		}
 
-		public Uri PrepareRedirect (TestContext ctx, HttpConnection connection, Handler handler, bool keepAlive, string path)
+		public Uri PrepareRedirect (TestContext ctx, HttpOperation operation, HttpConnection connection,
+		                            Handler handler, bool keepAlive, string path)
 		{
 			lock (this) {
+				var redirect = RegisterOperation (ctx, operation, handler, path);
+
 				var iter = connections.First;
 				while (iter != null) {
 					var node = iter.Value;
@@ -230,11 +233,12 @@ namespace Xamarin.WebTests.Server
 					if (node.Connection != connection)
 						continue;
 
-					return node.Operation.PrepareRedirect (ctx, connection, handler, keepAlive, path);
+					node.Operation.PrepareRedirect (ctx, redirect, connection, keepAlive);
+					return redirect.Uri;
 				}
 
-				throw new NotImplementedException ();
-			}	
+				throw new InvalidOperationException ();
+			}
 		}
 
 		protected override void Close ()
