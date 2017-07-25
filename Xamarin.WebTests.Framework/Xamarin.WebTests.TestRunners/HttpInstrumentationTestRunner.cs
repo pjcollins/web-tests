@@ -95,7 +95,7 @@ namespace Xamarin.WebTests.TestRunners
 			ME = $"{GetType ().Name}({EffectiveType})";
 		}
 
-		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.Simple;
+		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.SimpleNtlm;
 
 		static readonly HttpInstrumentationTestType[] WorkingTests = {
 			HttpInstrumentationTestType.Simple,
@@ -1206,7 +1206,7 @@ namespace Xamarin.WebTests.TestRunners
 					ctx, this, connection, request, state, cancellationToken).ConfigureAwait (false);
 
 				if (response != null) {
-					operation.RegisterRedirect (ctx, this, true, request.Path);
+					operation.RegisterRedirect (ctx, connection, this, true, request.Path);
 					return response;
 				}
 
@@ -1302,7 +1302,7 @@ namespace Xamarin.WebTests.TestRunners
 					return new HttpResponse (HttpStatusCode.OK, Content);
 
 				case HttpInstrumentationTestType.RedirectNoLength:
-					var targetUri = operation.RegisterRedirect (ctx, Target, false);
+					var targetUri = operation.RegisterRedirect (ctx, connection, Target, false);
 					response = HttpResponse.CreateRedirect (HttpStatusCode.Redirect, targetUri);
 					response.NoContentLength = true;
 					return response;

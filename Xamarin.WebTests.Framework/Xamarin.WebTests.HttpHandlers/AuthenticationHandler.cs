@@ -105,7 +105,7 @@ namespace Xamarin.WebTests.HttpHandlers
 
 			var keepAlive = (effectiveFlags & (RequestFlags.KeepAlive | RequestFlags.CloseConnection)) == RequestFlags.KeepAlive;
 			if (response != null) {
-				var targetUri = operation.RegisterRedirect (ctx, this, keepAlive, request.Path);
+				var targetUri = operation.RegisterRedirect (ctx, connection, this, keepAlive, request.Path);
 				return response;
 			}
 

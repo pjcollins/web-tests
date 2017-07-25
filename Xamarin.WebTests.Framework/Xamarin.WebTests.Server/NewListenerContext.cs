@@ -42,15 +42,13 @@ namespace Xamarin.WebTests.Server
 			: base (listener)
 		{
 			this.connection = connection;
-			serverInitTask = new TaskCompletionSource<object> ();
+			State = ConnectionState.Listening;
 		}
 
 		protected NewListenerContext (ParallelListener listener)
 			: base (listener)
 		{
 		}
-
-		TaskCompletionSource<object> serverInitTask;
 
 		public override HttpConnection Connection {
 			get { return connection; }
@@ -66,7 +64,12 @@ namespace Xamarin.WebTests.Server
 		{
 			if (!Listener.UsingInstrumentation)
 				throw new InvalidOperationException ();
-			return Interlocked.CompareExchange (ref currentInstrumentation, operation, null) == null;
+
+			if (Interlocked.CompareExchange (ref currentInstrumentation, operation, null) != null)
+				return false;
+
+			State = ConnectionState.Listening;
+			return true;
 		}
 
 		public override void Continue ()
@@ -90,7 +93,7 @@ namespace Xamarin.WebTests.Server
 					throw new InvalidOperationException ();
 			}
 
-			ctx.LogDebug (5, $"{me}");
+			ctx.LogDebug (5, $"{me} {State}");
 
 			try {
 				currentIteration = StartIteration ();
@@ -103,7 +106,7 @@ namespace Xamarin.WebTests.Server
 			Iteration StartIteration ()
 			{
 				switch (State) {
-				case ConnectionState.None:
+				case ConnectionState.Listening:
 					return CreateIteration (Start, Accepted);
 				case ConnectionState.KeepAlive:
 					return CreateIteration (ReuseConnection, Accepted);
@@ -149,30 +152,32 @@ namespace Xamarin.WebTests.Server
 				return ConnectionState.HasRequest;
 			}
 
-			Task<(bool keepAlive, ListenerOperation next)> HandleRequest ()
+			Task<(bool keepAlive, ListenerOperation redict, HttpConnection next)> HandleRequest ()
 			{
 				return currentOperation.HandleRequest (ctx, this, Connection, currentRequest, cancellationToken);
 			}
 
-			ConnectionState RequestComplete (bool keepAlive, ListenerOperation next)
+			ConnectionState RequestComplete (bool keepAlive, ListenerOperation redirect, HttpConnection next)
 			{
-				ctx.LogDebug (5, $"{me}: {keepAlive} {next?.ME}");
-
-				if (!keepAlive) {
-					if (next != null)
-						throw new InvalidOperationException ();
-					CompleteOperation ();
-					return ConnectionState.Closed;
-				}
-
-				if (next != null) {
-					CompleteOperation ();
-					currentOperation = (ParallelListenerOperation)next;
-					return ConnectionState.WaitingForRequest;
-				}
+				ctx.LogDebug (5, $"{me}: {keepAlive} {redirect?.ME}");
 
 				CompleteOperation ();
-				return ConnectionState.KeepAlive;
+
+				if (!keepAlive) {
+					connection.Dispose ();
+					connection = null;
+				}
+
+				if (redirect == null)
+					return keepAlive ? ConnectionState.KeepAlive : ConnectionState.Closed;
+
+				currentOperation = (ParallelListenerOperation)redirect;
+				if (!keepAlive) {
+					connection = next;
+					return ConnectionState.Listening;
+				}
+
+				return ConnectionState.WaitingForRequest;
 			}
 
 			void CompleteOperation ()
@@ -207,7 +212,12 @@ namespace Xamarin.WebTests.Server
 
 		static Iteration CreateIteration<T, U> (Func<Task<(T, U)>> start, Func<T, U, ConnectionState> continuation)
 		{
-			return new Iteration<T, U> (start, continuation);
+			return new Iteration<(T, U)> (start, r => continuation (r.Item1, r.Item2));
+		}
+
+		static Iteration CreateIteration<T, U, V> (Func<Task<(T, U, V)>> start, Func<T, U, V, ConnectionState> continuation)
+		{
+			return new Iteration<(T, U, V)> (start, r => continuation (r.Item1, r.Item2, r.Item3));
 		}
 
 		abstract class Iteration
@@ -244,34 +254,9 @@ namespace Xamarin.WebTests.Server
 			}
 		}
 
-		class Iteration<T, U> : Iteration
-		{
-			public Task<(T, U)> Start {
-				get;
-			}
-
-			public override Task Task => Start;
-
-			public Func<T, U, ConnectionState> Continuation {
-				get;
-			}
-
-			public Iteration (Func<Task<(T, U)>> start, Func<T, U, ConnectionState> continuation)
-			{
-				Start = start ();
-				Continuation = continuation;
-			}
-
-			public override ConnectionState Continue ()
-			{
-				var (first, second) = Start.Result;
-				return Continuation (first, second);
-			}
-		}
-
 		public override void PrepareRedirect (TestContext ctx, HttpConnection connection, bool keepAlive)
 		{
-			throw new NotImplementedException ();
+			// throw new NotImplementedException ();
 		}
 
 		protected override void Close ()

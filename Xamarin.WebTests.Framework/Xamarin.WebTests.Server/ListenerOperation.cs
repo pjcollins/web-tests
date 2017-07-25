@@ -70,14 +70,14 @@ namespace Xamarin.WebTests.Server
 
 			ME = $"[{ID}:{GetType ().Name}:{operation.ME}]";
 			serverInitTask = new TaskCompletionSource<object> ();
-			serverFinishedTask = new TaskCompletionSource<object> (); 
+			serverFinishedTask = new TaskCompletionSource<object> ();
 		}
 
 		public Task ServerInitTask => serverInitTask.Task;
 
 		public Task ServerFinishedTask => serverFinishedTask.Task;
 
-		internal async Task<(bool keepAlive, ListenerOperation next)> HandleRequest (
+		internal async Task<(bool keepAlive, ListenerOperation redirect, HttpConnection next)> HandleRequest (
 			TestContext ctx, ListenerContext context, HttpConnection connection,
 			HttpRequest request, CancellationToken cancellationToken)
 		{
@@ -107,22 +107,40 @@ namespace Xamarin.WebTests.Server
 				throw;
 			}
 
-			var redirect = Interlocked.Exchange (ref redirectOperation, null);
+			ListenerOperation redirect;
+			HttpConnection next;
+			lock (Listener) {
+				redirect = Interlocked.Exchange (ref redirectOperation, null);
+				next = Interlocked.Exchange (ref redirectRequested, null);
+
+				ctx.LogDebug (2, $"{me} HANDLE REQUEST DONE #1: {redirect?.ME}");
+			}
 
 			serverFinishedTask.TrySetResult (null);
-			return (keepAlive, redirect);
+			return (keepAlive, redirect, next);
 		}
 
 		ListenerOperation redirectOperation;
+		HttpConnection redirectRequested;
 
-		public Uri PrepareRedirect (TestContext ctx, Handler handler, bool keepAlive, string path)
+		public Uri PrepareRedirect (TestContext ctx, HttpConnection connection, Handler handler, bool keepAlive, string path)
 		{
 			lock (Listener) {
 				var me = $"{ME}({nameof (PrepareRedirect)}";
 				ctx.LogDebug (5, $"{me}: {handler.Value} {keepAlive}");
 				var redirect = Listener.RegisterOperation (ctx, Operation, handler, path);
+
+				HttpConnection next;
 				if (keepAlive)
-					redirectOperation = redirect;
+					next = connection;
+				else
+					next = Listener.Backend.CreateConnection ();
+
+				if (Interlocked.CompareExchange (ref redirectRequested, next, null) != null)
+					throw new InvalidOperationException ();
+
+				redirectOperation = redirect;
+
 				return redirect.Uri;
 			}
 		}
