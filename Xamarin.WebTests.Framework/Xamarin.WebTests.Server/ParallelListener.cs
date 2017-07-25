@@ -37,7 +37,7 @@ namespace Xamarin.WebTests.Server
 
 	class ParallelListener : Listener
 	{
-		LinkedList<ParallelListenerContext> connections;
+		LinkedList<NewListenerContext> connections;
 		bool closed;
 
 		int running;
@@ -49,7 +49,7 @@ namespace Xamarin.WebTests.Server
 		public ParallelListener (TestContext ctx, HttpServer server, ListenerBackend backend)
 			: base (ctx, server, backend)
 		{
-			connections = new LinkedList<ParallelListenerContext> ();
+			connections = new LinkedList<NewListenerContext> ();
 			mainLoopEvent = new AsyncManualResetEvent (false);
 			cts = new CancellationTokenSource ();
 
@@ -91,7 +91,7 @@ namespace Xamarin.WebTests.Server
 				Debug ($"MAIN LOOP");
 
 				var taskList = new List<Task> ();
-				var connectionArray = new List<ParallelListenerContext> ();
+				var connectionArray = new List<NewListenerContext> ();
 				lock (this) {
 					RunScheduler ();
 
@@ -181,7 +181,7 @@ namespace Xamarin.WebTests.Server
 						return (node, true);
 				}
 
-				var context = new ParallelListenerContext (this);
+				var context = new NewInstrumentationListenerContext (this);
 				context.StartOperation (operation);
 				connections.AddLast (context);
 				return (context, false);

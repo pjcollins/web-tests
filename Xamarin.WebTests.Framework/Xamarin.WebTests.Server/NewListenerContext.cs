@@ -43,6 +43,11 @@ namespace Xamarin.WebTests.Server
 			serverInitTask = new TaskCompletionSource<object> ();
 		}
 
+		protected NewListenerContext (Listener listener)
+			: base (listener)
+		{
+		}
+
 		TaskCompletionSource<object> serverInitTask;
 
 		public override HttpConnection Connection {
@@ -53,6 +58,8 @@ namespace Xamarin.WebTests.Server
 		ParallelListenerOperation currentOperation;
 		HttpConnection connection;
 		Iteration currentIteration;
+
+		public abstract bool StartOperation (HttpOperation operation);
 
 		public override void Continue ()
 		{

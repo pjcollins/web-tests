@@ -1,5 +1,5 @@
 ﻿//
-// ParallelListenerContext.cs
+// NewInstrumentationListenerContext.cs
 //
 // Author:
 //       Martin Baulig <mabaul@microsoft.com>
@@ -34,16 +34,18 @@ namespace Xamarin.WebTests.Server
 	using ConnectionFramework;
 	using HttpFramework;
 
-	class ParallelListenerContext : NewListenerContext
+	class NewInstrumentationListenerContext : NewListenerContext
 	{
-		public ParallelListenerContext (ParallelListener listener, HttpConnection connection)
-			: base (listener, connection)
+		public NewInstrumentationListenerContext (Listener listener)
+			: base (listener)
 		{
 		}
 
+		HttpOperation currentOperation;
+
 		public override bool StartOperation (HttpOperation operation)
 		{
-			throw new InvalidOperationException ();
+			return Interlocked.CompareExchange (ref currentOperation, operation, null) == null;
 		}
 	}
 }
