@@ -94,7 +94,7 @@ namespace Xamarin.WebTests.HttpFramework {
 			if (Interlocked.CompareExchange (ref currentBackend, backend, null) != null)
 				throw new InternalErrorException ();
 
-			if ((Flags & HttpServerFlags.ParallelListener) != 0) {
+			if (true || (Flags & HttpServerFlags.ParallelListener) != 0) {
 				var parallelListener = new ParallelListener (ctx, this, backend);
 				if ((Flags & HttpServerFlags.InstrumentationListener) != 0)
 					parallelListener.StartInstrumentation ();

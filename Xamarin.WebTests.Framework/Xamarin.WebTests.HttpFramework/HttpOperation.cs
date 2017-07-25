@@ -145,7 +145,7 @@ namespace Xamarin.WebTests.HttpFramework
 			var linkedCts = CancellationTokenSource.CreateLinkedTokenSource (cts.Token, cancellationToken);
 			try {
 				Response response;
-				if ((Server.Flags & HttpServerFlags.ParallelListener) != 0)
+				if (true || (Server.Flags & HttpServerFlags.ParallelListener) != 0)
 					response = await RunParallelListener (ctx, linkedCts.Token).ConfigureAwait (false);
 				else
 					response = await RunListener (ctx, linkedCts.Token).ConfigureAwait (false);
