@@ -37,7 +37,7 @@ namespace Xamarin.WebTests.Server
 
 	class ProxyConnection : SocketConnection
 	{
-		public InstrumentationListener TargetListener {
+		public ParallelListener TargetListener {
 			get;
 		}
 
@@ -46,7 +46,7 @@ namespace Xamarin.WebTests.Server
 		public ProxyConnection (BuiltinProxyServer server, Socket socket, HttpServer target)
 			: base (server, socket)
 		{
-			TargetListener = (InstrumentationListener)target.Listener;
+			TargetListener = (ParallelListener)target.Listener;
 		}
 
 		public override async Task AcceptAsync (TestContext ctx, CancellationToken cancellationToken)
