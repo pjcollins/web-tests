@@ -322,14 +322,14 @@ namespace Xamarin.WebTests.Server
 			return context;
 		}
 
-		public HttpContext CreateContext (TestContext ctx, HttpOperation operation)
+		public async Task CreateContext (TestContext ctx, HttpOperation operation, CancellationToken cancellationToken)
 		{
 			var reusing = !operation.HasAnyFlags (HttpOperationFlags.DontReuseConnection);
 			var (context, reused) = FindOrCreateContext (operation, reusing);
 
 			ctx.LogDebug (2, $"{ME} CREATE CONTEXT: {reusing} {reused} {context.ME}");
 
-			return context.HttpContext;
+			await context.HttpContext.ServerStartTask.ConfigureAwait (false);
 		}
 
 		void Close ()

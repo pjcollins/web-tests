@@ -109,7 +109,6 @@ namespace Xamarin.WebTests.HttpFramework
 
 		Request currentRequest;
 		ServicePoint servicePoint;
-		HttpContext listenerContext;
 		ListenerOperation listenerOperation;
 		Listener listener;
 		TaskCompletionSource<Request> requestTask;
@@ -250,9 +249,7 @@ namespace Xamarin.WebTests.HttpFramework
 
 			if ((Server.Flags & HttpServerFlags.InstrumentationListener) != 0) {
 				ctx.LogDebug (2, $"{me} INSTRUMENTATION");
-				listenerContext = listener.CreateContext (ctx, this);
-
-				await listenerContext.ServerStartTask.ConfigureAwait (false);
+				await listener.CreateContext (ctx, this, cancellationToken).ConfigureAwait (false);
 			}
 
 			var clientTask = RunInner (ctx, request, cancellationToken);
