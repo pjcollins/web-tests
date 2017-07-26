@@ -122,26 +122,29 @@ namespace Xamarin.WebTests.Server
 				Debug ($"MAIN LOOP");
 
 				var taskList = new List<Task> ();
-				var connectionArray = new List<ListenerContext> ();
+				var listenerTasks = new List<ListenerTask> ();
 				lock (this) {
 					RunScheduler ();
 
 					taskList.Add (mainLoopEvent.WaitAsync ());
-					foreach (var context in connections) {
-						Task task = null;
-						Debug ($"  MAIN LOOP #0: {context.ME} {context.State}");
+
+					var iter = connections.First;
+					while (iter != null) {
+						var node = iter;
+						var context = node.Value;
+						iter = iter.Next;
+
 						try {
-							task = context.MainLoopListenerTask (TestContext, cts.Token);
-						} catch (Exception ex) {
-							task = FailedTask (ex);
-						}
-						if (task != null) {
-							connectionArray.Add (context);
-							taskList.Add (task);
+							var listenerTask = context.MainLoopListenerTask (TestContext, cts.Token);
+							listenerTasks.Add (listenerTask);
+							taskList.Add (listenerTask.Task);
+						} catch {
+							connections.Remove (node);
+							context.Dispose ();
 						}
 					}
 
-					Debug ($"MAIN LOOP #0: {connectionArray.Count} {taskList.Count}");
+					Debug ($"MAIN LOOP #0: {taskList.Count}");
 				}
 
 				var finished = await Task.WhenAny (taskList).ConfigureAwait (false);
@@ -156,17 +159,18 @@ namespace Xamarin.WebTests.Server
 					}
 
 					int idx = -1;
-					for (int i = 0; i < connectionArray.Count; i++) {
+					for (int i = 0; i < listenerTasks.Count; i++) {
 						if (finished == taskList[i + 1]) {
 							idx = i;
 							break;
 						}
 					}
 
-					var context = connectionArray[idx];
-					Debug ($"MAIN LOOP #2: {idx} {context.State} {context?.Connection?.ME}");
+					var task = listenerTasks[idx];
+					var context = task.Context;
+					Debug ($"MAIN LOOP #2: {idx} {task.State}");
 
-					var state = context.MainLoopListenerTaskDone (TestContext, finished, cts.Token);
+					var state = context.MainLoopListenerTaskDone (TestContext, cts.Token);
 					if (state == ConnectionState.Closed) {
 						connections.Remove (context);
 						context.Dispose ();

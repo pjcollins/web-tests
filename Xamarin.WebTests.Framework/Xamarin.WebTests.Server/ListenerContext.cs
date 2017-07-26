@@ -93,14 +93,14 @@ namespace Xamarin.WebTests.Server
 			return true;
 		}
 
-		public Task MainLoopListenerTask (TestContext ctx, CancellationToken cancellationToken)
+		public ListenerTask MainLoopListenerTask (TestContext ctx, CancellationToken cancellationToken)
 		{
 			var me = $"{Listener.ME}({Connection.ME}) TASK";
 
 			HttpOperation instrumentation;
 			lock (Listener) {
 				if (currentListenerTask != null)
-					return currentListenerTask.Task;
+					return currentListenerTask;
 
 				instrumentation = currentInstrumentation;
 				if (Listener.UsingInstrumentation && instrumentation == null)
@@ -109,28 +109,24 @@ namespace Xamarin.WebTests.Server
 
 			ctx.LogDebug (5, $"{me} {State}");
 
-			try {
-				currentListenerTask = StartListenerTask ();
-				currentListenerTask.Start ();
-			} catch (Exception ex) {
-				return FailedTask (ex);
-			}
+			currentListenerTask = StartListenerTask ();
+			currentListenerTask.Start ();
 
-			return currentListenerTask.Task;
+			return currentListenerTask;
 
 			ListenerTask StartListenerTask ()
 			{
 				switch (State) {
 				case ConnectionState.Listening:
-					return ListenerTask.Create (Start, Accepted);
+					return ListenerTask.Create (this, State, Start, Accepted);
 				case ConnectionState.ReuseConnection:
-					return ListenerTask.Create (ReuseConnection, Accepted);
+					return ListenerTask.Create (this, State, ReuseConnection, Accepted);
 				case ConnectionState.WaitingForRequest:
-					return ListenerTask.Create (ReadRequestHeader, GotRequest);
+					return ListenerTask.Create (this, State, ReadRequestHeader, GotRequest);
 				case ConnectionState.HasRequest:
-					return ListenerTask.Create (HandleRequest, RequestComplete);
+					return ListenerTask.Create (this, State, HandleRequest, RequestComplete);
 				case ConnectionState.RequestComplete:
-					return ListenerTask.Create (WriteResponse, ResponseWritten);
+					return ListenerTask.Create (this, State, WriteResponse, ResponseWritten);
 				default:
 					throw ctx.AssertFail (State);
 				}
@@ -221,29 +217,27 @@ namespace Xamarin.WebTests.Server
 			}
 		}
 
-		public ConnectionState MainLoopListenerTaskDone (TestContext ctx, Task task, CancellationToken cancellationToken)
+		public ConnectionState MainLoopListenerTaskDone (TestContext ctx, CancellationToken cancellationToken)
 		{
-			var me = $"{Listener.ME}({Connection.ME}) task DONE";
+			var me = $"{Listener.ME}({Connection.ME}) TASK DONE";
 
-			ctx.LogDebug (5, $"{me}: {task.Status} {State}");
+			var task = Interlocked.Exchange (ref currentListenerTask, null);
 
-			if (task.Status == TaskStatus.Canceled) {
+			ctx.LogDebug (5, $"{me}: {task.Task.Status} {State}");
+
+			if (task.Task.Status == TaskStatus.Canceled) {
 				OnCanceled ();
 				State = ConnectionState.Closed;
 				return ConnectionState.Closed;
 			}
 
-			if (task.Status == TaskStatus.Faulted) {
-				OnError (task.Exception);
+			if (task.Task.Status == TaskStatus.Faulted) {
+				OnError (task.Task.Exception);
 				State = ConnectionState.Closed;
 				return ConnectionState.Closed;
 			}
 
-			var currentTask = Interlocked.Exchange (ref currentListenerTask, null);
-			if (currentTask.Task != task)
-				throw new InvalidOperationException ();
-
-			var nextState = currentTask.Continue ();
+			var nextState = task.Continue ();
 
 			ctx.LogDebug (5, $"{me} DONE: {State} -> {nextState}");
 

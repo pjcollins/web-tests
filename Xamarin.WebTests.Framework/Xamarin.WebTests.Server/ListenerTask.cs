@@ -31,6 +31,10 @@ namespace Xamarin.WebTests.Server
 {
 	abstract class ListenerTask
 	{
+		public abstract ListenerContext Context {
+			get;
+		}
+
 		public abstract ConnectionState State {
 			get;
 		}
@@ -43,28 +47,33 @@ namespace Xamarin.WebTests.Server
 
 		public abstract ConnectionState Continue ();
 
-		public static ListenerTask Create<T> (Func<Task<T>> start, Func<T, ConnectionState> continuation)
+		public static ListenerTask Create<T> (ListenerContext context, ConnectionState state,
+		                                      Func<Task<T>> start, Func<T, ConnectionState> continuation)
 		{
-			return new ListenerTask<T> (start, continuation);
+			return new ListenerTask<T> (context, state, start, continuation);
 		}
 
-		public static ListenerTask Create<T, U> (Func<Task<(T, U)>> start, Func<T, U, ConnectionState> continuation)
+		public static ListenerTask Create<T, U> (ListenerContext context, ConnectionState state,
+		                                         Func<Task<(T, U)>> start, Func<T, U, ConnectionState> continuation)
 		{
-			return new ListenerTask<(T, U)> (start, r => continuation (r.Item1, r.Item2));
+			return new ListenerTask<(T, U)> (context, state, start, r => continuation (r.Item1, r.Item2));
 		}
 
-		public static ListenerTask Create<T, U, V> (Func<Task<(T, U, V)>> start, Func<T, U, V, ConnectionState> continuation)
+		public static ListenerTask Create<T, U, V> (ListenerContext context, ConnectionState state,
+		                                            Func<Task<(T, U, V)>> start, Func<T, U, V, ConnectionState> continuation)
 		{
-			return new ListenerTask<(T, U, V)> (start, r => continuation (r.Item1, r.Item2, r.Item3));
+			return new ListenerTask<(T, U, V)> (context, state, start, r => continuation (r.Item1, r.Item2, r.Item3));
 		}
 	}
 
-	class ListenerTask<T> : ListenerTask
+	sealed class ListenerTask<T> : ListenerTask
 	{
+		public override ListenerContext Context {
+			get;
+		}
+
 		public override ConnectionState State {
-			get {
-				throw new NotImplementedException ();
-			}
+			get;
 		}
 
 		public Func<Task<T>> StartFunc {
@@ -84,8 +93,10 @@ namespace Xamarin.WebTests.Server
 		TaskCompletionSource<T> tcs;
 		volatile bool completed;
 
-		public ListenerTask (Func<Task<T>> start, Func<T, ConnectionState> continuation)
+		public ListenerTask (ListenerContext context, ConnectionState state, Func<Task<T>> start, Func<T, ConnectionState> continuation)
 		{
+			Context = context;
+			State = state;
 			StartFunc = start;
 			Continuation = continuation;
 			tcs = new TaskCompletionSource<T> ();
