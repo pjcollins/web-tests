@@ -113,12 +113,16 @@ namespace Xamarin.WebTests.Server
 
 		internal void Redirect (ListenerContext newContext)
 		{
-			if (State != ConnectionState.NeedContextForRedirect)
+			if (State == ConnectionState.NeedContextForRedirect) {
+				redirectContext = newContext;
+				redirectContext.currentInstrumentation = currentInstrumentation;
+				State = ConnectionState.RequestComplete;
+			} else if (State == ConnectionState.CannotReuseConnection) {
+				newContext.currentInstrumentation = currentInstrumentation;
+				State = ConnectionState.Closed;
+			} else {
 				throw new InvalidOperationException ();
-
-			redirectContext = newContext;
-			redirectContext.currentInstrumentation = currentInstrumentation;
-			State = ConnectionState.RequestComplete;
+			}
 		}
 
 		public ListenerTask MainLoopListenerTask (TestContext ctx, CancellationToken cancellationToken)
@@ -166,12 +170,22 @@ namespace Xamarin.WebTests.Server
 
 			ConnectionState Accepted (bool completed, bool success)
 			{
+				ctx.LogDebug (5, $"{me} ACCEPTED: {completed} {success}");
 				Listening = false;
+
+				if (!completed) {
+					return ConnectionState.CannotReuseConnection;
+				}
+
+				if (!success)
+					return ConnectionState.Closed;
+
 				return ConnectionState.WaitingForRequest;
 			}
 
 			Task<HttpRequest> ReadRequestHeader ()
 			{
+				ctx.LogDebug (5, $"{me} READ REQUEST HEADER");
 				return Connection.ReadRequestHeader (ctx, cancellationToken);
 			}
 

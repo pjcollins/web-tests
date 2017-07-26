@@ -74,9 +74,10 @@ namespace Xamarin.WebTests.HttpFramework
 			TestContext ctx, HttpOperation operation, CancellationToken cancellationToken)
 		{
 			try {
+				ctx.LogDebug (2, $"{ME} INIT");
 				(bool complete, bool success) result;
 				if (ReusingConnection) {
-					if (await ReuseConnection (ctx, cancellationToken).ConfigureAwait (false))
+					if (await ReuseConnection (ctx, operation, cancellationToken).ConfigureAwait (false))
 						result = (true, true);
 					else
 						result = (false, false);
@@ -92,6 +93,7 @@ namespace Xamarin.WebTests.HttpFramework
 				OnCanceled ();
 				throw;
 			} catch (Exception ex) {
+				ctx.LogDebug (2, $"{ME} INIT FAILED: {ex.Message}");
 				OnError (ex);
 				throw;
 			}
@@ -109,7 +111,7 @@ namespace Xamarin.WebTests.HttpFramework
 			serverReadyTask.TrySetResult (error);
 		}
 
-		async Task<bool> ReuseConnection (TestContext ctx, CancellationToken cancellationToken)
+		async Task<bool> ReuseConnection (TestContext ctx, HttpOperation operation, CancellationToken cancellationToken)
 		{
 			var me = $"{ME}({connection.ME}) REUSE";
 			ctx.LogDebug (2, $"{me}");
@@ -120,6 +122,20 @@ namespace Xamarin.WebTests.HttpFramework
 			var reusable = await connection.ReuseConnection (ctx, cancellationToken).ConfigureAwait (false);
 
 			ctx.LogDebug (2, $"{me} #1: {reusable}");
+
+			if (reusable && (operation?.HasAnyFlags (HttpOperationFlags.ClientUsesNewConnection) ?? false)) {
+				try {
+					await connection.ReadRequest (ctx, cancellationToken).ConfigureAwait (false);
+					throw ctx.AssertFail ("Expected client to use a new connection.");
+				} catch (OperationCanceledException) {
+					throw;
+				} catch (Exception ex) {
+					ctx.LogDebug (2, $"{ME} EXPECTED EXCEPTION: {ex.GetType ()} {ex.Message}");
+				}
+				connection.Dispose ();
+				return false;
+			}
+
 			return reusable;
 		}
 

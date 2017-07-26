@@ -203,12 +203,12 @@ namespace Xamarin.WebTests.Server
 
 		void RunScheduler ()
 		{
-			Cleanup ();
+			do {
+				Cleanup ();
 
-			if (!UsingInstrumentation)
-				CreateConnections ();
-
-			do { } while (!StartTasks ());
+				if (!UsingInstrumentation)
+					CreateConnections ();
+			} while (!StartTasks ());
 
 			void Cleanup ()
 			{
@@ -257,13 +257,14 @@ namespace Xamarin.WebTests.Server
 					if (context.CurrentTask != null)
 						continue;
 
-					if (context.State == ConnectionState.WaitingForContext) {
+					switch (context.State) {
+					case ConnectionState.WaitingForContext:
 						if (!UsingInstrumentation)
 							throw new InvalidOperationException ();
 						continue;
-					}
 
-					if (context.State == ConnectionState.NeedContextForRedirect) {
+					case ConnectionState.NeedContextForRedirect:
+					case ConnectionState.CannotReuseConnection:
 						if (redirectContext == null)
 							redirectContext = context;
 						continue;
@@ -329,7 +330,7 @@ namespace Xamarin.WebTests.Server
 
 			ctx.LogDebug (2, $"{ME} CREATE CONTEXT: {reusing} {reused} {context.ME}");
 
-			if (reused && operation.HasAnyFlags (HttpOperationFlags.ClientUsesNewConnection)) {
+			if (false && reused && operation.HasAnyFlags (HttpOperationFlags.ClientUsesNewConnection)) {
 				try {
 					await context.Connection.ReadRequest (ctx, cancellationToken).ConfigureAwait (false);
 					throw ctx.AssertFail ("Expected client to use a new connection.");
