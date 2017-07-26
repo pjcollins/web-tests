@@ -73,6 +73,10 @@ namespace Xamarin.WebTests.Server
 			get { return currentOperation; }
 		}
 
+		public ListenerTask CurrentTask {
+			get { return currentListenerTask; }
+		}
+
 		HttpRequest currentRequest;
 		HttpResponse currentResponse;
 		ListenerOperation redirectRequested;
@@ -100,7 +104,8 @@ namespace Xamarin.WebTests.Server
 			HttpOperation instrumentation;
 			lock (Listener) {
 				if (currentListenerTask != null)
-					return currentListenerTask;
+					throw new InvalidOperationException ();
+					// return currentListenerTask;
 
 				instrumentation = currentInstrumentation;
 				if (Listener.UsingInstrumentation && instrumentation == null)
@@ -217,7 +222,7 @@ namespace Xamarin.WebTests.Server
 			}
 		}
 
-		public ConnectionState MainLoopListenerTaskDone (TestContext ctx, CancellationToken cancellationToken)
+		public void MainLoopListenerTaskDone (TestContext ctx, CancellationToken cancellationToken)
 		{
 			var me = $"{Listener.ME}({Connection.ME}) TASK DONE";
 
@@ -228,13 +233,13 @@ namespace Xamarin.WebTests.Server
 			if (task.Task.Status == TaskStatus.Canceled) {
 				OnCanceled ();
 				State = ConnectionState.Closed;
-				return ConnectionState.Closed;
+				return;
 			}
 
 			if (task.Task.Status == TaskStatus.Faulted) {
 				OnError (task.Task.Exception);
 				State = ConnectionState.Closed;
-				return ConnectionState.Closed;
+				return;
 			}
 
 			var nextState = task.Continue ();
@@ -242,7 +247,6 @@ namespace Xamarin.WebTests.Server
 			ctx.LogDebug (5, $"{me} DONE: {State} -> {nextState}");
 
 			State = nextState;
-			return nextState;
 		}
 
 		TaskCompletionSource<object> serverReadyTask;

@@ -39,6 +39,7 @@ namespace Xamarin.WebTests.Server
 	class Listener : IDisposable
 	{
 		LinkedList<ListenerContext> connections;
+		LinkedList<ListenerTask> listenerTasks;
 		bool closed;
 
 		int running;
@@ -81,6 +82,7 @@ namespace Xamarin.WebTests.Server
 			registry = new Dictionary<string, ListenerOperation> ();
 
 			connections = new LinkedList<ListenerContext> ();
+			listenerTasks = new LinkedList<ListenerTask> ();
 			mainLoopEvent = new AsyncManualResetEvent (false);
 			finishedEvent = new TaskCompletionSource<object> ();
 			cts = new CancellationTokenSource ();
@@ -122,27 +124,12 @@ namespace Xamarin.WebTests.Server
 				Debug ($"MAIN LOOP");
 
 				var taskList = new List<Task> ();
-				var listenerTasks = new List<ListenerTask> ();
+				var contextList = new List<ListenerTask> ();
 				lock (this) {
 					RunScheduler ();
 
 					taskList.Add (mainLoopEvent.WaitAsync ());
-
-					var iter = connections.First;
-					while (iter != null) {
-						var node = iter;
-						var context = node.Value;
-						iter = iter.Next;
-
-						try {
-							var listenerTask = context.MainLoopListenerTask (TestContext, cts.Token);
-							listenerTasks.Add (listenerTask);
-							taskList.Add (listenerTask.Task);
-						} catch {
-							connections.Remove (node);
-							context.Dispose ();
-						}
-					}
+					PopulateTaskList (contextList, taskList);
 
 					Debug ($"MAIN LOOP #0: {taskList.Count}");
 				}
@@ -159,25 +146,24 @@ namespace Xamarin.WebTests.Server
 					}
 
 					int idx = -1;
-					for (int i = 0; i < listenerTasks.Count; i++) {
+					for (int i = 0; i < contextList.Count; i++) {
 						if (finished == taskList[i + 1]) {
 							idx = i;
 							break;
 						}
 					}
 
-					var task = listenerTasks[idx];
+					var task = contextList[idx];
 					var context = task.Context;
-					Debug ($"MAIN LOOP #2: {idx} {task.State}");
+					listenerTasks.Remove (task);
 
-					var state = context.MainLoopListenerTaskDone (TestContext, cts.Token);
-					if (state == ConnectionState.Closed) {
+					Debug ($"MAIN LOOP #2: {idx} {context.State}");
+
+					try {
+						context.MainLoopListenerTaskDone (TestContext, cts.Token);
+					} catch {
 						connections.Remove (context);
 						context.Dispose ();
-					} else if (state == ConnectionState.ReuseConnection) {
-						connections.Remove (context);
-						var newContext = context.ReuseConnection ();
-						connections.AddLast (newContext);
 					}
 				}
 			}
@@ -202,13 +188,69 @@ namespace Xamarin.WebTests.Server
 
 			finishedEvent.SetResult (null);
 
-			void RunScheduler ()
+			void PopulateTaskList (List<ListenerTask> contextList, List<Task> taskList)
+			{
+				var iter = listenerTasks.First;
+				while (iter != null) {
+					var node = iter;
+					iter = iter.Next;
+
+					contextList.Add (node.Value);
+					taskList.Add (node.Value.Task);
+				}
+			}
+		}
+
+		void RunScheduler ()
+		{
+			Cleanup ();
+
+			if (!UsingInstrumentation)
+				CreateConnections ();
+
+			StartTasks ();
+
+			void Cleanup ()
+			{
+				var iter = connections.First;
+				while (iter != null) {
+					var node = iter;
+					var context = node.Value;
+					iter = iter.Next;
+
+					if (context.State == ConnectionState.Closed) {
+						connections.Remove (node);
+						context.Dispose ();
+					} else if (context.State == ConnectionState.ReuseConnection) {
+						connections.Remove (node);
+						var newContext = context.ReuseConnection ();
+						connections.AddLast (newContext);
+					}
+				}
+			}
+
+			void CreateConnections ()
 			{
 				while (connections.Count < requestParallelConnections) {
 					Debug ($"RUN SCHEDULER: {connections.Count}");
 					var connection = Backend.CreateConnection ();
 					connections.AddLast (new ListenerContext (this, connection));
 					Debug ($"RUN SCHEDULER #1: {connection.ME}");
+				}
+			}
+
+			void StartTasks ()
+			{
+				var iter = connections.First;
+				while (iter != null) {
+					var node = iter;
+					var context = node.Value;
+					iter = iter.Next;
+
+					if (context.CurrentTask == null) {
+						var task = context.MainLoopListenerTask (TestContext, cts.Token);
+						listenerTasks.AddLast (task);
+					}
 				}
 			}
 		}
@@ -350,6 +392,5 @@ namespace Xamarin.WebTests.Server
 				Backend.Dispose ();
 			}
 		}
-
 	}
 }
