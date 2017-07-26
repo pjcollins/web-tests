@@ -109,7 +109,7 @@ namespace Xamarin.WebTests.HttpFramework
 
 		Request currentRequest;
 		ServicePoint servicePoint;
-		ListenerContext listenerContext;
+		HttpContext listenerContext;
 		ListenerOperation listenerOperation;
 		Listener listener;
 		TaskCompletionSource<Request> requestTask;

@@ -70,7 +70,7 @@ namespace Xamarin.WebTests.HttpFramework
 
 		public Task ServerReadyTask => serverReadyTask.Task;
 
-		async Task<(bool complete, bool success)> Initialize (
+		public async Task<(bool complete, bool success)> Initialize (
 			TestContext ctx, HttpOperation operation, CancellationToken cancellationToken)
 		{
 			try {
@@ -97,13 +97,13 @@ namespace Xamarin.WebTests.HttpFramework
 			}
 		}
 
-		void OnCanceled ()
+		internal void OnCanceled ()
 		{
 			serverStartTask.TrySetCanceled ();
 			serverReadyTask.TrySetCanceled ();
 		}
 
-		void OnError (Exception error)
+		internal void OnError (Exception error)
 		{
 			serverStartTask.TrySetException (error);
 			serverReadyTask.TrySetResult (error);
