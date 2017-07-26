@@ -295,9 +295,18 @@ namespace Xamarin.WebTests.Server
 			var oldConnection = Interlocked.Exchange (ref connection, null);
 			if (oldConnection == null)
 				throw new InvalidOperationException ();
-			var newContext = new ListenerContext (Listener, oldConnection, true);
-			newContext.State = ConnectionState.WaitingForRequest;
-			newContext.currentInstrumentation = currentInstrumentation;
+			if (httpContext != null) {
+				httpContext.ReuseConnection ();
+				httpContext = null;
+			}
+
+			var newContext = new ListenerContext (Listener, oldConnection, true) {
+				State = Listener.UsingInstrumentation ? ConnectionState.WaitingForContext : ConnectionState.WaitingForRequest
+			};
+
+			currentInstrumentation = null;
+			currentOperation = null;
+			State = ConnectionState.Closed;
 			return newContext;
 		}
 

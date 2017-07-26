@@ -257,6 +257,12 @@ namespace Xamarin.WebTests.Server
 					if (context.CurrentTask != null)
 						continue;
 
+					if (context.State == ConnectionState.WaitingForContext) {
+						if (!UsingInstrumentation)
+							throw new InvalidOperationException ();
+						continue;
+					}
+
 					if (context.State == ConnectionState.NeedContextForRedirect) {
 						if (redirectContext == null)
 							redirectContext = context;
@@ -294,8 +300,10 @@ namespace Xamarin.WebTests.Server
 					var node = iter.Value;
 					iter = iter.Next;
 
-					if (node.StartOperation (operation))
+					if (node.StartOperation (operation)) {
+						mainLoopEvent.Set ();
 						return (node, true);
+					}
 				}
 
 				var connection = Backend.CreateConnection ();
@@ -318,6 +326,8 @@ namespace Xamarin.WebTests.Server
 		{
 			var reusing = !operation.HasAnyFlags (HttpOperationFlags.DontReuseConnection);
 			var (context, reused) = FindOrCreateContext (operation, reusing);
+
+			ctx.LogDebug (2, $"{ME} CREATE CONTEXT: {reusing} {reused} {context.ME}");
 
 			if (reused && operation.HasAnyFlags (HttpOperationFlags.ClientUsesNewConnection)) {
 				try {

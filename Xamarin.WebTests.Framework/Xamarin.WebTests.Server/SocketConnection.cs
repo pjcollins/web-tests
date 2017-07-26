@@ -162,6 +162,10 @@ namespace Xamarin.WebTests.Server
 			cancellationToken.ThrowIfCancellationRequested ();
 			ctx.LogDebug (5, $"{ME} READ REQUEST: {ListenSocket?.LocalEndPoint} {remoteEndPoint}");
 			var header = await reader.ReadLineAsync (cancellationToken);
+			if (header == null) {
+				ctx.LogDebug (5, $"{ME} READ REQUEST - CLOSED CONNECTION!");
+				throw new IOException ();
+			}
 			var (method, protocol, path) = HttpMessage.ReadHttpHeader (header);
 			ctx.LogDebug (5, $"{ME} READ REQUEST #1: {ListenSocket?.LocalEndPoint} {remoteEndPoint} - {method} {protocol} {path}");
 			ctx.LogDebug (5, $"{ME} READ REQUEST DONE: {method} {protocol} {path}");

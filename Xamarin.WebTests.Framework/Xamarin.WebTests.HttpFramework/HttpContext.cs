@@ -184,6 +184,12 @@ namespace Xamarin.WebTests.HttpFramework
 
 		int disposed;
 
+		internal void ReuseConnection ()
+		{
+			connection = null;
+			disposed = 1;
+		}
+
 		void Close ()
 		{
 			if (connection != null) {
