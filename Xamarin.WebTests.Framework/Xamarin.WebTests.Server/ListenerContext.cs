@@ -169,9 +169,8 @@ namespace Xamarin.WebTests.Server
 				ctx.LogDebug (5, $"{me} ACCEPTED: {completed} {success}");
 				Listening = false;
 
-				if (!completed) {
+				if (!completed)
 					return ConnectionState.CannotReuseConnection;
-				}
 
 				if (!success)
 					return ConnectionState.Closed;
