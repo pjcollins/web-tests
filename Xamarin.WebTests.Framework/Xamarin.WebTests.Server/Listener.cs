@@ -316,32 +316,18 @@ namespace Xamarin.WebTests.Server
 			}
 		}
 
-		public ListenerContext CreateContext (TestContext ctx, HttpOperation operation, bool reusing)
+		internal ListenerContext CreateContext (TestContext ctx, HttpOperation operation, bool reusing)
 		{
 			var (context, _) = FindOrCreateContext (operation, reusing);
 			return context;
 		}
 
-		public async Task<HttpContext> CreateContext (
-			TestContext ctx, HttpOperation operation, CancellationToken cancellationToken)
+		public HttpContext CreateContext (TestContext ctx, HttpOperation operation)
 		{
 			var reusing = !operation.HasAnyFlags (HttpOperationFlags.DontReuseConnection);
 			var (context, reused) = FindOrCreateContext (operation, reusing);
 
 			ctx.LogDebug (2, $"{ME} CREATE CONTEXT: {reusing} {reused} {context.ME}");
-
-			if (false && reused && operation.HasAnyFlags (HttpOperationFlags.ClientUsesNewConnection)) {
-				try {
-					await context.Connection.ReadRequest (ctx, cancellationToken).ConfigureAwait (false);
-					throw ctx.AssertFail ("Expected client to use a new connection.");
-				} catch (OperationCanceledException) {
-					throw;
-				} catch (Exception ex) {
-					ctx.LogDebug (2, $"{ME} EXPECTED EXCEPTION: {ex.GetType ()} {ex.Message}");
-				}
-				context.Dispose ();
-				(context, reused) = FindOrCreateContext (operation, false);
-			}
 
 			return context.HttpContext;
 		}
