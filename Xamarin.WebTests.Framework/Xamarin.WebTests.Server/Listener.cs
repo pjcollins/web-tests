@@ -208,7 +208,7 @@ namespace Xamarin.WebTests.Server
 			if (!UsingInstrumentation)
 				CreateConnections ();
 
-			StartTasks ();
+			do { } while (!StartTasks ());
 
 			void Cleanup ()
 			{
@@ -239,25 +239,50 @@ namespace Xamarin.WebTests.Server
 				}
 			}
 
-			void StartTasks ()
+			bool StartTasks ()
 			{
 				var listening = false;
+				ListenerContext listeningContext = null;
+				ListenerContext redirectContext = null;
+
 				var iter = connections.First;
 				while (iter != null) {
 					var node = iter;
 					var context = node.Value;
 					iter = iter.Next;
 
-					if (UsingInstrumentation && listening && context.State == ConnectionState.Listening) {
+					if (UsingInstrumentation && listening && context.State == ConnectionState.Listening)
+						continue;
+
+					if (context.CurrentTask != null)
+						continue;
+
+					if (context.State == ConnectionState.NeedContextForRedirect) {
+						if (redirectContext == null)
+							redirectContext = context;
 						continue;
 					}
 
-					if (context.CurrentTask == null) {
-						var task = context.MainLoopListenerTask (TestContext, cts.Token);
-						listenerTasks.AddLast (task);
-						listening |= context.Listening;
+					var task = context.MainLoopListenerTask (TestContext, cts.Token);
+					listenerTasks.AddLast (task);
+
+					if (context.Listening && !listening) {
+						listeningContext = context;
+						listening = true;
 					}
 				}
+
+				if (redirectContext == null)
+					return true;
+
+				if (listeningContext == null) {
+					var connection = Backend.CreateConnection ();
+					listeningContext = new ListenerContext (this, connection, false);
+					connections.AddLast (listeningContext);
+				}
+
+				redirectContext.Redirect (listeningContext);
+				return false;
 			}
 		}
 

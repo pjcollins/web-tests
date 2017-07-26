@@ -93,6 +93,7 @@ namespace Xamarin.WebTests.Server
 		HttpOperation currentInstrumentation;
 		HttpConnection connection;
 		ListenerTask currentListenerTask;
+		ListenerContext redirectContext;
 
 		public bool StartOperation (HttpOperation operation)
 		{
@@ -106,6 +107,16 @@ namespace Xamarin.WebTests.Server
 			return true;
 		}
 
+		internal void Redirect (ListenerContext newContext)
+		{
+			if (State != ConnectionState.NeedContextForRedirect)
+				throw new InvalidOperationException ();
+
+			redirectContext = newContext;
+			redirectContext.currentInstrumentation = currentInstrumentation;
+			State = ConnectionState.RequestComplete;
+		}
+
 		public ListenerTask MainLoopListenerTask (TestContext ctx, CancellationToken cancellationToken)
 		{
 			var me = $"{Listener.ME}({Connection.ME}) TASK";
@@ -114,7 +125,6 @@ namespace Xamarin.WebTests.Server
 			lock (Listener) {
 				if (currentListenerTask != null)
 					throw new InvalidOperationException ();
-					// return currentListenerTask;
 
 				instrumentation = currentInstrumentation;
 				if (Listener.UsingInstrumentation && instrumentation == null)
@@ -184,18 +194,31 @@ namespace Xamarin.WebTests.Server
 				ctx.LogDebug (5, $"{me}: {response} {response.Redirect?.ME}");
 
 				currentResponse = response;
+
+				var keepAlive = (response.KeepAlive ?? false) && !response.CloseConnection;
+				if (response.Redirect != null && !keepAlive)
+					return ConnectionState.NeedContextForRedirect;
+
 				return ConnectionState.RequestComplete;
 			}
 
 			async Task<bool> WriteResponse ()
 			{
 				var response = Interlocked.Exchange (ref currentResponse, null);
+				var redirect = Interlocked.Exchange (ref redirectContext, null);
+
 				redirectRequested = response.Redirect;
 
 				var keepAlive = (response.KeepAlive ?? false) && !response.CloseConnection;
 
 				if (response.Redirect != null) {
 					ctx.LogDebug (5, $"{me} REDIRECT: {keepAlive}");
+				}
+
+				if (redirect != null) {
+					ctx.LogDebug (5, $"{me} REDIRECT ON NEW CONTEXT: {redirect.ME}!");
+					await redirect.ServerStartTask.ConfigureAwait (false);
+					ctx.LogDebug (5, $"{me} REDIRECT ON NEW CONTEXT #1: {redirect.ME}!");
 				}
 
 				await connection.WriteResponse (ctx, response, cancellationToken).ConfigureAwait (false);
@@ -218,6 +241,7 @@ namespace Xamarin.WebTests.Server
 
 				currentOperation = redirect;
 				if (!keepAlive) {
+					return ConnectionState.Closed;
 					connection = Listener.Backend.CreateConnection ();
 					return ConnectionState.Listening;
 				}

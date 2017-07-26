@@ -35,6 +35,7 @@ namespace Xamarin.WebTests.Server
 		WaitingForRequest,
 		HasRequest,
 		RequestComplete,
+		NeedContextForRedirect,
 		ReuseConnection,
 		Closed
 	}
