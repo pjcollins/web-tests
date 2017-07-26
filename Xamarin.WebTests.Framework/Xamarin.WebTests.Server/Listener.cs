@@ -329,7 +329,7 @@ namespace Xamarin.WebTests.Server
 
 			ctx.LogDebug (2, $"{ME} CREATE CONTEXT: {reusing} {reused} {context.ME}");
 
-			await context.HttpContext.ServerStartTask.ConfigureAwait (false);
+			await context.ServerStartTask.ConfigureAwait (false);
 		}
 
 		void Close ()
