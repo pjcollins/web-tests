@@ -234,22 +234,28 @@ namespace Xamarin.WebTests.Server
 				while (connections.Count < requestParallelConnections) {
 					Debug ($"RUN SCHEDULER: {connections.Count}");
 					var connection = Backend.CreateConnection ();
-					connections.AddLast (new ListenerContext (this, connection));
+					connections.AddLast (new ListenerContext (this, connection, false));
 					Debug ($"RUN SCHEDULER #1: {connection.ME}");
 				}
 			}
 
 			void StartTasks ()
 			{
+				var listening = false;
 				var iter = connections.First;
 				while (iter != null) {
 					var node = iter;
 					var context = node.Value;
 					iter = iter.Next;
 
+					if (UsingInstrumentation && listening && context.State == ConnectionState.Listening) {
+						continue;
+					}
+
 					if (context.CurrentTask == null) {
 						var task = context.MainLoopListenerTask (TestContext, cts.Token);
 						listenerTasks.AddLast (task);
+						listening |= context.Listening;
 					}
 				}
 			}
@@ -268,7 +274,7 @@ namespace Xamarin.WebTests.Server
 				}
 
 				var connection = Backend.CreateConnection ();
-				var context = new ListenerContext (this, connection);
+				var context = new ListenerContext (this, connection, false);
 				context.StartOperation (operation);
 				connections.AddLast (context);
 				mainLoopEvent.Set ();

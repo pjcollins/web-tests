@@ -52,21 +52,25 @@ namespace Xamarin.WebTests.Server
 			get;
 		}
 
-		public ListenerContext (Listener listener, HttpConnection connection)
+		public ListenerContext (Listener listener, HttpConnection connection, bool reusing)
 		{
 			this.connection = connection;
+			ReusingConnection = reusing;
 
 			Listener = listener;
-			State = ConnectionState.None;
+			State = ConnectionState.Listening;
 			ME = $"[{ID}:{GetType ().Name}:{listener.ME}]";
 
 			serverStartTask = new TaskCompletionSource<object> ();
 			serverReadyTask = new TaskCompletionSource<object> ();
-			State = ConnectionState.Listening;
 		}
 
 		public HttpConnection Connection {
 			get { return connection; }
+		}
+
+		public bool ReusingConnection {
+			get;
 		}
 
 		public ListenerOperation Operation {
@@ -75,6 +79,11 @@ namespace Xamarin.WebTests.Server
 
 		public ListenerTask CurrentTask {
 			get { return currentListenerTask; }
+		}
+
+		public bool Listening {
+			get;
+			private set;
 		}
 
 		HttpRequest currentRequest;
@@ -124,8 +133,6 @@ namespace Xamarin.WebTests.Server
 				switch (State) {
 				case ConnectionState.Listening:
 					return ListenerTask.Create (this, State, Start, Accepted);
-				case ConnectionState.ReuseConnection:
-					return ListenerTask.Create (this, State, ReuseConnection, Accepted);
 				case ConnectionState.WaitingForRequest:
 					return ListenerTask.Create (this, State, ReadRequestHeader, GotRequest);
 				case ConnectionState.HasRequest:
@@ -139,16 +146,13 @@ namespace Xamarin.WebTests.Server
 
 			Task<(bool complete, bool success)> Start ()
 			{
-				return Initialize (ctx, false, instrumentation, cancellationToken);
-			}
-
-			Task<(bool complete, bool success)> ReuseConnection ()
-			{
-				return Initialize (ctx, true, instrumentation, cancellationToken);
+				Listening = true;
+				return Initialize (ctx, instrumentation, cancellationToken);
 			}
 
 			ConnectionState Accepted (bool completed, bool success)
 			{
+				Listening = false;
 				return ConnectionState.WaitingForRequest;
 			}
 
@@ -257,11 +261,11 @@ namespace Xamarin.WebTests.Server
 		public Task ServerReadyTask => serverReadyTask.Task;
 
 		async Task<(bool complete, bool success)> Initialize (
-			TestContext ctx, bool reused, HttpOperation operation, CancellationToken cancellationToken)
+			TestContext ctx, HttpOperation operation, CancellationToken cancellationToken)
 		{
 			try {
 				(bool complete, bool success) result;
-				if (reused) {
+				if (ReusingConnection) {
 					if (await ReuseConnection (ctx, cancellationToken).ConfigureAwait (false))
 						result = (true, true);
 					else
@@ -389,7 +393,7 @@ namespace Xamarin.WebTests.Server
 			var oldConnection = Interlocked.Exchange (ref connection, null);
 			if (oldConnection == null)
 				throw new InvalidOperationException ();
-			var newContext = new ListenerContext (Listener, oldConnection);
+			var newContext = new ListenerContext (Listener, oldConnection, true);
 			newContext.State = ConnectionState.WaitingForRequest;
 			newContext.currentInstrumentation = currentInstrumentation;
 			return newContext;
