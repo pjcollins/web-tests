@@ -39,6 +39,8 @@ namespace Xamarin.WebTests.Server
 			get;
 		}
 
+		public abstract void Start ();
+
 		public abstract ConnectionState Continue ();
 
 		public static ListenerTask Create<T> (Func<Task<T>> start, Func<T, ConnectionState> continuation)
@@ -65,25 +67,67 @@ namespace Xamarin.WebTests.Server
 			}
 		}
 
-		public Task<T> Start {
+		public Func<Task<T>> StartFunc {
 			get;
 		}
 
-		public override Task Task => Start;
+		public override Task Task => tcs.Task;
 
 		public Func<T, ConnectionState> Continuation {
 			get;
 		}
 
+		public bool Completed {
+			get { return completed; }
+		}
+
+		TaskCompletionSource<T> tcs;
+		volatile bool completed;
+
 		public ListenerTask (Func<Task<T>> start, Func<T, ConnectionState> continuation)
 		{
-			Start = start ();
+			StartFunc = start;
 			Continuation = continuation;
+			tcs = new TaskCompletionSource<T> ();
+		}
+
+		public override void Start ()
+		{
+			Task<T> task;
+			try {
+				task = StartFunc ();
+			} catch (OperationCanceledException) {
+				completed = true;
+				tcs.TrySetCanceled ();
+				return;
+			} catch (Exception ex) {
+				completed = true;
+				tcs.TrySetException (ex);
+				return;
+			}
+
+			task.ContinueWith (t => {
+				completed = true;
+				switch (t.Status) {
+				case TaskStatus.Canceled:
+					tcs.TrySetCanceled ();
+					break;
+				case TaskStatus.Faulted:
+					tcs.TrySetException (t.Exception);
+					break;
+				case TaskStatus.RanToCompletion:
+					tcs.TrySetResult (t.Result);
+					break;
+				default:
+					tcs.TrySetException (new InvalidOperationException ());
+					break;
+				}
+			});
 		}
 
 		public override ConnectionState Continue ()
 		{
-			var result = Start.Result;
+			var result = tcs.Task.Result;
 			return Continuation (result);
 		}
 	}

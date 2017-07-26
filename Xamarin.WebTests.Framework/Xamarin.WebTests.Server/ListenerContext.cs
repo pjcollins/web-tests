@@ -111,6 +111,7 @@ namespace Xamarin.WebTests.Server
 
 			try {
 				currentListenerTask = StartListenerTask ();
+				currentListenerTask.Start ();
 			} catch (Exception ex) {
 				return FailedTask (ex);
 			}
