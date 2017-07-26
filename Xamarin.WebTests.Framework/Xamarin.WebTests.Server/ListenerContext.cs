@@ -79,7 +79,7 @@ namespace Xamarin.WebTests.Server
 		ListenerOperation currentOperation;
 		HttpOperation currentInstrumentation;
 		HttpConnection connection;
-		Iteration currentIteration;
+		ListenerTask currentListenerTask;
 
 		public bool StartOperation (HttpOperation operation)
 		{
@@ -93,14 +93,14 @@ namespace Xamarin.WebTests.Server
 			return true;
 		}
 
-		public Task MainLoopIteration (TestContext ctx, CancellationToken cancellationToken)
+		public Task MainLoopListenerTask (TestContext ctx, CancellationToken cancellationToken)
 		{
-			var me = $"{Listener.ME}({Connection.ME}) ITERATION";
+			var me = $"{Listener.ME}({Connection.ME}) TASK";
 
 			HttpOperation instrumentation;
 			lock (Listener) {
-				if (currentIteration != null)
-					return currentIteration.Task;
+				if (currentListenerTask != null)
+					return currentListenerTask.Task;
 
 				instrumentation = currentInstrumentation;
 				if (Listener.UsingInstrumentation && instrumentation == null)
@@ -110,26 +110,26 @@ namespace Xamarin.WebTests.Server
 			ctx.LogDebug (5, $"{me} {State}");
 
 			try {
-				currentIteration = StartIteration ();
+				currentListenerTask = StartListenerTask ();
 			} catch (Exception ex) {
 				return FailedTask (ex);
 			}
 
-			return currentIteration.Task;
+			return currentListenerTask.Task;
 
-			Iteration StartIteration ()
+			ListenerTask StartListenerTask ()
 			{
 				switch (State) {
 				case ConnectionState.Listening:
-					return CreateIteration (Start, Accepted);
+					return ListenerTask.Create (Start, Accepted);
 				case ConnectionState.ReuseConnection:
-					return CreateIteration (ReuseConnection, Accepted);
+					return ListenerTask.Create (ReuseConnection, Accepted);
 				case ConnectionState.WaitingForRequest:
-					return CreateIteration (ReadRequestHeader, GotRequest);
+					return ListenerTask.Create (ReadRequestHeader, GotRequest);
 				case ConnectionState.HasRequest:
-					return CreateIteration (HandleRequest, RequestComplete);
+					return ListenerTask.Create (HandleRequest, RequestComplete);
 				case ConnectionState.RequestComplete:
-					return CreateIteration (WriteResponse, ResponseWritten);
+					return ListenerTask.Create (WriteResponse, ResponseWritten);
 				default:
 					throw ctx.AssertFail (State);
 				}
@@ -188,6 +188,10 @@ namespace Xamarin.WebTests.Server
 
 				var keepAlive = (response.KeepAlive ?? false) && !response.CloseConnection;
 
+				if (response.Redirect != null) {
+					ctx.LogDebug (5, $"{me} REDIRECT: {keepAlive}");
+				}
+
 				await connection.WriteResponse (ctx, response, cancellationToken).ConfigureAwait (false);
 				return keepAlive;
 			}
@@ -216,9 +220,9 @@ namespace Xamarin.WebTests.Server
 			}
 		}
 
-		public ConnectionState MainLoopIterationDone (TestContext ctx, Task task, CancellationToken cancellationToken)
+		public ConnectionState MainLoopListenerTaskDone (TestContext ctx, Task task, CancellationToken cancellationToken)
 		{
-			var me = $"{Listener.ME}({Connection.ME}) ITERATION DONE";
+			var me = $"{Listener.ME}({Connection.ME}) task DONE";
 
 			ctx.LogDebug (5, $"{me}: {task.Status} {State}");
 
@@ -234,11 +238,11 @@ namespace Xamarin.WebTests.Server
 				return ConnectionState.Closed;
 			}
 
-			var iteration = Interlocked.Exchange (ref currentIteration, null);
-			if (task != iteration.Task)
+			var currentTask = Interlocked.Exchange (ref currentListenerTask, null);
+			if (currentTask.Task != task)
 				throw new InvalidOperationException ();
 
-			var nextState = iteration.Continue ();
+			var nextState = currentTask.Continue ();
 
 			ctx.LogDebug (5, $"{me} DONE: {State} -> {nextState}");
 
@@ -398,55 +402,6 @@ namespace Xamarin.WebTests.Server
 				return;
 			disposed = true;
 			Close ();
-		}
-
-		static Iteration CreateIteration<T> (Func<Task<T>> start, Func<T, ConnectionState> continuation)
-		{
-			return new Iteration<T> (start, continuation);
-		}
-
-		static Iteration CreateIteration<T, U> (Func<Task<(T, U)>> start, Func<T, U, ConnectionState> continuation)
-		{
-			return new Iteration<(T, U)> (start, r => continuation (r.Item1, r.Item2));
-		}
-
-		static Iteration CreateIteration<T, U, V> (Func<Task<(T, U, V)>> start, Func<T, U, V, ConnectionState> continuation)
-		{
-			return new Iteration<(T, U, V)> (start, r => continuation (r.Item1, r.Item2, r.Item3));
-		}
-
-		abstract class Iteration
-		{
-			public abstract Task Task {
-				get;
-			}
-
-			public abstract ConnectionState Continue ();
-		}
-
-		class Iteration<T> : Iteration
-		{
-			public Task<T> Start {
-				get;
-			}
-
-			public override Task Task => Start;
-
-			public Func<T, ConnectionState> Continuation {
-				get;
-			}
-
-			public Iteration (Func<Task<T>> start, Func<T, ConnectionState> continuation)
-			{
-				Start = start ();
-				Continuation = continuation;
-			}
-
-			public override ConnectionState Continue ()
-			{
-				var result = Start.Result;
-				return Continuation (result);
-			}
 		}
 	}
 }

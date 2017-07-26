@@ -131,7 +131,7 @@ namespace Xamarin.WebTests.Server
 						Task task = null;
 						Debug ($"  MAIN LOOP #0: {context.ME} {context.State}");
 						try {
-							task = context.MainLoopIteration (TestContext, cts.Token);
+							task = context.MainLoopListenerTask (TestContext, cts.Token);
 						} catch (Exception ex) {
 							task = FailedTask (ex);
 						}
@@ -166,7 +166,7 @@ namespace Xamarin.WebTests.Server
 					var context = connectionArray[idx];
 					Debug ($"MAIN LOOP #2: {idx} {context.State} {context?.Connection?.ME}");
 
-					var state = context.MainLoopIterationDone (TestContext, finished, cts.Token);
+					var state = context.MainLoopListenerTaskDone (TestContext, finished, cts.Token);
 					if (state == ConnectionState.Closed) {
 						connections.Remove (context);
 						context.Dispose ();
