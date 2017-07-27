@@ -461,8 +461,12 @@ namespace Xamarin.WebTests.Server
 		public ListenerOperation RegisterOperation (TestContext ctx, HttpOperation operation, Handler handler, string path)
 		{
 			lock (this) {
-				if (TargetListener != null)
-					return TargetListener.RegisterOperation (ctx, operation, handler, path);
+				if (TargetListener != null) {
+					var targetOperation = TargetListener.RegisterOperation (ctx, operation, handler, path);
+					var proxyOperation = new ProxyOperation (this, targetOperation);
+					registry.Add (proxyOperation.Uri.LocalPath, proxyOperation);
+					return proxyOperation;
+				}
 				if (path == null) {
 					var id = Interlocked.Increment (ref nextRequestID);
 					path = $"/id/{operation.ID}/{handler.GetType ().Name}/";
@@ -470,7 +474,7 @@ namespace Xamarin.WebTests.Server
 				var me = $"{nameof (RegisterOperation)}({handler.Value})";
 				Debug ($"{me} {path}");
 				var uri = new Uri (Server.TargetUri, path);
-				var listenerOperation = new ListenerOperation (this, operation, handler, uri);
+				var listenerOperation = new ServerOperation (this, operation, handler, uri);
 				registry.Add (path, listenerOperation);
 				return listenerOperation;
 			}
@@ -479,8 +483,6 @@ namespace Xamarin.WebTests.Server
 		internal ListenerOperation GetOperation (ListenerContext context, HttpRequest request)
 		{
 			lock (this) {
-				if (TargetListener != null)
-					return TargetListener.GetOperation (context, request);
 				var me = $"{nameof (GetOperation)}({context.Connection.ME})";
 				Debug ($"{me} {request.Method} {request.Path} {request.Protocol}");
 
