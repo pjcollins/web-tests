@@ -95,7 +95,7 @@ namespace Xamarin.WebTests.Server
 
 				ctx.LogDebug (2, $"{me} REQUEST FULLY READ");
 
-				response = await Handler.NewHandleRequest (
+				response = await Handler.HandleRequest (
 					ctx, Operation, connection, request, cancellationToken).ConfigureAwait (false);
 
 				ctx.LogDebug (2, $"{me} HANDLE REQUEST DONE: {response}");

@@ -79,16 +79,6 @@ namespace Xamarin.WebTests.HttpFramework {
 			get; private set;
 		}
 
-		public override void RegisterHandler (TestContext ctx, string path, Handler handler)
-		{
-			Target.RegisterHandler (ctx, path, handler);
-		}
-
-		protected internal override Handler GetHandler (TestContext ctx, string path)
-		{
-			return Target.GetHandler (ctx, path);
-		}
-
 		Listener currentListener;
 		ProxyBackend currentBackend;
 
@@ -135,9 +125,9 @@ namespace Xamarin.WebTests.HttpFramework {
 			Target.CloseAll ();
 		}
 
-		internal override async Task<bool> HandleConnection (TestContext ctx, HttpOperation operation,
-		                                                     HttpConnection connection, HttpRequest request,
-		                                                     Handler handler, CancellationToken cancellationToken)
+		async Task<bool> HandleConnection (TestContext ctx, HttpOperation operation,
+		                                   HttpConnection connection, HttpRequest request,
+		                                   Handler handler, CancellationToken cancellationToken)
 		{
 			// ++countRequests;
 			var proxyConnection = (ProxyConnection)connection;

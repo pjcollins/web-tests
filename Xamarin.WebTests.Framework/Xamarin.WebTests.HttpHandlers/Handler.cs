@@ -43,18 +43,13 @@ namespace Xamarin.WebTests.HttpHandlers
 
 		public RequestFlags Flags {
 			get { return flags; }
-			set {
-				WantToModify ();
-				flags = value;
+			set { flags = value;
 			}
 		}
 
 		public Func<TestContext, bool> Filter {
 			get { return filter; }
-			set {
-				WantToModify ();
-				filter = value;
-			}
+			set { filter = value; }
 		}
 
 		bool ITestFilter.Filter (TestContext ctx, out bool enabled)
@@ -76,14 +71,7 @@ namespace Xamarin.WebTests.HttpHandlers
 
 		Func<TestContext, bool> filter;
 
-		bool hasRequest;
 		RequestFlags flags;
-
-		protected void WantToModify ()
-		{
-			if (hasRequest)
-				throw new InvalidOperationException ();
-		}
 
 		public Handler (Handler parent, string identifier = null)
 		{
@@ -123,9 +111,9 @@ namespace Xamarin.WebTests.HttpHandlers
 			ctx.LogDebug (2, sb.ToString ());
 		}
 
-		public async Task<HttpResponse> NewHandleRequest (TestContext ctx, HttpOperation operation,
-		                                                  HttpConnection connection, HttpRequest request,
-		                                                  CancellationToken cancellationToken)
+		public async Task<HttpResponse> HandleRequest (TestContext ctx, HttpOperation operation,
+		                                               HttpConnection connection, HttpRequest request,
+		                                               CancellationToken cancellationToken)
 		{
 			Exception originalError;
 			HttpResponse response;
@@ -178,90 +166,11 @@ namespace Xamarin.WebTests.HttpHandlers
 			return response;
 		}
 
-		public async Task<bool> HandleRequest (TestContext ctx, HttpOperation operation,
-		                                       HttpConnection connection, HttpRequest request,
-		                                       CancellationToken cancellationToken)
-		{
-			Exception originalError;
-			HttpResponse response;
-
-			if (operation == null)
-				throw new ArgumentNullException (nameof (operation));
-			if (connection == null)
-				throw new ArgumentNullException (nameof (connection));
-
-			var expectServerError = operation.HasAnyFlags (HttpOperationFlags.ExpectServerException);
-
-			try {
-				Debug (ctx, 1, $"HANDLE REQUEST: {connection.RemoteEndPoint}");
-				DumpHeaders (ctx, request);
-				connection.Server.CheckEncryption (ctx, connection.SslStream);
-				response = await HandleRequest (ctx, operation, connection, request, Flags, cancellationToken);
-
-				if (response == null)
-					response = HttpResponse.CreateSuccess ();
-				if (!response.KeepAlive.HasValue && ((Flags & RequestFlags.KeepAlive) != 0))
-					response.KeepAlive = true;
-				var keepAlive = (response.KeepAlive ?? false) && ((Flags & RequestFlags.CloseConnection) == 0);
-
-				cancellationToken.ThrowIfCancellationRequested ();
-				await connection.WriteResponse (ctx, response, cancellationToken);
-
-				Debug (ctx, 1, $"HANDLE REQUEST DONE: {connection.RemoteEndPoint} {keepAlive}", response);
-				DumpHeaders (ctx, response);
-				return keepAlive;
-			} catch (AssertionException ex) {
-				originalError = ex;
-				response = HttpResponse.CreateError (ex.Message);
-			} catch (OperationCanceledException) {
-				throw;
-			} catch (Exception ex) {
-				originalError = ex;
-				response = HttpResponse.CreateError ("Caught unhandled exception", ex);
-			}
-
-			if (ctx.IsCanceled || cancellationToken.IsCancellationRequested) {
-				Debug (ctx, 1, "HANDLE REQUEST - CANCELED");
-				return false;
-			}
-
-			if (originalError is AssertionException)
-				Debug (ctx, 1, "HANDLE REQUEST - ASSERTION FAILED", originalError);
-			else if (expectServerError)
-				Debug (ctx, 1, "HANDLE REQUEST - EXPECTED ERROR", originalError.GetType ());
-			else
-				Debug (ctx, 1, "HANDLE REQUEST - ERROR", originalError);
-
-			try {
-				cancellationToken.ThrowIfCancellationRequested ();
-				await connection.WriteResponse (ctx, response, cancellationToken);
-				return false;
-			} catch (OperationCanceledException) {
-				throw;
-			} catch (Exception ex) {
-				if (!expectServerError)
-					Debug (ctx, 1, "FAILED TO SEND ERROR RESPONSE", originalError, ex);
-				throw new AggregateException ("Failed to send error response", originalError, ex);
-			}
-		}
-
 		[StackTraceEntryPoint]
 		protected internal abstract Task<HttpResponse> HandleRequest (
 			TestContext ctx, HttpOperation operation, HttpConnection connection,
 			HttpRequest request, RequestFlags effectiveFlags,
 			CancellationToken cancellationToken);
-
-		[Obsolete]
-		public Uri RegisterRequest (TestContext ctx, HttpServer server)
-		{
-			lock (this) {
-				if (hasRequest)
-					throw new InvalidOperationException ();
-				hasRequest = true;
-
-				return server.RegisterHandler (ctx, this);
-			}
-		}
 
 		public virtual void ConfigureRequest (Request request, Uri uri)
 		{

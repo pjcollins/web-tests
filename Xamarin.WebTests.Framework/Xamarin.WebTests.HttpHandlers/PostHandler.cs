@@ -68,7 +68,6 @@ namespace Xamarin.WebTests.HttpHandlers
 				return method;
 			}
 			set {
-				WantToModify ();
 				method = value;
 			}
 		}
@@ -78,14 +77,12 @@ namespace Xamarin.WebTests.HttpHandlers
 				return allowWriteBuffering;
 			}
 			set {
-				WantToModify ();
 				allowWriteBuffering = value;
 			}
 		}
 
 		public Func<HttpRequest, HttpResponse> CustomHandler {
 			set {
-				WantToModify ();
 				customHandler = value;
 			}
 		}
