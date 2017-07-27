@@ -56,7 +56,7 @@ namespace Xamarin.WebTests.Server
 
 		public override Task Initialize (TestContext ctx, HttpOperation operation, CancellationToken cancellationToken)
 		{
-			targetContext = TargetListener.CreateContext (ctx, operation, false);
+			// targetContext = TargetListener.CreateContext (ctx, operation, false);
 			return base.Initialize (ctx, operation, cancellationToken);
 		}
 

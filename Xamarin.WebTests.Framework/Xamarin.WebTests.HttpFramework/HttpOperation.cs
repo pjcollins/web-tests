@@ -141,7 +141,7 @@ namespace Xamarin.WebTests.HttpFramework
 
 			var linkedCts = CancellationTokenSource.CreateLinkedTokenSource (cts.Token, cancellationToken);
 			try {
-				var response = await RunParallelListener (ctx, linkedCts.Token).ConfigureAwait (false);
+				var response = await RunListener (ctx, linkedCts.Token).ConfigureAwait (false);
 				requestDoneTask.TrySetResult (response);
 			} catch (OperationCanceledException) {
 				requestDoneTask.TrySetCanceled ();
@@ -224,9 +224,9 @@ namespace Xamarin.WebTests.HttpFramework
 				Debug (ctx, 5, "GOT RESPONSE BODY", response.Content);
 		}
 
-		async Task<Response> RunParallelListener (TestContext ctx, CancellationToken cancellationToken)
+		async Task<Response> RunListener (TestContext ctx, CancellationToken cancellationToken)
 		{
-			var me = $"{ME} NEW LISTENER";
+			var me = $"{ME} RUN LISTENER";
 			ctx.LogDebug (1, me);
 
 			var operation = Server.Listener.RegisterOperation (ctx, this, Handler, null);
