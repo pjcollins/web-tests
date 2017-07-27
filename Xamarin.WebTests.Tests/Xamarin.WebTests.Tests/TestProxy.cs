@@ -203,7 +203,7 @@ namespace Xamarin.WebTests.Tests {
 
 		[Martin3]
 		[AsyncTest (ParameterFilter = "martin", Unstable = true)]
-		[WebTestFeatures.UseProxyKind (ProxyKind.Simple)]
+		[WebTestFeatures.UseProxyKind (ProxyKind.BasicAuth)]
 		public async Task MartinTest (
 			TestContext ctx, HttpServer server, Handler handler,
 			CancellationToken cancellationToken)

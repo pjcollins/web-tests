@@ -203,10 +203,28 @@ namespace Xamarin.WebTests.Server
 				currentRequest = request;
 				ctx.LogDebug (5, $"{me} GOT REQUEST");
 
-				if (Listener.TargetListener != null)
-					return ConnectionState.ConnectToTarget;
+				if (Listener.TargetListener == null)
+					return ConnectionState.HasRequest;
 
-				return ConnectionState.HasRequest;
+				var remoteAddress = connection.RemoteEndPoint.Address;
+				request.AddHeader ("X-Forwarded-For", remoteAddress);
+
+				var authManager = ((BuiltinProxyServer)Listener.Server).AuthenticationManager;
+				if (authManager != null) {
+					AuthenticationState state;
+					var response = authManager.HandleAuthentication (ctx, connection, request, out state);
+					if (response != null) {
+						currentResponse = response;
+						Listener.TargetListener.UnregisterOperation (operation);
+						response.Redirect = Listener.RegisterOperation (ctx, operation.Operation, operation.Handler, request.Path);
+						return ConnectionState.RequestComplete;
+					}
+
+					// HACK: Mono rewrites chunked requests into non-chunked.
+					request.AddHeader ("X-Mono-Redirected", "true");
+				}
+
+				return ConnectionState.ConnectToTarget;
 			}
 
 			Task<HttpResponse> HandleRequest ()
@@ -264,8 +282,6 @@ namespace Xamarin.WebTests.Server
 
 			async Task<HttpResponse> CopyResponse ()
 			{
-				await Task.Yield ();
-
 				cancellationToken.ThrowIfCancellationRequested ();
 				var response = await targetConnection.ReadResponse (ctx, cancellationToken).ConfigureAwait (false);
 				response.SetHeader ("Connection", "close");
