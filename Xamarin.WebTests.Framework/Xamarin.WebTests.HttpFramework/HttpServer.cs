@@ -161,7 +161,6 @@ namespace Xamarin.WebTests.HttpFramework {
 		static int nextServerId;
 		public readonly int ID = ++nextServerId;
 
-		static long nextId;
 		volatile int countRequests;
 
 		internal void BumpRequestCount ()
