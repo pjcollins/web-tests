@@ -24,6 +24,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 using System;
+using System.IO;
+using System.Net;
+using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Xamarin.AsyncTests;
@@ -92,6 +95,7 @@ namespace Xamarin.WebTests.Server
 		ListenerOperation currentOperation;
 		HttpOperation currentInstrumentation;
 		HttpConnection connection;
+		SocketConnection targetConnection;
 		ListenerTask currentListenerTask;
 		ListenerContext redirectContext;
 
@@ -153,6 +157,8 @@ namespace Xamarin.WebTests.Server
 					return ListenerTask.Create (this, State, HandleRequest, RequestComplete);
 				case ConnectionState.RequestComplete:
 					return ListenerTask.Create (this, State, WriteResponse, ResponseWritten);
+				case ConnectionState.ConnectToTarget:
+					return ListenerTask.Create (this, State, ConnectToTarget, ProxyConnectionEstablished);
 				default:
 					throw ctx.AssertFail (State);
 				}
@@ -194,12 +200,42 @@ namespace Xamarin.WebTests.Server
 				currentOperation = operation;
 				currentRequest = request;
 				ctx.LogDebug (5, $"{me} GOT REQUEST");
+
+				if (operation is ProxyOperation proxy)
+					return ConnectionState.ConnectToTarget;
+
 				return ConnectionState.HasRequest;
 			}
 
 			Task<HttpResponse> HandleRequest ()
 			{
 				return currentOperation.HandleRequest (ctx, this, Connection, currentRequest, cancellationToken);
+			}
+
+			async Task ConnectToTarget ()
+			{
+				var proxyOperation = (ProxyOperation)currentOperation;
+				var targetUri = proxyOperation.TargetOperation.Uri;
+				ctx.LogDebug (5, $"{me} CONNECT TO TARGET");
+
+				targetConnection = new SocketConnection (proxyOperation.TargetOperation.Listener.Server);
+				var targetEndPoint = new DnsEndPoint (targetUri.Host, targetUri.Port);
+				ctx.LogDebug (5, $"{me} CONNECT TO TARGET #1: {targetEndPoint}");
+
+				cancellationToken.ThrowIfCancellationRequested ();
+				await targetConnection.ConnectAsync (ctx, targetEndPoint, cancellationToken);
+
+				ctx.LogDebug (5, $"{me} CONNECT TO TARGET #2");
+
+				cancellationToken.ThrowIfCancellationRequested ();
+				await targetConnection.Initialize (ctx, proxyOperation.Operation, cancellationToken);
+
+				ctx.LogDebug (5, $"{me} CONNECT TO TARGET #3");
+			}
+
+			ConnectionState ProxyConnectionEstablished ()
+			{
+				throw new NotImplementedException ();
 			}
 
 			ConnectionState RequestComplete (HttpResponse response)
@@ -425,6 +461,10 @@ namespace Xamarin.WebTests.Server
 			if (connection != null) {
 				connection.Dispose ();
 				connection = null;
+			}
+			if (targetConnection != null) {
+				targetConnection.Dispose ();
+				targetConnection = null;
 			}
 		}
 

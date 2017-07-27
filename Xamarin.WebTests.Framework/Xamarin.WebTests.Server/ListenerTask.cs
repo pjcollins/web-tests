@@ -47,6 +47,13 @@ namespace Xamarin.WebTests.Server
 
 		public abstract ConnectionState Continue ();
 
+		public static ListenerTask Create (ListenerContext context, ConnectionState state,
+		                                   Func<Task> start, Func<ConnectionState> continuation)
+		{
+			Func<Task<object>> func = async () => { await start ().ConfigureAwait (false); return null; };
+			return new ListenerTask<object> (context, state, func, r => continuation ());
+		}
+
 		public static ListenerTask Create<T> (ListenerContext context, ConnectionState state,
 		                                      Func<Task<T>> start, Func<T, ConnectionState> continuation)
 		{
