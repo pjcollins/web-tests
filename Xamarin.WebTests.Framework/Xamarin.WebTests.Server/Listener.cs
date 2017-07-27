@@ -363,12 +363,8 @@ namespace Xamarin.WebTests.Server
 			}
 
 			var clientTask = clientFunc (ctx, request, cancellationToken);
-
-			var targetOperation = operation;
-			if (operation is ProxyOperation proxyOperation)
-				targetOperation = proxyOperation.TargetOperation;
-			var serverInitTask = targetOperation.ServerInitTask;
-			var serverFinishedTask = targetOperation.ServerFinishedTask;
+			var serverInitTask = operation.ServerInitTask;
+			var serverFinishedTask = operation.ServerFinishedTask;
 
 			ExceptionDispatchInfo throwMe = null;
 			bool initDone = false, serverDone = false, clientDone = false;
@@ -468,9 +464,8 @@ namespace Xamarin.WebTests.Server
 			lock (this) {
 				if (TargetListener != null) {
 					var targetOperation = TargetListener.RegisterOperation (ctx, operation, handler, path);
-					var proxyOperation = new ProxyOperation (this, targetOperation);
-					registry.Add (proxyOperation.Uri.LocalPath, proxyOperation);
-					return proxyOperation;
+					registry.Add (targetOperation.Uri.LocalPath, targetOperation);
+					return targetOperation;
 				}
 				if (path == null) {
 					var id = Interlocked.Increment (ref nextRequestID);
@@ -479,7 +474,7 @@ namespace Xamarin.WebTests.Server
 				var me = $"{nameof (RegisterOperation)}({handler.Value})";
 				Debug ($"{me} {path}");
 				var uri = new Uri (Server.TargetUri, path);
-				var listenerOperation = new ServerOperation (this, operation, handler, uri);
+				var listenerOperation = new ListenerOperation (this, operation, handler, uri);
 				registry.Add (path, listenerOperation);
 				return listenerOperation;
 			}

@@ -33,7 +33,7 @@ namespace Xamarin.WebTests.Server
 	using HttpFramework;
 	using HttpHandlers;
 
-	abstract class ListenerOperation
+	class ListenerOperation
 	{
 		public Listener Listener {
 			get;
@@ -95,7 +95,7 @@ namespace Xamarin.WebTests.Server
 
 				ctx.LogDebug (2, $"{me} REQUEST FULLY READ");
 
-				response = await HandleRequest (
+				response = await Handler.NewHandleRequest (
 					ctx, Operation, connection, request, cancellationToken).ConfigureAwait (false);
 
 				ctx.LogDebug (2, $"{me} HANDLE REQUEST DONE: {response}");
@@ -123,10 +123,6 @@ namespace Xamarin.WebTests.Server
 
 			return response;
 		}
-
-		protected abstract Task<HttpResponse> HandleRequest (TestContext ctx, HttpOperation operation,
-								     HttpConnection connection, HttpRequest request,
-								     CancellationToken cancellationToken);
 
 		void OnInit ()
 		{

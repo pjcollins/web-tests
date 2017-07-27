@@ -203,7 +203,7 @@ namespace Xamarin.WebTests.Server
 				currentRequest = request;
 				ctx.LogDebug (5, $"{me} GOT REQUEST");
 
-				if (operation is ProxyOperation proxy)
+				if (Listener.TargetListener != null)
 					return ConnectionState.ConnectToTarget;
 
 				return ConnectionState.HasRequest;
@@ -216,12 +216,10 @@ namespace Xamarin.WebTests.Server
 
 			async Task ConnectToTarget ()
 			{
-				var proxyOperation = (ProxyOperation)currentOperation;
-				var targetUri = proxyOperation.TargetOperation.Uri;
 				ctx.LogDebug (5, $"{me} CONNECT TO TARGET");
 
-				targetConnection = new SocketConnection (proxyOperation.TargetOperation.Listener.Server);
-				var targetEndPoint = new DnsEndPoint (targetUri.Host, targetUri.Port);
+				targetConnection = new SocketConnection (Listener.TargetListener.Server);
+				var targetEndPoint = new DnsEndPoint (currentOperation.Uri.Host, currentOperation.Uri.Port);
 				ctx.LogDebug (5, $"{me} CONNECT TO TARGET #1: {targetEndPoint}");
 
 				cancellationToken.ThrowIfCancellationRequested ();
@@ -230,7 +228,7 @@ namespace Xamarin.WebTests.Server
 				ctx.LogDebug (5, $"{me} CONNECT TO TARGET #2");
 
 				cancellationToken.ThrowIfCancellationRequested ();
-				await targetConnection.Initialize (ctx, proxyOperation.Operation, cancellationToken);
+				await targetConnection.Initialize (ctx, currentOperation.Operation, cancellationToken);
 
 				ctx.LogDebug (5, $"{me} CONNECT TO TARGET #3");
 			}
