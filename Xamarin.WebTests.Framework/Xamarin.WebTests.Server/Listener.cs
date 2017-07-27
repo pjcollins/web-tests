@@ -27,6 +27,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Runtime.ExceptionServices;
 using Xamarin.AsyncTests;
 
 namespace Xamarin.WebTests.Server
@@ -324,6 +325,8 @@ namespace Xamarin.WebTests.Server
 
 		public async Task CreateContext (TestContext ctx, HttpOperation operation, CancellationToken cancellationToken)
 		{
+			if (!UsingInstrumentation)
+				return;
 			var reusing = !operation.HasAnyFlags (HttpOperationFlags.DontReuseConnection);
 			var (context, reused) = FindOrCreateContext (operation, reusing);
 
@@ -331,6 +334,101 @@ namespace Xamarin.WebTests.Server
 
 			await context.ServerStartTask.ConfigureAwait (false);
 		}
+
+		public async Task<Response> RunWithContext (TestContext ctx, ListenerOperation operation, Request request,
+							    ClientFunc clientFunc, CancellationToken cancellationToken)
+		{
+			var me = $"{ME}({operation.Operation.ME}) RUN WITH CONTEXT";
+
+			ListenerContext context = null;
+			var reusing = !operation.Operation.HasAnyFlags (HttpOperationFlags.DontReuseConnection);
+
+			if (UsingInstrumentation) {
+				(context, reusing) = FindOrCreateContext (operation.Operation, reusing);
+
+				ctx.LogDebug (2, $"{me} - CREATE CONTEXT: {reusing} {context.ME}");
+
+				await context.ServerStartTask.ConfigureAwait (false);
+			}
+
+			var clientTask = clientFunc (ctx, request, cancellationToken);
+			var serverInitTask = operation.ServerInitTask;
+
+			ExceptionDispatchInfo throwMe = null;
+			bool initDone = false, serverDone = false, clientDone = false;
+
+			while (!initDone || !serverDone || !clientDone) {
+				ctx.LogDebug (2, $"{me} LOOP: init={initDone} server={serverDone} client={clientDone}");
+
+				if (clientDone) {
+					if (operation.Operation.HasAnyFlags (
+						HttpOperationFlags.AbortAfterClientExits, HttpOperationFlags.ServerAbortsHandshake,
+						HttpOperationFlags.ClientAbortsHandshake)) {
+						ctx.LogDebug (2, $"{me} - ABORTING");
+						break;
+					}
+					if (!initDone) {
+						ctx.LogDebug (2, $"{me} - ERROR: {clientTask.Result}");
+						throwMe = ExceptionDispatchInfo.Capture (new ConnectionException (
+							$"{me} client exited before server accepted connection."));
+						break;
+					}
+				}
+
+				var tasks = new List<Task> ();
+				if (!initDone)
+					tasks.Add (operation.ServerInitTask);
+				if (!serverDone)
+					tasks.Add (operation.ServerFinishedTask);
+				if (!clientDone)
+					tasks.Add (clientTask);
+				var finished = await Task.WhenAny (tasks).ConfigureAwait (false);
+
+				string which;
+				if (finished == operation.ServerInitTask) {
+					which = "init";
+					initDone = true;
+				} else if (finished == operation.ServerFinishedTask) {
+					which = "server";
+					serverDone = true;
+				} else if (finished == clientTask) {
+					which = "client";
+					clientDone = true;
+				} else {
+					throwMe = ExceptionDispatchInfo.Capture (new InvalidOperationException ());
+					break;
+				}
+
+				ctx.LogDebug (2, $"{me} #4: {which} exited - {finished.Status}");
+				if (finished.Status == TaskStatus.Faulted || finished.Status == TaskStatus.Canceled) {
+					if (operation.Operation.HasAnyFlags (HttpOperationFlags.ExpectServerException) &&
+					    (finished == operation.ServerFinishedTask || finished == operation.ServerInitTask))
+						ctx.LogDebug (2, $"{me} EXPECTED EXCEPTION {finished.Exception.GetType ()}");
+					else {
+						ctx.LogDebug (2, $"{me} FAILED: {finished.Exception.Message}");
+						throwMe = ExceptionDispatchInfo.Capture (finished.Exception);
+						break;
+					}
+				}
+			}
+
+			if (throwMe != null) {
+				ctx.LogDebug (2, $"{me} THROWING {throwMe.SourceException.Message}");
+				lock (this) {
+					operation.OnError (throwMe.SourceException);
+					if (context != null)
+						context.Dispose ();
+					mainLoopEvent.Set ();
+				}
+				throwMe.Throw ();
+			}
+
+			var response = clientTask.Result;
+
+			return response;
+		}
+
+		internal delegate Task<Response> ClientFunc (TestContext ctx, Request request, CancellationToken cancellationToken);
 
 		void Close ()
 		{

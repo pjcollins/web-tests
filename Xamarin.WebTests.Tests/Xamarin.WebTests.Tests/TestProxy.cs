@@ -69,7 +69,7 @@ namespace Xamarin.WebTests.Tests {
 		{
 			var endpoint = address.CopyWithPort (port);
 			var proxyEndpoint = address.CopyWithPort (proxyPort);
-			var target = new BuiltinHttpServer (endpoint, endpoint, HttpServerFlags.None, parameters, null);
+			var target = new BuiltinHttpServer (endpoint, endpoint, HttpServerFlags.InstrumentationListener, parameters, null);
 			return new BuiltinProxyServer (target, proxyEndpoint, HttpServerFlags.Proxy, authType) {
 				Credentials = credentials
 			};
@@ -203,7 +203,7 @@ namespace Xamarin.WebTests.Tests {
 
 		[Martin3]
 		[AsyncTest (ParameterFilter = "martin", Unstable = true)]
-		[WebTestFeatures.UseProxyKind (ProxyKind.NtlmWithSSL)]
+		[WebTestFeatures.UseProxyKind (ProxyKind.Simple)]
 		public async Task MartinTest (
 			TestContext ctx, HttpServer server, Handler handler,
 			CancellationToken cancellationToken)

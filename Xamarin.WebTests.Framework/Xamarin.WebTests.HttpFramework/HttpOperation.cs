@@ -244,6 +244,10 @@ namespace Xamarin.WebTests.HttpFramework
 
 			ctx.LogDebug (2, $"{me} #1: {operation.Uri} {request}");
 
+			var response = await Server.Listener.RunWithContext (
+				ctx, operation, request, RunInner, cancellationToken).ConfigureAwait (false);
+
+#if FIXME
 			if ((Server.Flags & HttpServerFlags.InstrumentationListener) != 0) {
 				ctx.LogDebug (2, $"{me} INSTRUMENTATION");
 				await Server.Listener.CreateContext (ctx, this, cancellationToken).ConfigureAwait (false);
@@ -303,6 +307,7 @@ namespace Xamarin.WebTests.HttpFramework
 			}
 
 			var response = clientTask.Result;
+#endif
 
 			ctx.LogDebug (2, $"{me} DONE: {response}");
 

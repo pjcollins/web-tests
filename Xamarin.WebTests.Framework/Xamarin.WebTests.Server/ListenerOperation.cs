@@ -143,7 +143,7 @@ namespace Xamarin.WebTests.Server
 			parentOperation?.OnCanceled ();
 		}
 
-		void OnError (Exception error)
+		internal void OnError (Exception error)
 		{
 			serverInitTask.TrySetException (error);
 			serverFinishedTask.TrySetException (error);
