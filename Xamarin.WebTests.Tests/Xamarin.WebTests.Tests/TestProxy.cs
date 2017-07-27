@@ -121,7 +121,8 @@ namespace Xamarin.WebTests.Tests {
 
 			switch (filter) {
 			case "martin":
-				list.Add (HelloWorldHandler.GetSimple ());
+				// list.Add (HelloWorldHandler.GetSimple ());
+				list.Add (new PostHandler ("Normal post", HttpContent.HelloWorld));
 				break;
 			default:
 				list.Add (HelloWorldHandler.GetSimple ());
@@ -203,7 +204,7 @@ namespace Xamarin.WebTests.Tests {
 
 		[Martin3]
 		[AsyncTest (ParameterFilter = "martin", Unstable = true)]
-		[WebTestFeatures.UseProxyKind (ProxyKind.BasicAuth)]
+		[WebTestFeatures.UseProxyKind (ProxyKind.Simple)]
 		public async Task MartinTest (
 			TestContext ctx, HttpServer server, Handler handler,
 			CancellationToken cancellationToken)
