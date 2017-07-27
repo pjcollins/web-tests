@@ -139,7 +139,7 @@ namespace Xamarin.WebTests.HttpFramework {
 		                                                     HttpConnection connection, HttpRequest request,
 		                                                     Handler handler, CancellationToken cancellationToken)
 		{
-			++countRequests;
+			// ++countRequests;
 			var proxyConnection = (ProxyConnection)connection;
 
 			var remoteAddress = connection.RemoteEndPoint.Address;

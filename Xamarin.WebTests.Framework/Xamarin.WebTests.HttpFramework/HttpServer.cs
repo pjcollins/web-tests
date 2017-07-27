@@ -162,7 +162,12 @@ namespace Xamarin.WebTests.HttpFramework {
 		public readonly int ID = ++nextServerId;
 
 		static long nextId;
-		protected int countRequests;
+		volatile int countRequests;
+
+		internal void BumpRequestCount ()
+		{
+			Interlocked.Increment (ref countRequests);
+		}
 
 		public Uri RegisterHandler (TestContext ctx, Handler handler)
 		{

@@ -83,7 +83,7 @@ namespace Xamarin.WebTests.Server
 		}
 
 		public Listener (TestContext ctx, HttpServer server,
-		                 ListenerType type, ListenerBackend backend)
+				 ListenerType type, ListenerBackend backend)
 		{
 			TestContext = ctx;
 			Server = server;
@@ -498,6 +498,7 @@ namespace Xamarin.WebTests.Server
 
 				var operation = registry[request.Path];
 				registry.Remove (request.Path);
+				Server.BumpRequestCount ();
 				return operation;
 			}
 		}
