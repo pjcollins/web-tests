@@ -110,7 +110,6 @@ namespace Xamarin.WebTests.HttpFramework
 		Request currentRequest;
 		ServicePoint servicePoint;
 		ListenerOperation listenerOperation;
-		Listener listener;
 		TaskCompletionSource<Request> requestTask;
 		TaskCompletionSource<Response> requestDoneTask;
 		CancellationTokenSource cts;
@@ -230,9 +229,7 @@ namespace Xamarin.WebTests.HttpFramework
 			var me = $"{ME} NEW LISTENER";
 			ctx.LogDebug (1, me);
 
-			listener = ((BuiltinHttpServer)Server).Listener;
-
-			var operation = listener.RegisterOperation (ctx, this, Handler, null);
+			var operation = Server.Listener.RegisterOperation (ctx, this, Handler, null);
 			var request = CreateRequest (ctx, operation.Uri);
 
 			listenerOperation = operation;
@@ -249,7 +246,7 @@ namespace Xamarin.WebTests.HttpFramework
 
 			if ((Server.Flags & HttpServerFlags.InstrumentationListener) != 0) {
 				ctx.LogDebug (2, $"{me} INSTRUMENTATION");
-				await listener.CreateContext (ctx, this, cancellationToken).ConfigureAwait (false);
+				await Server.Listener.CreateContext (ctx, this, cancellationToken).ConfigureAwait (false);
 			}
 
 			var clientTask = RunInner (ctx, request, cancellationToken);
@@ -316,7 +313,7 @@ namespace Xamarin.WebTests.HttpFramework
 
 		internal ListenerOperation RegisterRedirect (TestContext ctx, Handler handler, string path = null)
 		{
-			return listener.RegisterOperation (ctx, this, handler, path);
+			return Server.Listener.RegisterOperation (ctx, this, handler, path);
 		}
 
 		protected abstract void Destroy ();
