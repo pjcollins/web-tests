@@ -101,12 +101,15 @@ namespace Xamarin.WebTests.HttpFramework {
 			var backend = new ProxyBackend (ctx, this);
 			if (Interlocked.CompareExchange (ref currentBackend, backend, null) != null)
 				throw new InternalErrorException ();
+
+			if (AuthenticationType != AuthenticationType.None)
+				AuthenticationManager = new AuthenticationManager (AuthenticationType, true);
+
+			await Target.Start (ctx, cancellationToken).ConfigureAwait (false);
+
 			var listener = new Listener (ctx, this, ListenerType.Proxy, backend);
 			listener.Start ();
 			currentListener = listener;
-			if (AuthenticationType != AuthenticationType.None)
-				AuthenticationManager = new AuthenticationManager (AuthenticationType, true);
-			await Target.Start (ctx, cancellationToken).ConfigureAwait (false);
 		}
 
 		public override async Task Stop (TestContext ctx, CancellationToken cancellationToken)

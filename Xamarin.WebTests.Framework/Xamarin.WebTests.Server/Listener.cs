@@ -70,6 +70,10 @@ namespace Xamarin.WebTests.Server
 			get;
 		}
 
+		internal Listener TargetListener {
+			get;
+		}
+
 		internal HttpServer Server {
 			get;
 		}
@@ -85,6 +89,9 @@ namespace Xamarin.WebTests.Server
 			Server = server;
 			Type = type;
 			Backend = backend;
+
+			if (backend is ProxyBackend proxyBackend)
+				TargetListener = proxyBackend.Target.Listener;
 
 			ME = $"{GetType ().Name}({ID}:{Type})";
 			registry = new Dictionary<string, ListenerOperation> ();
@@ -327,30 +334,13 @@ namespace Xamarin.WebTests.Server
 			}
 		}
 
-		internal ListenerContext CreateContext (TestContext ctx, HttpOperation operation, bool reusing)
-		{
-			var (context, _) = FindOrCreateContext (operation, reusing);
-			return context;
-		}
-
-		public async Task CreateContext (TestContext ctx, HttpOperation operation, CancellationToken cancellationToken)
-		{
-			if (!UsingInstrumentation)
-				return;
-			var reusing = !operation.HasAnyFlags (HttpOperationFlags.DontReuseConnection);
-			var (context, reused) = FindOrCreateContext (operation, reusing);
-
-			ctx.LogDebug (2, $"{ME} CREATE CONTEXT: {reusing} {reused} {context.ME}");
-
-			await context.ServerStartTask.ConfigureAwait (false);
-		}
-
 		public async Task<Response> RunWithContext (TestContext ctx, ListenerOperation operation, Request request,
 							    ClientFunc clientFunc, CancellationToken cancellationToken)
 		{
 			var me = $"{ME}({operation.Operation.ME}) RUN WITH CONTEXT";
 
 			ListenerContext context = null;
+			ListenerContext targetContext = null;
 			var reusing = !operation.Operation.HasAnyFlags (HttpOperationFlags.DontReuseConnection);
 
 			if (UsingInstrumentation) {
@@ -359,6 +349,17 @@ namespace Xamarin.WebTests.Server
 				ctx.LogDebug (2, $"{me} - CREATE CONTEXT: {reusing} {context.ME}");
 
 				await context.ServerStartTask.ConfigureAwait (false);
+			}
+
+			if (TargetListener?.UsingInstrumentation ?? false) {
+				(targetContext, _) = TargetListener.FindOrCreateContext (operation.Operation, false);
+				ctx.LogDebug (2, $"{me} - CREATE TARGET CONTEXT: {reusing} {targetContext.ME}");
+				try {
+					await targetContext.ServerStartTask.ConfigureAwait (false);
+				} catch {
+					context?.Dispose ();
+					throw;
+				}
 			}
 
 			var clientTask = clientFunc (ctx, request, cancellationToken);
@@ -428,6 +429,8 @@ namespace Xamarin.WebTests.Server
 					operation.OnError (throwMe.SourceException);
 					if (context != null)
 						context.Dispose ();
+					if (targetContext != null)
+						targetContext.Dispose ();
 					mainLoopEvent.Set ();
 				}
 				throwMe.Throw ();
@@ -458,6 +461,8 @@ namespace Xamarin.WebTests.Server
 		public ListenerOperation RegisterOperation (TestContext ctx, HttpOperation operation, Handler handler, string path)
 		{
 			lock (this) {
+				if (TargetListener != null)
+					return TargetListener.RegisterOperation (ctx, operation, handler, path);
 				if (path == null) {
 					var id = Interlocked.Increment (ref nextRequestID);
 					path = $"/id/{operation.ID}/{handler.GetType ().Name}/";
@@ -474,6 +479,8 @@ namespace Xamarin.WebTests.Server
 		internal ListenerOperation GetOperation (ListenerContext context, HttpRequest request)
 		{
 			lock (this) {
+				if (TargetListener != null)
+					return TargetListener.GetOperation (context, request);
 				var me = $"{nameof (GetOperation)}({context.Connection.ME})";
 				Debug ($"{me} {request.Method} {request.Path} {request.Protocol}");
 
