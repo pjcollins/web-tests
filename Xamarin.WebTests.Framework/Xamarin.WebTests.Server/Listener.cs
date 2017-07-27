@@ -423,9 +423,7 @@ namespace Xamarin.WebTests.Server
 				throwMe.Throw ();
 			}
 
-			var response = clientTask.Result;
-
-			return response;
+			return clientTask.Result;
 		}
 
 		internal delegate Task<Response> ClientFunc (TestContext ctx, Request request, CancellationToken cancellationToken);

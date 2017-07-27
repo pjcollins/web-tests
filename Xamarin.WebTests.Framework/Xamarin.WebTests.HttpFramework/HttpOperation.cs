@@ -247,68 +247,6 @@ namespace Xamarin.WebTests.HttpFramework
 			var response = await Server.Listener.RunWithContext (
 				ctx, operation, request, RunInner, cancellationToken).ConfigureAwait (false);
 
-#if FIXME
-			if ((Server.Flags & HttpServerFlags.InstrumentationListener) != 0) {
-				ctx.LogDebug (2, $"{me} INSTRUMENTATION");
-				await Server.Listener.CreateContext (ctx, this, cancellationToken).ConfigureAwait (false);
-			}
-
-			var clientTask = RunInner (ctx, request, cancellationToken);
-
-			bool initDone = false, serverDone = false, clientDone = false;
-			while (!initDone || !serverDone || !clientDone) {
-				ctx.LogDebug (2, $"{me} #3: init={initDone} server={serverDone} client={clientDone}");
-
-				if (clientDone) {
-					if (HasAnyFlags (HttpOperationFlags.AbortAfterClientExits, HttpOperationFlags.ServerAbortsHandshake,
-							 HttpOperationFlags.ClientAbortsHandshake)) {
-						ctx.LogDebug (2, $"{me} #3 - ABORTING");
-						break;
-					}
-					if (!initDone) {
-						ctx.LogDebug (2, $"{me} #3 - ERROR: {clientTask.Result}");
-						throw new ConnectionException ($"{ME} client exited before server accepted connection.");
-					}
-				}
-
-				var tasks = new List<Task> ();
-				if (!initDone)
-					tasks.Add (operation.ServerInitTask);
-				if (!serverDone)
-					tasks.Add (operation.ServerFinishedTask);
-				if (!clientDone)
-					tasks.Add (clientTask);
-				var finished = await Task.WhenAny (tasks).ConfigureAwait (false);
-
-				string which;
-				if (finished == operation.ServerInitTask) {
-					which = "init";
-					initDone = true;
-				} else if (finished == operation.ServerFinishedTask) {
-					which = "server";
-					serverDone = true;
-				} else if (finished == clientTask) {
-					which = "client";
-					clientDone = true;
-				} else {
-					throw new InvalidOperationException ();
-				}
-
-				ctx.LogDebug (2, $"{me} #4: {which} exited - {finished.Status}");
-				if (finished.Status == TaskStatus.Faulted || finished.Status == TaskStatus.Canceled) {
-					if (HasAnyFlags (HttpOperationFlags.ExpectServerException) &&
-					    (finished == operation.ServerFinishedTask || finished == operation.ServerInitTask))
-						ctx.LogDebug (2, $"{me} #4 - EXPECTED EXCEPTION {finished.Exception.GetType ()}");
-					else {
-						ctx.LogDebug (2, $"{me} #4 FAILED: {finished.Exception.Message}");
-						throw finished.Exception;
-					}
-				}
-			}
-
-			var response = clientTask.Result;
-#endif
-
 			ctx.LogDebug (2, $"{me} DONE: {response}");
 
 			CheckResponse (ctx, Handler, response, cancellationToken, ExpectedStatus, ExpectedError);
