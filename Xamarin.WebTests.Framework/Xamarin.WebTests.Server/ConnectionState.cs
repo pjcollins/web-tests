@@ -38,6 +38,7 @@ namespace Xamarin.WebTests.Server
 		RequestComplete,
 		NeedContextForRedirect,
 		CannotReuseConnection,
+		InitializeProxyConnection,
 		ConnectToTarget,
 		HandleProxyConnection,
 		ReuseConnection,

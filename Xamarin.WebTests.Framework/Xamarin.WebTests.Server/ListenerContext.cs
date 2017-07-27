@@ -157,7 +157,9 @@ namespace Xamarin.WebTests.Server
 					return ListenerTask.Create (this, State, HandleRequest, RequestComplete);
 				case ConnectionState.RequestComplete:
 					return ListenerTask.Create (this, State, WriteResponse, ResponseWritten);
-				case ConnectionState.ConnectToTarget:
+				case ConnectionState.InitializeProxyConnection:
+					return ListenerTask.Create (this, State, InitProxyConnection, InitProxyConnectionDone);
+;				case ConnectionState.ConnectToTarget:
 					return ListenerTask.Create (this, State, ConnectToTarget, ProxyConnectionEstablished);
 				case ConnectionState.HandleProxyConnection:
 					return ListenerTask.Create (this, State, HandleProxyConnection, ProxyConnectionFinished);
@@ -206,6 +208,23 @@ namespace Xamarin.WebTests.Server
 				if (Listener.TargetListener == null)
 					return ConnectionState.HasRequest;
 
+				return ConnectionState.InitializeProxyConnection;
+			}
+
+			Task<HttpResponse> HandleRequest ()
+			{
+				return currentOperation.HandleRequest (ctx, this, Connection, currentRequest, cancellationToken);
+			}
+
+			async Task InitProxyConnection ()
+			{
+				await currentRequest.ReadHeaders (ctx, cancellationToken).ConfigureAwait (false);
+			}
+
+			ConnectionState InitProxyConnectionDone ()
+			{
+				var request = currentRequest;
+				var operation = currentOperation;
 				var remoteAddress = connection.RemoteEndPoint.Address;
 				request.AddHeader ("X-Forwarded-For", remoteAddress);
 
@@ -214,10 +233,10 @@ namespace Xamarin.WebTests.Server
 					AuthenticationState state;
 					var response = authManager.HandleAuthentication (ctx, connection, request, out state);
 					if (response != null) {
-						currentResponse = response;
 						Listener.TargetListener.UnregisterOperation (operation);
 						response.Redirect = Listener.RegisterOperation (ctx, operation.Operation, operation.Handler, request.Path);
-						return ConnectionState.RequestComplete;
+						operation.RegisterProxyAuth (response.Redirect);
+						return RequestComplete (response);
 					}
 
 					// HACK: Mono rewrites chunked requests into non-chunked.
@@ -225,11 +244,6 @@ namespace Xamarin.WebTests.Server
 				}
 
 				return ConnectionState.ConnectToTarget;
-			}
-
-			Task<HttpResponse> HandleRequest ()
-			{
-				return currentOperation.HandleRequest (ctx, this, Connection, currentRequest, cancellationToken);
 			}
 
 			async Task ConnectToTarget ()

@@ -124,6 +124,11 @@ namespace Xamarin.WebTests.Server
 			return response;
 		}
 
+		internal void RegisterProxyAuth (ListenerOperation redirect)
+		{
+			redirect.parentOperation = this;
+		}
+
 		void OnInit ()
 		{
 			serverInitTask.TrySetResult (null);

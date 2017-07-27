@@ -56,9 +56,30 @@ namespace Xamarin.WebTests.HttpFramework
 
 		HttpStreamReader reader;
 		HttpListenerRequest listenerRequest;
+		bool headersRead;
+		bool bodyRead;
+
+		internal async Task ReadHeaders (TestContext ctx, CancellationToken cancellationToken)
+		{
+			if (headersRead)
+				return;
+			headersRead = true;
+
+			if (listenerRequest != null)
+				return;
+
+			cancellationToken.ThrowIfCancellationRequested ();
+			await ReadHeaders (ctx, reader, cancellationToken).ConfigureAwait (false);
+		}
 
 		internal async Task Read (TestContext ctx, CancellationToken cancellationToken)
 		{
+			if (bodyRead)
+				return;
+			bodyRead = true;
+
+			await ReadHeaders (ctx, cancellationToken).ConfigureAwait (false);
+
 			cancellationToken.ThrowIfCancellationRequested ();
 			if (listenerRequest != null) {
 				using (var bodyReader = new HttpStreamReader (listenerRequest.InputStream)) {
@@ -66,9 +87,6 @@ namespace Xamarin.WebTests.HttpFramework
 					return;
 				}
 			}
-
-			cancellationToken.ThrowIfCancellationRequested ();
-			await ReadHeaders (ctx, reader, cancellationToken).ConfigureAwait (false);
 
 			cancellationToken.ThrowIfCancellationRequested ();
 			Body = await ReadBody (ctx, reader, false, cancellationToken);
