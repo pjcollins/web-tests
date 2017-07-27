@@ -58,6 +58,10 @@ namespace Xamarin.WebTests.Server
 
 		public readonly int ID = ++nextID;
 
+		public ListenerType Type {
+			get;
+		}
+
 		internal TestContext TestContext {
 			get;
 		}
@@ -74,12 +78,15 @@ namespace Xamarin.WebTests.Server
 			get;
 		}
 
-		public Listener (TestContext ctx, HttpServer server, ListenerBackend backend)
+		public Listener (TestContext ctx, HttpServer server,
+		                 ListenerType type, ListenerBackend backend)
 		{
 			TestContext = ctx;
 			Server = server;
+			Type = type;
 			Backend = backend;
-			ME = $"{GetType ().Name}({ID})";
+
+			ME = $"{GetType ().Name}({ID}:{Type})";
 			registry = new Dictionary<string, ListenerOperation> ();
 
 			connections = new LinkedList<ListenerContext> ();
@@ -90,30 +97,33 @@ namespace Xamarin.WebTests.Server
 		}
 
 		public bool UsingInstrumentation {
-			get;
-			private set;
+			get { return Type == ListenerType.Instrumentation; }
 		}
 
-		public void StartParallel (int parallelConnections)
-		{
-			lock (this) {
-				if (Interlocked.CompareExchange (ref running, 1, 0) != 0)
-					throw new InvalidOperationException ();
-
-				requestParallelConnections = parallelConnections;
-				mainLoopEvent.Set ();
-				MainLoop ();
+		public int ParallelConnections {
+			get { return requestParallelConnections; }
+			set {
+				lock (this) {
+					if (value == requestParallelConnections)
+						return;
+					requestParallelConnections = value;
+					if (running != 0)
+						mainLoopEvent.Set ();
+				}
 			}
 		}
 
-		public void StartInstrumentation ()
+		public void Start ()
 		{
 			lock (this) {
 				if (Interlocked.CompareExchange (ref running, 1, 0) != 0)
 					throw new InvalidOperationException ();
 
-				UsingInstrumentation = true;
-				requestParallelConnections = -1;
+				if (Type == ListenerType.Instrumentation)
+					requestParallelConnections = -1;
+				else if (requestParallelConnections == 0)
+					requestParallelConnections = 10;
+
 				mainLoopEvent.Set ();
 				MainLoop ();
 			}
