@@ -159,6 +159,8 @@ namespace Xamarin.WebTests.Server
 					return ListenerTask.Create (this, State, WriteResponse, ResponseWritten);
 				case ConnectionState.ConnectToTarget:
 					return ListenerTask.Create (this, State, ConnectToTarget, ProxyConnectionEstablished);
+				case ConnectionState.HandleProxyConnection:
+					return ListenerTask.Create (this, State, HandleProxyConnection, ProxyConnectionFinished);
 				default:
 					throw ctx.AssertFail (State);
 				}
@@ -235,7 +237,43 @@ namespace Xamarin.WebTests.Server
 
 			ConnectionState ProxyConnectionEstablished ()
 			{
-				throw new NotImplementedException ();
+				return ConnectionState.HandleProxyConnection;
+			}
+
+			async Task<HttpResponse> HandleProxyConnection ()
+			{
+				var copyResponseTask = CopyResponse ();
+
+				cancellationToken.ThrowIfCancellationRequested ();
+				await targetConnection.WriteRequest (ctx, currentRequest, cancellationToken);
+
+				ctx.LogDebug (5, $"{me} HANDLE PROXY CONNECTION");
+
+				cancellationToken.ThrowIfCancellationRequested ();
+				var response = await copyResponseTask.ConfigureAwait (false);
+
+				ctx.LogDebug (5, $"{me} HANDLE PROXY CONNECTION #1");
+				return response;
+			}
+
+			ConnectionState ProxyConnectionFinished (HttpResponse response)
+			{
+				currentResponse = response;
+				targetConnection.Dispose ();
+				targetConnection = null;
+				return ConnectionState.RequestComplete;
+			}
+
+			async Task<HttpResponse> CopyResponse ()
+			{
+				await Task.Yield ();
+
+				cancellationToken.ThrowIfCancellationRequested ();
+				var response = await targetConnection.ReadResponse (ctx, cancellationToken).ConfigureAwait (false);
+				response.SetHeader ("Connection", "close");
+				response.SetHeader ("Proxy-Connection", "close");
+
+				return response;
 			}
 
 			ConnectionState RequestComplete (HttpResponse response)
