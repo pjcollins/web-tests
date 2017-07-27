@@ -27,6 +27,7 @@ using System;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Xamarin.AsyncTests;
@@ -159,10 +160,12 @@ namespace Xamarin.WebTests.Server
 					return ListenerTask.Create (this, State, WriteResponse, ResponseWritten);
 				case ConnectionState.InitializeProxyConnection:
 					return ListenerTask.Create (this, State, InitProxyConnection, InitProxyConnectionDone);
-;				case ConnectionState.ConnectToTarget:
+				case ConnectionState.ConnectToTarget:
 					return ListenerTask.Create (this, State, ConnectToTarget, ProxyConnectionEstablished);
 				case ConnectionState.HandleProxyConnection:
 					return ListenerTask.Create (this, State, HandleProxyConnection, ProxyConnectionFinished);
+				case ConnectionState.RunTunnel:
+					return ListenerTask.Create (this, State, ProxyConnect, ProxyConnectDone);
 				default:
 					throw ctx.AssertFail (State);
 				}
@@ -196,13 +199,20 @@ namespace Xamarin.WebTests.Server
 
 			ConnectionState GotRequest (HttpRequest request)
 			{
+				currentRequest = request;
+
+				if (request.Method == "CONNECT") {
+					Server.BumpRequestCount ();
+					return ConnectionState.RunTunnel;
+				}
+
 				var operation = Listener.GetOperation (this, request);
 				if (operation == null) {
 					ctx.LogDebug (5, $"{me} INVALID REQUEST: {request.Path}");
 					return ConnectionState.Closed;
 				}
+
 				currentOperation = operation;
-				currentRequest = request;
 				ctx.LogDebug (5, $"{me} GOT REQUEST");
 
 				if (Listener.TargetListener == null)
@@ -302,6 +312,16 @@ namespace Xamarin.WebTests.Server
 				response.SetHeader ("Proxy-Connection", "close");
 
 				return response;
+			}
+
+			async Task ProxyConnect ()
+			{
+				await CreateTunnel (ctx, ((ProxyConnection)connection).Stream, currentRequest, cancellationToken);
+			}
+
+			ConnectionState ProxyConnectDone ()
+			{
+				return ConnectionState.Closed;
 			}
 
 			ConnectionState RequestComplete (HttpResponse response)
@@ -514,6 +534,129 @@ namespace Xamarin.WebTests.Server
 			ctx.LogDebug (2, $"{me} DONE");
 			return true;
 		}
+
+		static IPEndPoint GetConnectEndpoint (HttpRequest request)
+		{
+			var pos = request.Path.IndexOf (':');
+			if (pos < 0)
+				return new IPEndPoint (IPAddress.Parse (request.Path), 443);
+
+			var address = IPAddress.Parse (request.Path.Substring (0, pos));
+			var port = int.Parse (request.Path.Substring (pos + 1));
+			return new IPEndPoint (address, port);
+		}
+
+		async Task CreateTunnel (
+			TestContext ctx, Stream stream,
+			HttpRequest request, CancellationToken cancellationToken)
+		{
+			var targetEndpoint = GetConnectEndpoint (request);
+			var targetSocket = new Socket (AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+			targetSocket.Connect (targetEndpoint);
+			targetSocket.NoDelay = true;
+
+			var targetStream = new NetworkStream (targetSocket, true);
+
+			var connectionEstablished = new HttpResponse (HttpStatusCode.OK, HttpProtocol.Http10, "Connection established");
+			await connectionEstablished.Write (ctx, stream, cancellationToken).ConfigureAwait (false);
+
+			try {
+				await RunTunnel (ctx, stream, targetStream, cancellationToken);
+			} catch (OperationCanceledException) {
+				throw;
+			} catch (Exception ex) {
+				System.Diagnostics.Debug.WriteLine ("ERROR: {0}", ex);
+				cancellationToken.ThrowIfCancellationRequested ();
+				throw;
+			} finally {
+				targetSocket.Dispose ();
+			}
+		}
+
+		async Task RunTunnel (TestContext ctx, Stream input, Stream output, CancellationToken cancellationToken)
+		{
+			await Task.Yield ();
+
+			bool doneSending = false;
+			bool doneReading = false;
+			Task<bool> inputTask = null;
+			Task<bool> outputTask = null;
+
+			while (!doneReading && !doneSending) {
+				cancellationToken.ThrowIfCancellationRequested ();
+
+				ctx.LogDebug (5, "RUN TUNNEL: {0} {1} {2} {3}",
+					      doneReading, doneSending, inputTask != null, outputTask != null);
+
+				if (!doneReading && inputTask == null)
+					inputTask = Copy (ctx, input, output, cancellationToken);
+				if (!doneSending && outputTask == null)
+					outputTask = Copy (ctx, output, input, cancellationToken);
+
+				var tasks = new List<Task<bool>> ();
+				if (inputTask != null)
+					tasks.Add (inputTask);
+				if (outputTask != null)
+					tasks.Add (outputTask);
+
+				ctx.LogDebug (5, "RUN TUNNEL #1: {0}", tasks.Count);
+				var result = await Task.WhenAny (tasks).ConfigureAwait (false);
+				ctx.LogDebug (5, "RUN TUNNEL #2: {0} {1} {2}", result, result == inputTask, result == outputTask);
+
+				if (result.IsCanceled) {
+					ctx.LogDebug (5, "RUN TUNNEL - CANCEL");
+					throw new TaskCanceledException ();
+				}
+				if (result.IsFaulted) {
+					ctx.LogDebug (5, "RUN TUNNEL - ERROR: {0}", result.Exception);
+					throw result.Exception;
+				}
+
+				ctx.LogDebug (5, "RUN TUNNEL #3: {0}", result.Result);
+
+				if (result == inputTask) {
+					if (!result.Result)
+						doneReading = true;
+					inputTask = null;
+				} else if (result == outputTask) {
+					if (!result.Result)
+						doneSending = true;
+					outputTask = null;
+				} else {
+					throw new NotSupportedException ();
+				}
+			}
+		}
+
+		async Task<bool> Copy (TestContext ctx, Stream input, Stream output, CancellationToken cancellationToken)
+		{
+			var buffer = new byte[4096];
+			int ret;
+			try {
+				ret = await input.ReadAsync (buffer, 0, buffer.Length, cancellationToken).ConfigureAwait (false);
+			} catch {
+				cancellationToken.ThrowIfCancellationRequested ();
+				throw;
+			}
+			if (ret == 0) {
+				try {
+					output.Dispose ();
+				} catch {
+					;
+				}
+				return false;
+			}
+
+			try {
+				await output.WriteAsync (buffer, 0, ret, cancellationToken);
+			} catch {
+				cancellationToken.ThrowIfCancellationRequested ();
+				throw;
+			}
+			return true;
+		}
+
+
 
 		internal static Task FailedTask (Exception ex)
 		{

@@ -74,6 +74,11 @@ namespace Xamarin.WebTests.Server
 			get;
 		}
 
+		internal Listener ParentListener {
+			get;
+			private set;
+		}
+
 		internal HttpServer Server {
 			get;
 		}
@@ -90,8 +95,10 @@ namespace Xamarin.WebTests.Server
 			Type = type;
 			Backend = backend;
 
-			if (backend is ProxyBackend proxyBackend)
+			if (backend is ProxyBackend proxyBackend) {
 				TargetListener = proxyBackend.Target.Listener;
+				TargetListener.ParentListener = this;
+			}
 
 			ME = $"{GetType ().Name}({ID}:{Type})";
 			registry = new Dictionary<string, ListenerOperation> ();
@@ -482,6 +489,7 @@ namespace Xamarin.WebTests.Server
 
 		internal ListenerOperation GetOperation (ListenerContext context, HttpRequest request)
 		{
+			ListenerOperation operation;
 			lock (this) {
 				var me = $"{nameof (GetOperation)}({context.Connection.ME})";
 				Debug ($"{me} {request.Method} {request.Path} {request.Protocol}");
@@ -491,11 +499,12 @@ namespace Xamarin.WebTests.Server
 					return null;
 				}
 
-				var operation = registry[request.Path];
+				operation = registry[request.Path];
 				registry.Remove (request.Path);
 				Server.BumpRequestCount ();
-				return operation;
 			}
+			ParentListener?.UnregisterOperation (operation);
+			return operation;
 		}
 
 		internal void UnregisterOperation (ListenerOperation redirect)
