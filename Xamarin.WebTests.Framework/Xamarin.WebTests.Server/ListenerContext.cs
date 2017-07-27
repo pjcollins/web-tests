@@ -229,6 +229,8 @@ namespace Xamarin.WebTests.Server
 			async Task InitProxyConnection ()
 			{
 				await currentRequest.ReadHeaders (ctx, cancellationToken).ConfigureAwait (false);
+
+				await currentRequest.Read (ctx, cancellationToken);
 			}
 
 			ConnectionState InitProxyConnectionDone ()
