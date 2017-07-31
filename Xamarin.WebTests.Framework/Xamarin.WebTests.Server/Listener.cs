@@ -152,16 +152,17 @@ namespace Xamarin.WebTests.Server
 				var taskList = new List<Task> ();
 				var contextList = new List<ListenerTask> ();
 				lock (this) {
+					Debug ($"MAIN LOOP - SCHEDULER: {connections.Count}");
 					RunScheduler ();
 
 					taskList.Add (mainLoopEvent.WaitAsync ());
 					PopulateTaskList (contextList, taskList);
 
-					Debug ($"MAIN LOOP #0: {taskList.Count}");
+					Debug ($"MAIN LOOP - SCHEDULER DONE: {connections.Count} {taskList.Count}");
 				}
 
 				var finished = await Task.WhenAny (taskList).ConfigureAwait (false);
-				Debug ($"MAIN LOOP #1: {finished.Status} {finished == taskList[0]} {taskList[0].Status}");
+				Debug ($"MAIN LOOP TASK: {finished.Status} {finished == taskList[0]} {taskList[0].Status}");
 
 				InstrumentationContext instrumentation = null;
 				ListenerContext context;
@@ -187,7 +188,7 @@ namespace Xamarin.WebTests.Server
 					context = task.Context;
 					listenerTasks.Remove (task);
 
-					Debug ($"MAIN LOOP #2: {idx} {context.State}");
+					Debug ($"MAIN LOOP TASK #1: {idx} {context.State}");
 
 					if (context.State == ConnectionState.Listening && currentInstrumentation?.AssignedContext == context) {
 						instrumentation = Interlocked.Exchange (ref currentInstrumentation, null);
@@ -287,15 +288,19 @@ namespace Xamarin.WebTests.Server
 				var me = $"RUN SCHEDULER - TASKS";
 				Debug ($"{me}");
 
+				var idx = 0;
 				var iter = connections.First;
 				while (iter != null) {
 					var node = iter;
 					var context = node.Value;
 					iter = iter.Next;
 
-					Debug ($"{me}: {context.State} {context.CurrentTask != null} {context.ME}");
+					Debug ($"{me} ({++idx}/{connections.Count}): {context.State} {context.CurrentTask != null} {context.ME}");
 
-					if (UsingInstrumentation && listening && context.State == ConnectionState.Listening)
+					if (!listening && context.State == ConnectionState.Listening)
+						listening = true;
+
+					if (false && UsingInstrumentation && listening && context.State == ConnectionState.Listening)
 						continue;
 
 					if (context.CurrentTask != null)
@@ -325,15 +330,16 @@ namespace Xamarin.WebTests.Server
 					var task = context.MainLoopListenerTask (TestContext, cts.Token);
 					listenerTasks.AddLast (task);
 
-					if (context.State == ConnectionState.Listening && !listening) {
+					if (false && context.State == ConnectionState.Listening && !listening) {
 						listeningContext = context;
 						listening = true;
 					}
 				}
 
-				Debug ($"{me} DONE: instrumentation={currentInstrumentation != null} " +
-				       $"redirect={redirectContext != null} idle={idleContext != null} " +
-				       $"listening={listeningContext != null} assigned={currentInstrumentation?.AssignedContext != null}");
+				Debug ($"{me} DONE: instrumentation={currentInstrumentation != null} listening={listening} " +
+				       $"redirect={redirectContext != null} idleContext={idleContext != null} " +
+				       $"listeningContext={listeningContext != null} " +
+				       $"assigned={currentInstrumentation?.AssignedContext != null}");
 
 				var availableContext = idleContext ?? listeningContext;
 
@@ -341,8 +347,13 @@ namespace Xamarin.WebTests.Server
 					if (currentInstrumentation.AssignedContext != null) {
 						return true;
 					}
+
 					var operation = currentInstrumentation.Operation.Operation;
-					if (availableContext == null || operation.HasAnyFlags (HttpOperationFlags.ForceNewConnection)) {
+					var forceNewCnc = operation.HasAnyFlags (HttpOperationFlags.ForceNewConnection);
+					if (listening && !forceNewCnc)
+						return true;
+
+					if (availableContext == null || forceNewCnc) {
 						var connection = Backend.CreateConnection ();
 						availableContext = new ListenerContext (this, connection, false);
 						connections.AddLast (availableContext);
