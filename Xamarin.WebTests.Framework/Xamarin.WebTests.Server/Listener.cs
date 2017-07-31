@@ -201,6 +201,8 @@ namespace Xamarin.WebTests.Server
 						context.Dispose ();
 						success = false;
 					}
+
+					Debug ($"MAIN LOOP TASK #2: {idx} {context.State} {instrumentation != null}");
 				}
 
 				if (instrumentation != null)
@@ -380,6 +382,7 @@ namespace Xamarin.WebTests.Server
 		internal void ReleaseInstrumentation (InstrumentationContext context)
 		{
 			lock (this) {
+				Debug ($"{ME} RELEASE INSTRUMENTATION");
 				if (currentInstrumentation != context)
 					throw new InvalidOperationException ();
 				currentInstrumentation = null;

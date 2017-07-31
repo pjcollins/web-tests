@@ -65,7 +65,6 @@ namespace Xamarin.WebTests.Server
 			ME = $"[{ID}:{GetType ().Name}:{listener.ME}:{reusing}]";
 
 			serverStartTask = new TaskCompletionSource<object> ();
-			serverReadyTask = new TaskCompletionSource<object> ();
 
 			State = listener.UsingInstrumentation ? ConnectionState.Idle : ConnectionState.Listening;
 		}
@@ -403,12 +402,9 @@ namespace Xamarin.WebTests.Server
 			return true;
 		}
 
-		TaskCompletionSource<object> serverReadyTask;
 		TaskCompletionSource<object> serverStartTask;
 
 		public Task ServerStartTask => serverStartTask.Task;
-
-		public Task ServerReadyTask => serverReadyTask.Task;
 
 		public async Task<(bool complete, bool success)> Initialize (
 			TestContext ctx, HttpOperation operation, CancellationToken cancellationToken)
@@ -427,7 +423,6 @@ namespace Xamarin.WebTests.Server
 					else
 						result = (true, false);
 				}
-				serverReadyTask.TrySetResult (null);
 				return result;
 			} catch (OperationCanceledException) {
 				OnCanceled ();
@@ -442,13 +437,11 @@ namespace Xamarin.WebTests.Server
 		internal void OnCanceled ()
 		{
 			serverStartTask.TrySetCanceled ();
-			serverReadyTask.TrySetCanceled ();
 		}
 
 		internal void OnError (Exception error)
 		{
 			serverStartTask.TrySetException (error);
-			serverReadyTask.TrySetResult (error);
 		}
 
 		async Task<bool> ReuseConnection (TestContext ctx, HttpOperation operation, CancellationToken cancellationToken)
