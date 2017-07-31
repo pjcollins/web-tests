@@ -153,6 +153,8 @@ namespace Xamarin.WebTests.Server
 				switch (State) {
 				case ConnectionState.Listening:
 					return ListenerTask.Create (this, State, Start, Accepted);
+				case ConnectionState.InitializeConnection:
+					return ListenerTask.Create (this, State, InitializeConnection, Initialized);
 				case ConnectionState.WaitingForRequest:
 					return ListenerTask.Create (this, State, ReadRequestHeader, GotRequest);
 				case ConnectionState.HasRequest:
@@ -172,14 +174,24 @@ namespace Xamarin.WebTests.Server
 				}
 			}
 
-			Task<(bool complete, bool success)> Start ()
+			Task Start ()
+			{
+				return Accept (ctx, cancellationToken);
+			}
+
+			ConnectionState Accepted ()
+			{
+				return ConnectionState.InitializeConnection;
+			}
+
+			Task<(bool complete, bool success)> InitializeConnection ()
 			{
 				return Initialize (ctx, clientOperation, cancellationToken);
 			}
 
-			ConnectionState Accepted (bool completed, bool success)
+			ConnectionState Initialized (bool completed, bool success)
 			{
-				ctx.LogDebug (5, $"{me} ACCEPTED: {completed} {success}");
+				ctx.LogDebug (5, $"{me} INITIALIZED: {completed} {success}");
 
 				if (!completed)
 					return ConnectionState.CannotReuseConnection;
@@ -406,11 +418,41 @@ namespace Xamarin.WebTests.Server
 
 		public Task ServerStartTask => serverStartTask.Task;
 
+		public async Task Accept (TestContext ctx, CancellationToken cancellationToken)
+		{
+			var me = $"{ME}({connection.ME}:{ReusingConnection}) ACCEPT";
+			ctx.LogDebug (2, $"{me}");
+
+			try {
+				if (ReusingConnection) {
+					serverStartTask.TrySetResult (null);
+					currentInstrumentation?.Finish ();
+				} else {
+					cancellationToken.ThrowIfCancellationRequested ();
+					var acceptTask = connection.AcceptAsync (ctx, cancellationToken);
+
+					serverStartTask.TrySetResult (null);
+
+					await acceptTask.ConfigureAwait (false);
+
+					ctx.LogDebug (2, $"{me} DONE: {connection.RemoteEndPoint}");
+
+					currentInstrumentation?.Finish ();
+				}
+			} catch (OperationCanceledException) {
+				OnCanceled ();
+				throw;
+			} catch (Exception ex) {
+				ctx.LogDebug (2, $"{me} FAILED: {ex.Message}");
+				OnError (ex);
+				throw;
+			}
+		}
+
 		public async Task<(bool complete, bool success)> Initialize (
 			TestContext ctx, HttpOperation operation, CancellationToken cancellationToken)
 		{
 			try {
-				ctx.LogDebug (2, $"{ME} INIT");
 				(bool complete, bool success) result;
 				if (ReusingConnection) {
 					if (await ReuseConnection (ctx, operation, cancellationToken).ConfigureAwait (false))
@@ -449,9 +491,6 @@ namespace Xamarin.WebTests.Server
 			var me = $"{ME}({connection.ME}) REUSE";
 			ctx.LogDebug (2, $"{me}");
 
-			serverStartTask.TrySetResult (null);
-			currentInstrumentation?.Finish ();
-
 			cancellationToken.ThrowIfCancellationRequested ();
 			var reusable = await connection.ReuseConnection (ctx, cancellationToken).ConfigureAwait (false);
 
@@ -477,17 +516,6 @@ namespace Xamarin.WebTests.Server
 		{
 			var me = $"{ME}({connection.ME}) INIT";
 			ctx.LogDebug (2, $"{me}");
-
-			cancellationToken.ThrowIfCancellationRequested ();
-			var acceptTask = connection.AcceptAsync (ctx, cancellationToken);
-
-			serverStartTask.TrySetResult (null);
-
-			await acceptTask.ConfigureAwait (false);
-
-			ctx.LogDebug (2, $"{me} ACCEPTED {connection.RemoteEndPoint}");
-
-			currentInstrumentation?.Finish ();
 
 			bool haveRequest;
 
