@@ -196,7 +196,8 @@ namespace Xamarin.WebTests.Server
 
 					try {
 						success = context.MainLoopListenerTaskDone (TestContext, cts.Token);
-					} catch {
+					} catch (Exception ex) {
+						Debug ($"MAIN LOOP TASK EX: {idx} {context.State} {ex.Message}");
 						connections.Remove (context);
 						context.Dispose ();
 						success = false;

@@ -83,7 +83,7 @@ namespace Xamarin.WebTests.TestRunners
 		}
 
 		public HttpStressTestRunner (IPortableEndPoint endpoint, HttpStressTestParameters parameters,
-		                             ConnectionTestProvider provider, Uri uri, HttpServerFlags flags)
+					     ConnectionTestProvider provider, Uri uri, HttpServerFlags flags)
 			: base (endpoint, parameters)
 		{
 			Provider = provider;
@@ -164,28 +164,29 @@ namespace Xamarin.WebTests.TestRunners
 			var me = $"{ME}.{nameof (Run)}()";
 			ctx.LogDebug (2, $"{me}");
 
-			var helloKeepAlive = new HelloWorldHandler (EffectiveType.ToString ()) {
-				Flags = RequestFlags.KeepAlive
-			};
-			var redirect = new RedirectHandler (helloKeepAlive, HttpStatusCode.Redirect);
-			var auth = new AuthenticationHandler (AuthenticationType.NTLM, helloKeepAlive);
+			ServicePointManager.MaxServicePoints = 100;
 
-			var operation = new TraditionalOperation (Server, helloKeepAlive, true);
-			await operation.Run (ctx, cancellationToken).ConfigureAwait (false);
-
-			ctx.LogDebug (2, $"{me} first operation done.");
-
-			var secondOperation = new TraditionalOperation (Server, helloKeepAlive, true);
-			await secondOperation.Run (ctx, cancellationToken);
-
-			ctx.LogDebug (2, $"{me} second operation done.");
-
-			for (int i = 0; i < -500; i++) {
-				var loopOperation = new TraditionalOperation (Server, HelloWorldHandler.GetSimple (), true);
-				await loopOperation.Run (ctx, cancellationToken);
+			var tasks = new Task[75];
+			for (int i = 0; i < tasks.Length; i++) {
+				tasks [i] = RunLoop (ctx, i, cancellationToken);
 			}
 
+			ctx.LogDebug (2, $"{me} GOT TASKS");
+
+			await Task.WhenAll (tasks);
+
 			ctx.LogDebug (2, $"{me} DONE");
+		}
+
+		async Task RunLoop (TestContext ctx, int idx, CancellationToken cancellationToken)
+		{
+			var me = $"{ME}.{nameof (RunLoop)}({idx})";
+
+			for (int i = 0; i < 2500; i++) {
+				var loopOperation = new TraditionalOperation (Server, HelloWorldHandler.GetSimple (), true);
+				await loopOperation.Run (ctx, cancellationToken);
+				ctx.LogMessage ($"{me} RUN {i} DONE");
+			}
 		}
 
 		protected override async Task Initialize (TestContext ctx, CancellationToken cancellationToken)
