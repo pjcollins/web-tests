@@ -95,7 +95,7 @@ namespace Xamarin.WebTests.TestRunners
 			ME = $"{GetType ().Name}({EffectiveType})";
 		}
 
-		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.CustomConnectionGroup;
+		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.ReuseAfterPartialRead;
 
 		static readonly HttpInstrumentationTestType[] WorkingTests = {
 			HttpInstrumentationTestType.Simple,
@@ -408,7 +408,7 @@ namespace Xamarin.WebTests.TestRunners
 				return (new HttpInstrumentationHandler (this, null, null, !primary), flags);
 			case HttpInstrumentationTestType.ReuseAfterPartialRead:
 				return (new HttpInstrumentationHandler (
-					this, null, ConnectionHandler.GetLargeStringContent (250), !primary),
+					this, null, ConnectionHandler.GetLargeStringContent (2500), !primary),
 				        HttpOperationFlags.ClientUsesNewConnection);
 			case HttpInstrumentationTestType.ReuseConnection2:
 				if (primary)
