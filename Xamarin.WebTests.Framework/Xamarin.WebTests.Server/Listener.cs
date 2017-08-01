@@ -29,6 +29,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Runtime.ExceptionServices;
 using Xamarin.AsyncTests;
+using Xamarin.AsyncTests.Portable;
 
 namespace Xamarin.WebTests.Server
 {
@@ -107,7 +108,7 @@ namespace Xamarin.WebTests.Server
 			connections = new LinkedList<ListenerContext> ();
 			listenerTasks = new LinkedList<ListenerTask> ();
 			mainLoopEvent = new AsyncManualResetEvent (false);
-			finishedEvent = new TaskCompletionSource<object> ();
+			finishedEvent = TaskSupport.CreateAsyncCompletionSource<object> ();
 			cts = new CancellationTokenSource ();
 		}
 
@@ -587,15 +588,7 @@ namespace Xamarin.WebTests.Server
 			}
 		}
 
-		internal static Task FailedTask (Exception ex)
-		{
-			var tcs = new TaskCompletionSource<object> ();
-			if (ex is OperationCanceledException)
-				tcs.SetCanceled ();
-			else
-				tcs.SetException (ex);
-			return tcs.Task;
-		}
+		internal static IPortableTaskSupport TaskSupport => DependencyInjector.Get<IPortableTaskSupport> ();
 
 		public Task Shutdown ()
 		{

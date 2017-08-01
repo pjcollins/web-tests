@@ -58,8 +58,8 @@ namespace Xamarin.WebTests.Server
 		{
 			Listener = listener;
 			Operation = operation;
-			contextTask = new TaskCompletionSource<ListenerContext> ();
-			finishedTask = new TaskCompletionSource<object> ();
+			contextTask = Listener.TaskSupport.CreateAsyncCompletionSource<ListenerContext> ();
+			finishedTask = Listener.TaskSupport.CreateAsyncCompletionSource<object> ();
 		}
 
 		public void AssignContext (ListenerContext context)

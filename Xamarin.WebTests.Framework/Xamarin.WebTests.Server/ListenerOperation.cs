@@ -70,8 +70,8 @@ namespace Xamarin.WebTests.Server
 			Uri = uri;
 
 			ME = $"[{ID}:{GetType ().Name}:{operation.ME}]";
-			serverInitTask = new TaskCompletionSource<object> ();
-			serverFinishedTask = new TaskCompletionSource<object> ();
+			serverInitTask = Listener.TaskSupport.CreateAsyncCompletionSource<object> ();
+			serverFinishedTask = Listener.TaskSupport.CreateAsyncCompletionSource<object> ();
 		}
 
 		public Task ServerInitTask => serverInitTask.Task;

@@ -31,6 +31,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Xamarin.AsyncTests;
+using Xamarin.AsyncTests.Portable;
 
 namespace Xamarin.WebTests.Server
 {
@@ -64,7 +65,7 @@ namespace Xamarin.WebTests.Server
 			Listener = listener;
 			ME = $"[{ID}:{GetType ().Name}:{listener.ME}:{reusing}]";
 
-			serverStartTask = new TaskCompletionSource<object> ();
+			serverStartTask = Listener.TaskSupport.CreateAsyncCompletionSource<object> ();
 
 			State = listener.UsingInstrumentation ? ConnectionState.Idle : ConnectionState.Listening;
 		}
@@ -681,13 +682,6 @@ namespace Xamarin.WebTests.Server
 				throw;
 			}
 			return true;
-		}
-
-
-
-		internal static Task FailedTask (Exception ex)
-		{
-			return Listener.FailedTask (ex);
 		}
 
 		bool disposed;
