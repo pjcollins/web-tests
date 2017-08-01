@@ -67,6 +67,7 @@ namespace Xamarin.WebTests.TestFramework
 		RedirectNoLength,
 		PutChunked,
 		PutChunkDontCloseRequest,
+		ServerAbortsRedirect,
 
 		MartinTest
 	}

@@ -206,6 +206,11 @@ namespace Xamarin.WebTests.Server
 			Task<HttpRequest> ReadRequestHeader ()
 			{
 				ctx.LogDebug (5, $"{me} READ REQUEST HEADER");
+
+				var operation = currentInstrumentation?.Operation;
+				if (operation != null && (operation.Handler.Flags & RequestFlags.AbortRequest) != 0)
+					throw new IOException ("Aborting request as requested by handler.");
+
 				return Connection.ReadRequestHeader (ctx, cancellationToken);
 			}
 

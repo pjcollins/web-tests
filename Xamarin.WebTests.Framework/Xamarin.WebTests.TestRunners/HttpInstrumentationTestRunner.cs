@@ -95,7 +95,7 @@ namespace Xamarin.WebTests.TestRunners
 			ME = $"{GetType ().Name}({EffectiveType})";
 		}
 
-		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.ReuseAfterPartialRead;
+		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.ServerAbortsRedirect;
 
 		static readonly HttpInstrumentationTestType[] WorkingTests = {
 			HttpInstrumentationTestType.Simple,
@@ -288,6 +288,7 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.RedirectNoLength:
 			case HttpInstrumentationTestType.PutChunked:
 			case HttpInstrumentationTestType.PutChunkDontCloseRequest:
+			case HttpInstrumentationTestType.ServerAbortsRedirect:
 				break;
 			default:
 				throw ctx.AssertFail (GetEffectiveType (type));
@@ -451,6 +452,7 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.RedirectNoReuse:
 				return (new RedirectHandler (hello, HttpStatusCode.Redirect), flags);
 			case HttpInstrumentationTestType.RedirectNoLength:
+			case HttpInstrumentationTestType.ServerAbortsRedirect:
 				return (new HttpInstrumentationHandler (this, null, null, false), flags);
 			case HttpInstrumentationTestType.PutChunked:
 			case HttpInstrumentationTestType.PutChunkDontCloseRequest:
@@ -1144,6 +1146,7 @@ namespace Xamarin.WebTests.TestRunners
 			}
 
 			HttpInstrumentationRequest currentRequest;
+			bool secondRequest;
 
 			public override object Clone ()
 			{
@@ -1260,6 +1263,7 @@ namespace Xamarin.WebTests.TestRunners
 				case HttpInstrumentationTestType.RedirectNoLength:
 				case HttpInstrumentationTestType.PutChunked:
 				case HttpInstrumentationTestType.PutChunkDontCloseRequest:
+				case HttpInstrumentationTestType.ServerAbortsRedirect:
 					break;
 
 				default:
@@ -1308,6 +1312,16 @@ namespace Xamarin.WebTests.TestRunners
 					var redirect = operation.RegisterRedirect (ctx, Target);
 					response = HttpResponse.CreateRedirect (HttpStatusCode.Redirect, redirect);
 					response.NoContentLength = true;
+					return response;
+
+				case HttpInstrumentationTestType.ServerAbortsRedirect:
+					if (secondRequest)
+						throw ctx.AssertFail ("Should never happen.");
+					var cloned = new HttpInstrumentationHandler (this);
+					cloned.secondRequest = true;
+					cloned.Flags |= RequestFlags.AbortRequest;
+					redirect = operation.RegisterRedirect (ctx, cloned);
+					response = HttpResponse.CreateRedirect (HttpStatusCode.Redirect, redirect);
 					return response;
 
 				default:
