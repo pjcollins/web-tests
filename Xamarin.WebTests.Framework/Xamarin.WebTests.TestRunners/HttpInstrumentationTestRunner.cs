@@ -452,11 +452,12 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.RedirectNoReuse:
 				return (new RedirectHandler (hello, HttpStatusCode.Redirect), flags);
 			case HttpInstrumentationTestType.RedirectNoLength:
-			case HttpInstrumentationTestType.ServerAbortsRedirect:
 				return (new HttpInstrumentationHandler (this, null, null, false), flags);
 			case HttpInstrumentationTestType.PutChunked:
 			case HttpInstrumentationTestType.PutChunkDontCloseRequest:
 				return (new HttpInstrumentationHandler (this, null, null, true), flags);
+			case HttpInstrumentationTestType.ServerAbortsRedirect:
+				return (new HttpInstrumentationHandler (this, null, null, false), HttpOperationFlags.ServerAbortsRedirection);
 			default:
 				return (hello, flags);
 			}
@@ -1106,6 +1107,11 @@ namespace Xamarin.WebTests.TestRunners
 				get;
 			}
 
+			public bool IsSecondRequest {
+				get;
+				private set;
+			}
+
 			public string ME {
 				get;
 			}
@@ -1146,7 +1152,6 @@ namespace Xamarin.WebTests.TestRunners
 			}
 
 			HttpInstrumentationRequest currentRequest;
-			bool secondRequest;
 
 			public override object Clone ()
 			{
@@ -1315,11 +1320,10 @@ namespace Xamarin.WebTests.TestRunners
 					return response;
 
 				case HttpInstrumentationTestType.ServerAbortsRedirect:
-					if (secondRequest)
+					if (IsSecondRequest)
 						throw ctx.AssertFail ("Should never happen.");
 					var cloned = new HttpInstrumentationHandler (this);
-					cloned.secondRequest = true;
-					cloned.Flags |= RequestFlags.AbortRequest;
+					cloned.IsSecondRequest = true;
 					redirect = operation.RegisterRedirect (ctx, cloned);
 					response = HttpResponse.CreateRedirect (HttpStatusCode.Redirect, redirect);
 					return response;

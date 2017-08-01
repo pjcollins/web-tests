@@ -207,10 +207,6 @@ namespace Xamarin.WebTests.Server
 			{
 				ctx.LogDebug (5, $"{me} READ REQUEST HEADER");
 
-				var operation = currentInstrumentation?.Operation;
-				if (operation != null && (operation.Handler.Flags & RequestFlags.AbortRequest) != 0)
-					throw new IOException ("Aborting request as requested by handler.");
-
 				return Connection.ReadRequestHeader (ctx, cancellationToken);
 			}
 
@@ -387,6 +383,9 @@ namespace Xamarin.WebTests.Server
 
 				if (redirect == null)
 					return ConnectionState.ReuseConnection;
+
+				if (operation?.Operation.HasAnyFlags (HttpOperationFlags.ServerAbortsRedirection) ?? false)
+					connection.Dispose ();
 
 				return ConnectionState.WaitingForRequest;
 			}
