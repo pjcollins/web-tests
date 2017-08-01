@@ -166,8 +166,12 @@ namespace Xamarin.WebTests.TestRunners
 
 			ServicePointManager.MaxServicePoints = 100;
 
+			var martinTest = DependencyInjector.Get<IMartinTestProvider> ();
+
 			var tasks = new Task[75];
 			for (int i = 0; i < tasks.Length; i++) {
+				if (martinTest.IsSupported)
+					martinTest.MartinTest ();
 				tasks [i] = RunLoop (ctx, i, cancellationToken);
 			}
 

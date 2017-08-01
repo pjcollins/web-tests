@@ -300,6 +300,10 @@ namespace Xamarin.WebTests.TestRunners
 		{
 			var me = $"{ME}.{nameof (Run)}()";
 
+			var martinTest = DependencyInjector.Get<IMartinTestProvider> ();
+			if (martinTest.IsSupported)
+				martinTest.MartinTest ();
+
 			var (handler, flags) = CreateHandler (ctx, true);
 
 			ctx.LogDebug (2, $"{me}");
@@ -377,6 +381,9 @@ namespace Xamarin.WebTests.TestRunners
 			}
 
 			Server.CloseAll ();
+
+			if (martinTest.IsSupported)
+				martinTest.MartinTest ();
 		}
 
 		AuthenticationManager GetAuthenticationManager ()
