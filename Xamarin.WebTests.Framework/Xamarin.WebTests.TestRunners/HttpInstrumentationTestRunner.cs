@@ -95,7 +95,7 @@ namespace Xamarin.WebTests.TestRunners
 			ME = $"{GetType ().Name}({EffectiveType})";
 		}
 
-		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.NtlmReusesConnection;
+		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.RedirectNoLength;
 
 		static readonly HttpInstrumentationTestType[] WorkingTests = {
 			HttpInstrumentationTestType.Simple,
@@ -139,6 +139,10 @@ namespace Xamarin.WebTests.TestRunners
 		};
 
 		static readonly HttpInstrumentationTestType[] UnstableTests = {
+			HttpInstrumentationTestType.RedirectNoLength,
+			HttpInstrumentationTestType.PutChunked,
+			HttpInstrumentationTestType.PutChunkDontCloseRequest,
+			HttpInstrumentationTestType.ServerAbortsRedirect
 		};
 
 		static readonly HttpInstrumentationTestType[] StressTests = {
