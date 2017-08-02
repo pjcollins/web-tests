@@ -95,7 +95,7 @@ namespace Xamarin.WebTests.TestRunners
 			ME = $"{GetType ().Name}({EffectiveType})";
 		}
 
-		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.ServerAbortsRedirect;
+		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.NtlmReusesConnection;
 
 		static readonly HttpInstrumentationTestType[] WorkingTests = {
 			HttpInstrumentationTestType.Simple,
@@ -123,6 +123,7 @@ namespace Xamarin.WebTests.TestRunners
 			HttpInstrumentationTestType.CloseCustomConnectionGroup,
 			HttpInstrumentationTestType.CloseRequestStream,
 			HttpInstrumentationTestType.NtlmClosesConnection,
+			HttpInstrumentationTestType.NtlmReusesConnection,
 			HttpInstrumentationTestType.AbortResponse,
 			HttpInstrumentationTestType.RedirectNoReuse,
 			HttpInstrumentationTestType.PutChunked
@@ -278,6 +279,7 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.NtlmChunked:
 			case HttpInstrumentationTestType.NtlmInstrumentation:
 			case HttpInstrumentationTestType.NtlmClosesConnection:
+			case HttpInstrumentationTestType.NtlmReusesConnection:
 			case HttpInstrumentationTestType.ReuseConnection:
 			case HttpInstrumentationTestType.ReuseConnection2:
 			case HttpInstrumentationTestType.ReuseAfterPartialRead:
@@ -432,6 +434,8 @@ namespace Xamarin.WebTests.TestRunners
 				return (new HttpInstrumentationHandler (this, null, null, false), flags);
 			case HttpInstrumentationTestType.NtlmClosesConnection:
 				return (new HttpInstrumentationHandler (this, GetAuthenticationManager (), null, true), flags);
+			case HttpInstrumentationTestType.NtlmReusesConnection:
+				return (new HttpInstrumentationHandler (this, GetAuthenticationManager (), null, false), flags);
 			case HttpInstrumentationTestType.ParallelNtlm:
 			case HttpInstrumentationTestType.NtlmInstrumentation:
 			case HttpInstrumentationTestType.NtlmWhileQueued:
@@ -1260,6 +1264,7 @@ namespace Xamarin.WebTests.TestRunners
 
 				case HttpInstrumentationTestType.NtlmInstrumentation:
 				case HttpInstrumentationTestType.NtlmClosesConnection:
+				case HttpInstrumentationTestType.NtlmReusesConnection:
 				case HttpInstrumentationTestType.ParallelNtlm:
 				case HttpInstrumentationTestType.NtlmWhileQueued:
 					return await HandleNtlmRequest (
