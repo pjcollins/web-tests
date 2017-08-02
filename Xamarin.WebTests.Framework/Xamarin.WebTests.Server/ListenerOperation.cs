@@ -60,7 +60,10 @@ namespace Xamarin.WebTests.Server
 
 		TaskCompletionSource<object> serverInitTask;
 		TaskCompletionSource<object> serverFinishedTask;
+		TaskCompletionSource<ListenerContext> contextTask;
+		TaskCompletionSource<object> finishedTask;
 		ListenerOperation parentOperation;
+		bool hasInstrumentation;
 
 		public ListenerOperation (Listener listener, HttpOperation operation, Handler handler, Uri uri)
 		{
@@ -72,6 +75,63 @@ namespace Xamarin.WebTests.Server
 			ME = $"[{ID}:{GetType ().Name}:{operation.ME}]";
 			serverInitTask = Listener.TaskSupport.CreateAsyncCompletionSource<object> ();
 			serverFinishedTask = Listener.TaskSupport.CreateAsyncCompletionSource<object> ();
+			contextTask = Listener.TaskSupport.CreateAsyncCompletionSource<ListenerContext> ();
+			finishedTask = Listener.TaskSupport.CreateAsyncCompletionSource<object> ();
+		}
+
+		internal ListenerOperation TargetOperation {
+			get;
+			private set;
+		}
+
+		internal ListenerContext AssignedContext {
+			get;
+			private set;
+		}
+
+		internal void AssignContext (ListenerContext context)
+		{
+			hasInstrumentation = true;
+			AssignedContext = context;
+			context.AssignContext (this);
+			contextTask.TrySetResult (context);
+		}
+
+		internal Task Wait ()
+		{
+			return finishedTask.Task;
+		}
+
+		internal Task<ListenerContext> WaitForContext ()
+		{
+			return contextTask.Task;
+		}
+
+		internal void Abort (Exception exception =  null)
+		{
+			if (hasInstrumentation) {
+				hasInstrumentation = false;
+				Listener.ReleaseInstrumentation (this);
+			}
+			if (exception != null) {
+				finishedTask.TrySetException (exception);
+				contextTask.TrySetException (exception);
+				OnError (exception);
+			} else {
+				finishedTask.TrySetCanceled ();
+				contextTask.TrySetCanceled ();
+				OnCanceled ();
+			}
+		}
+
+		internal void Finish ()
+		{
+			if (hasInstrumentation) {
+				hasInstrumentation = false;
+				Listener.ReleaseInstrumentation (this);
+			}
+			finishedTask.TrySetResult (null);
+			contextTask.TrySetCanceled ();
 		}
 
 		public Task ServerInitTask => serverInitTask.Task;
@@ -127,6 +187,14 @@ namespace Xamarin.WebTests.Server
 		internal void RegisterProxyAuth (ListenerOperation redirect)
 		{
 			redirect.parentOperation = this;
+		}
+
+		internal ListenerOperation CreateProxy (Listener listener)
+		{
+			var proxy = new ListenerOperation (listener, Operation, Handler, Uri);
+			proxy.TargetOperation = this;
+			parentOperation = proxy;
+			return proxy;
 		}
 
 		void OnInit ()
