@@ -139,12 +139,12 @@ namespace Xamarin.WebTests.TestRunners
 		};
 
 		static readonly HttpInstrumentationTestType[] UnstableTests = {
-			HttpInstrumentationTestType.ThreeParallelRequests,
-			HttpInstrumentationTestType.ManyParallelRequests,
-			HttpInstrumentationTestType.ParallelRequestsSomeQueued,
 		};
 
 		static readonly HttpInstrumentationTestType[] StressTests = {
+			HttpInstrumentationTestType.ThreeParallelRequests,
+			HttpInstrumentationTestType.ManyParallelRequests,
+			HttpInstrumentationTestType.ParallelRequestsSomeQueued,
 			HttpInstrumentationTestType.ManyParallelRequestsStress
 		};
 
