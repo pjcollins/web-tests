@@ -161,31 +161,43 @@ namespace Xamarin.WebTests.TestRunners
 
 		public async Task Run (TestContext ctx, CancellationToken cancellationToken)
 		{
-			var me = $"{ME}.{nameof (Run)}()";
+			var me = $"{ME}.{nameof (Run)}({EffectiveType})";
 			ctx.LogDebug (2, $"{me}");
 
-			ServicePointManager.MaxServicePoints = 100;
-
-			var tasks = new Task[75];
-			for (int i = 0; i < tasks.Length; i++) {
-				tasks [i] = RunLoop (ctx, i, cancellationToken);
+			switch (EffectiveType) {
+			case HttpStressTestType.Simple:
+				await RunSimple ().ConfigureAwait (false);
+				break;
+			default:
+				throw ctx.AssertFail (EffectiveType);
 			}
 
-			ctx.LogDebug (2, $"{me} GOT TASKS");
-
-			await Task.WhenAll (tasks);
-
 			ctx.LogDebug (2, $"{me} DONE");
-		}
 
-		async Task RunLoop (TestContext ctx, int idx, CancellationToken cancellationToken)
-		{
-			var me = $"{ME}.{nameof (RunLoop)}({idx})";
+			async Task RunSimple ()
+			{
+				ServicePointManager.MaxServicePoints = 100;
 
-			for (int i = 0; i < 2500; i++) {
-				var loopOperation = new TraditionalOperation (Server, HelloWorldHandler.GetSimple (), true);
-				await loopOperation.Run (ctx, cancellationToken);
-				ctx.LogMessage ($"{me} RUN {i} DONE");
+				var tasks = new Task[75];
+				for (int i = 0; i < tasks.Length; i++) {
+					tasks[i] = RunLoop (i);
+				}
+
+				ctx.LogDebug (2, $"{me} GOT TASKS");
+
+				await Task.WhenAll (tasks);
+
+			}
+
+			async Task RunLoop (int idx)
+			{
+				var loopMe = $"{me} LOOP {idx}";
+
+				for (int i = 0; i < 2500; i++) {
+					var loopOperation = new TraditionalOperation (Server, HelloWorldHandler.GetSimple (), true);
+					await loopOperation.Run (ctx, cancellationToken);
+					ctx.LogMessage ($"{loopMe} {i} DONE");
+				}
 			}
 		}
 
