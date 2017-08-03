@@ -95,7 +95,7 @@ namespace Xamarin.WebTests.TestRunners
 			ME = $"{GetType ().Name}({EffectiveType})";
 		}
 
-		const HttpStressTestType MartinTest = HttpStressTestType.Simple;
+		const HttpStressTestType MartinTest = HttpStressTestType.RepeatedHttpClient;
 
 		static readonly HttpStressTestType[] WorkingTests = {
 		};
@@ -151,6 +151,12 @@ namespace Xamarin.WebTests.TestRunners
 
 			switch (GetEffectiveType (type)) {
 			case HttpStressTestType.Simple:
+				parameters.MaxServicePoints = 100;
+				parameters.CountParallelTasks = 75;
+				parameters.RepeatCount = 2500;
+				break;
+			case HttpStressTestType.RepeatedHttpClient:
+				parameters.RepeatCount = 5000;
 				break;
 			default:
 				throw ctx.AssertFail (GetEffectiveType (type));
@@ -166,6 +172,7 @@ namespace Xamarin.WebTests.TestRunners
 
 			switch (EffectiveType) {
 			case HttpStressTestType.Simple:
+			case HttpStressTestType.RepeatedHttpClient:
 				await RunSimple ().ConfigureAwait (false);
 				break;
 			default:
@@ -176,9 +183,10 @@ namespace Xamarin.WebTests.TestRunners
 
 			async Task RunSimple ()
 			{
-				ServicePointManager.MaxServicePoints = 100;
+				if (Parameters.MaxServicePoints != null)
+					ServicePointManager.MaxServicePoints = Parameters.MaxServicePoints.Value;
 
-				var tasks = new Task[75];
+				var tasks = new Task[Parameters.CountParallelTasks + 1];
 				for (int i = 0; i < tasks.Length; i++) {
 					tasks[i] = RunLoop (i);
 				}
@@ -193,11 +201,35 @@ namespace Xamarin.WebTests.TestRunners
 			{
 				var loopMe = $"{me} LOOP {idx}";
 
-				for (int i = 0; i < 2500; i++) {
-					var loopOperation = new TraditionalOperation (Server, HelloWorldHandler.GetSimple (), true);
-					await loopOperation.Run (ctx, cancellationToken);
-					ctx.LogMessage ($"{loopMe} {i} DONE");
+				for (int i = 0; i < Parameters.RepeatCount; i++) {
+					await LoopOperation (i).ConfigureAwait (false);
+					if ((i % 10) == 0)
+						ctx.LogMessage ($"{loopMe} {i} DONE");
 				}
+			}
+
+			async Task LoopOperation (int idx)
+			{
+				Handler handler;
+				HttpOperation loopOperation;
+
+				switch (EffectiveType) {
+				case HttpStressTestType.Simple:
+					handler = HelloWorldHandler.GetSimple (me);
+					loopOperation = new TraditionalOperation (Server, handler, true);
+					break;
+
+				case HttpStressTestType.RepeatedHttpClient:
+					handler = new HttpClientHandler (
+						me, HttpClientOperationType.GetString, null, HttpContent.HelloWorld);
+					loopOperation = new HttpClientOperation (Server, handler);
+					break;
+
+				default:
+					throw ctx.AssertFail (EffectiveType);
+				}
+
+				await loopOperation.Run (ctx, cancellationToken).ConfigureAwait (false);
 			}
 		}
 

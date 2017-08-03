@@ -102,7 +102,6 @@ namespace Xamarin.WebTests.HttpFramework
 
 		bool? keepAlive;
 		bool closeConnection;
-		bool responseWritten;
 		bool headersResolved;
 		bool writeAsBlob;
 		bool noContentLength;
@@ -232,7 +231,6 @@ namespace Xamarin.WebTests.HttpFramework
 		public async Task Write (TestContext ctx, Stream stream, CancellationToken cancellationToken)
 		{
 			ResolveHeaders ();
-			responseWritten = true;
 
 			cancellationToken.ThrowIfCancellationRequested ();
 
