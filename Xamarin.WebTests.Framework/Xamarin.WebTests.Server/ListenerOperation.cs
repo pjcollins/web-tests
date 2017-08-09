@@ -173,13 +173,7 @@ namespace Xamarin.WebTests.Server
 				return response;
 			}
 
-			if (Operation.HasAnyFlags (HttpOperationFlags.ClientDoesNotSendRedirect)) {
-				Listener.UnregisterOperation (response.Redirect);
-				response.Redirect = null;
-				OnFinished ();
-			} else {
-				response.Redirect.parentOperation = this;
-			}
+			response.Redirect.parentOperation = this;
 
 			return response;
 		}
