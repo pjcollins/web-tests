@@ -88,7 +88,7 @@ namespace Xamarin.WebTests.TestRunners
 			Provider = provider;
 			Uri = uri;
 
-			ServerFlags = flags | HttpServerFlags.ParallelListener | HttpServerFlags.InstrumentationListener;
+			ServerFlags = flags | HttpServerFlags.InstrumentationListener;
 
 			Server = new BuiltinHttpServer (uri, endpoint, ServerFlags, parameters, null);
 
