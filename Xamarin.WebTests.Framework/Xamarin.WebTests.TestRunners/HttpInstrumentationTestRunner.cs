@@ -122,8 +122,6 @@ namespace Xamarin.WebTests.TestRunners
 			HttpInstrumentationTestType.ReuseCustomConnectionGroup,
 			HttpInstrumentationTestType.CloseCustomConnectionGroup,
 			HttpInstrumentationTestType.CloseRequestStream,
-			HttpInstrumentationTestType.NtlmClosesConnection,
-			HttpInstrumentationTestType.NtlmReusesConnection,
 			HttpInstrumentationTestType.AbortResponse,
 			HttpInstrumentationTestType.RedirectNoReuse,
 			HttpInstrumentationTestType.PutChunked
@@ -135,6 +133,8 @@ namespace Xamarin.WebTests.TestRunners
 			HttpInstrumentationTestType.CloseIdleConnection,
 			HttpInstrumentationTestType.ReadTimeout,
 			HttpInstrumentationTestType.ParallelNtlm,
+			HttpInstrumentationTestType.NtlmClosesConnection,
+			HttpInstrumentationTestType.NtlmReusesConnection,
 			HttpInstrumentationTestType.PutChunkDontCloseRequest
 		};
 
