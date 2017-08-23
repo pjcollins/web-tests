@@ -25,6 +25,7 @@
 // THE SOFTWARE.
 using System;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -114,6 +115,37 @@ namespace Xamarin.WebTests.MonoTestFramework
 			};
 		}
 
+		[Flags]
+		internal enum InstrumentationFlags
+		{
+			None = 0,
+			ExpectClientException = 1,
+			ExpectServerException = 2,
+			SkipMainLoop = 4
+		}
+
+		static InstrumentationFlags GetFlags (RenegotiationTestType type)
+		{
+			switch (type) {
+			case RenegotiationTestType.MartinTest:
+				return InstrumentationFlags.ExpectClientException | InstrumentationFlags.ExpectServerException |
+					InstrumentationFlags.SkipMainLoop;
+			default:
+				throw new InternalErrorException ();
+			}
+		}
+
+		bool HasFlag (InstrumentationFlags flag)
+		{
+			var flags = GetFlags (EffectiveType);
+			return (flags & flag) == flag;
+		}
+
+		bool HasAnyFlag (params InstrumentationFlags[] flags)
+		{
+			return flags.Any (f => HasFlag (f));
+		}
+
 		protected override Task PreRun (TestContext ctx, CancellationToken cancellationToken)
 		{
 			return base.PreRun (ctx, cancellationToken);
@@ -165,15 +197,10 @@ namespace Xamarin.WebTests.MonoTestFramework
 
 			await Task.WhenAll (readTask, renegotiateTask).ConfigureAwait (false);
 
-			return;
+			if (HasFlag (InstrumentationFlags.SkipMainLoop))
+				return;
 
 			await ConnectionHandler.MainLoop (ctx, cancellationToken);
-		}
-
-		void LogDebug (TestContext ctx, int level, string message, params object[] args)
-		{
-			var formatted = string.Format (message, args);
-			ctx.LogDebug (level, $"RenegotiationTestRunner({EffectiveType}): {formatted}");
 		}
 
 		protected override Task StartClient (TestContext ctx, CancellationToken cancellationToken)
@@ -188,12 +215,14 @@ namespace Xamarin.WebTests.MonoTestFramework
 
 		protected override Task ClientShutdown (TestContext ctx, CancellationToken cancellationToken)
 		{
-			return FinishedTask;
+			if (HasFlag (InstrumentationFlags.ExpectClientException))
+				return FinishedTask;
 			return Client.Shutdown (ctx, cancellationToken);
 		}
 
 		protected override Task ServerShutdown (TestContext ctx, CancellationToken cancellationToken)
 		{
+			if (HasFlag (InstrumentationFlags.ExpectServerException))
 			return FinishedTask;
 			return Server.Shutdown (ctx, cancellationToken);
 		}
