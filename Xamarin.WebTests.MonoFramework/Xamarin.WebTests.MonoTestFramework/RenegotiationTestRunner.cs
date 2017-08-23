@@ -122,6 +122,7 @@ namespace Xamarin.WebTests.MonoTestFramework
 		protected sealed override async Task MainLoop (TestContext ctx, CancellationToken cancellationToken)
 		{
 			ctx.LogDebug (4, $"RenegotiationTestRunner({EffectiveType}) - main loop");
+
 			await ConnectionHandler.MainLoop (ctx, cancellationToken);
 		}
 

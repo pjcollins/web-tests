@@ -49,5 +49,9 @@ namespace Xamarin.WebTests.MonoConnectionFramework
 		bool SupportsRenegotiation {
 			get;
 		}
+
+		bool CanRenegotiate (IMonoSslStream stream);
+
+		void Renegotiate (IMonoSslStream stream);
 	}
 }

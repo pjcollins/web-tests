@@ -181,14 +181,42 @@ namespace Xamarin.WebTests.MonoTestProvider
 #endif
 		}
 
+#if !__IOS__ && !__MOBILE__
+		PropertyInfo canRenegotiate;
+		MethodInfo getCanRenegotiate;
+		MethodInfo renegotiate;
+#endif
+
 		bool CheckRenegotiation ()
 		{
 #if __IOS__ || __MOBILE__
 			return false;
 #else
 			var type = typeof (IMonoSslStream);
-			var method = type.GetMethod ("Renegotiate");
-			return method != null;
+			canRenegotiate = type.GetProperty ("CanRenegotiate");
+			if (canRenegotiate == null)
+				return false;
+			getCanRenegotiate = canRenegotiate.GetGetMethod ();
+			renegotiate = type.GetMethod ("Renegotiate");
+			return canRenegotiate != null;
+#endif
+		}
+
+		public bool CanRenegotiate (IMonoSslStream stream)
+		{
+#if __IOS__ || __MOBILE__
+			throw new NotSupportedException ();
+#else
+			return (bool)getCanRenegotiate.Invoke (stream, null);
+#endif
+		}
+
+		public void Renegotiate (IMonoSslStream stream)
+		{
+#if __IOS__ || __MOBILE__
+			throw new NotSupportedException ();
+#else
+			renegotiate.Invoke (stream, null);
 #endif
 		}
 	}
