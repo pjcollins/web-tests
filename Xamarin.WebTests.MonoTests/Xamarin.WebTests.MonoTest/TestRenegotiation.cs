@@ -34,6 +34,7 @@ namespace Xamarin.WebTests.MonoTests
 	using MonoTestFeatures;
 	using TestFramework;
 
+	[Renegotiation]
 	[CleanShutdown]
 	[AsyncTestFixture (Timeout = 5000)]
 	public class TestRenegotiation

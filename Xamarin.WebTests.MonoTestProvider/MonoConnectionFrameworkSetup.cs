@@ -80,6 +80,10 @@ namespace Xamarin.WebTests.MonoTestProvider
 			get;
 		}
 
+		public bool SupportsRenegotiation {
+			get;
+		}
+
 		public MonoConnectionFrameworkSetup (string name)
 		{
 			Name = name;
@@ -118,6 +122,7 @@ namespace Xamarin.WebTests.MonoTestProvider
 
 			SupportsCleanShutdown = CheckCleanShutdown ();
 			HasNewWebStack = CheckNewWebStack ();
+			SupportsRenegotiation = CheckRenegotiation ();
 
 			if (UsingAppleTls && !CheckAppleTls ())
 				throw new NotSupportedException ("AppleTls is not supported in this version of the Mono runtime.");
@@ -173,6 +178,17 @@ namespace Xamarin.WebTests.MonoTestProvider
 			return assembly.GetType ("Mono.AppleTls.SecAccess", false) != null;
 #else
 			return false;
+#endif
+		}
+
+		bool CheckRenegotiation ()
+		{
+#if __IOS__ || __MOBILE__
+			return false;
+#else
+			var type = typeof (IMonoSslStream);
+			var method = type.GetMethod ("Renegotiate");
+			return method != null;
 #endif
 		}
 	}
