@@ -56,6 +56,10 @@ namespace Xamarin.WebTests.MonoTestProvider
 			get;
 		}
 
+		public MonoTlsProvider SecondTlsProvider {
+			get;
+		}
+
 		public bool InstallDefaultCertificateValidator {
 			get { return true; }
 		}
@@ -124,13 +128,25 @@ namespace Xamarin.WebTests.MonoTestProvider
 			HasNewWebStack = CheckNewWebStack ();
 			SupportsRenegotiation = CheckRenegotiation ();
 
-			if (UsingAppleTls && !CheckAppleTls ())
-				throw new NotSupportedException ("AppleTls is not supported in this version of the Mono runtime.");
+			if (CheckAppleTls ()) {
+#if !XAMMAC
+				if (UsingBtls)
+					SecondTlsProvider = MonoTlsProviderFactory.GetProvider ("apple");
+				if (UsingAppleTls)
+					SecondTlsProvider = MonoTlsProviderFactory.GetProvider ("btls");
+#endif
+			} else {
+				if (UsingAppleTls)
+					throw new NotSupportedException ("AppleTls is not supported in this version of the Mono runtime.");
+			}
 		}
 
 		public void Initialize (ConnectionProviderFactory factory)
 		{
-			MonoConnectionProviderFactory.RegisterProvider (factory, TlsProvider);
+			MonoConnectionProviderFactory.RegisterProvider (factory, TlsProvider, false);
+
+			if (SecondTlsProvider != null)
+				MonoConnectionProviderFactory.RegisterProvider (factory, SecondTlsProvider, true);
 		}
 
 		public MonoTlsProvider GetDefaultProvider ()
