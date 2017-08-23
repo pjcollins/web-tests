@@ -139,23 +139,33 @@ namespace Xamarin.WebTests.MonoTestFramework
 			ctx.Assert (MonoServer.CanRenegotiate, "MonoServer.CanRenegotiate");
 
 			var buffer = new byte[16];
-			var readTask = Client.Stream.ReadAsync (buffer, 0, buffer.Length, cancellationToken);
+			var readTask = Client.Stream.ReadAsync (buffer, 0, buffer.Length, cancellationToken).ContinueWith (t => {
+				Client.Dispose ();
 
-			var renegotiateTask = MonoServer.RenegotiateAsync (cancellationToken);
+				var message = "Expected client to throw AuthenticationException(NoRenegotiate)";
+				ctx.Assert (t.Status, Is.EqualTo (TaskStatus.Faulted), message);
+				var exception = TestContext.CleanupException (t.Exception);
+
+				if (ctx.Expect (exception, Is.Not.Null, message) &&
+				    ctx.Expect (exception, Is.InstanceOf<AuthenticationException> (), message) &&
+				    ctx.Expect (exception.InnerException, Is.InstanceOf<TlsException> (), message)) {
+					var tlsExc = (TlsException)exception.InnerException;
+					ctx.Assert (tlsExc.Alert.Description, Is.EqualTo (AlertDescription.NoRenegotiation), message);
+				}
+			});
+
+			var renegotiateTask = MonoServer.RenegotiateAsync (cancellationToken).ContinueWith (t => {
+				var message = "Expected server to throw IOException.";
+				ctx.Assert (t.Status, Is.EqualTo (TaskStatus.Faulted), message);
+				var exception = TestContext.CleanupException (t.Exception);
+				ctx.Assert (exception, Is.InstanceOf<IOException> (), message);
+			});
 
 			ctx.LogDebug (4, $"{me} - called Renegotiate()");
 
-			try {
-				await Task.WhenAll (readTask, renegotiateTask).ConfigureAwait (false);
-				throw ctx.AssertFail ("Expected AuthenticationException/NoRenegotiation");
-			} catch (Exception ex) {
-				ctx.Assert (ex, Is.InstanceOf<AuthenticationException> ());
-				ctx.Assert (ex.InnerException, Is.InstanceOf <TlsException> ());
-				var tlsExc = (TlsException)ex.InnerException;
-				ctx.Assert (tlsExc.Alert.Description, Is.EqualTo (AlertDescription.NoRenegotiation));
-			}
+			await Task.WhenAll (readTask, renegotiateTask).ConfigureAwait (false);
 
-			ctx.LogDebug (4, $"{me} - after wait");
+			return;
 
 			await ConnectionHandler.MainLoop (ctx, cancellationToken);
 		}
@@ -178,11 +188,13 @@ namespace Xamarin.WebTests.MonoTestFramework
 
 		protected override Task ClientShutdown (TestContext ctx, CancellationToken cancellationToken)
 		{
+			return FinishedTask;
 			return Client.Shutdown (ctx, cancellationToken);
 		}
 
 		protected override Task ServerShutdown (TestContext ctx, CancellationToken cancellationToken)
 		{
+			return FinishedTask;
 			return Server.Shutdown (ctx, cancellationToken);
 		}
 	}
