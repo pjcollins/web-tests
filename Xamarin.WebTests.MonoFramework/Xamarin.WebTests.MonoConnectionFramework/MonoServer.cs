@@ -49,12 +49,12 @@ namespace Xamarin.WebTests.MonoConnectionFramework
 			}
 		}
 
-		public void Renegotiate ()
+		public Task RenegotiateAsync (CancellationToken cancellationToken)
 		{
 			if (!CanRenegotiate)
 				throw new NotSupportedException ();
 			var setup = DependencyInjector.Get<IMonoConnectionFrameworkSetup> ();
-			setup.Renegotiate (GetMonoSslStream ());
+			return setup.RenegotiateAsync (GetMonoSslStream (), cancellationToken);
 		}
 	}
 }

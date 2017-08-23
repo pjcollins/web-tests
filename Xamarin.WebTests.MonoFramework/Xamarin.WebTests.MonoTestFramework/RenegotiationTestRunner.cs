@@ -134,7 +134,7 @@ namespace Xamarin.WebTests.MonoTestFramework
 			ctx.LogDebug (4, $"{me} - client={MonoClient.Provider} server={MonoServer.Provider} - {MonoServer.CanRenegotiate}");
 			ctx.Assert (MonoServer.CanRenegotiate, "MonoServer.CanRenegotiate");
 
-			MonoServer.Renegotiate ();
+			await MonoServer.RenegotiateAsync (cancellationToken).ConfigureAwait (false);
 
 			ctx.LogDebug (4, $"{me} - called Renegotiate()");
 

@@ -25,6 +25,8 @@
 // THE SOFTWARE.
 using System;
 using System.Net;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Security.Cryptography.X509Certificates;
 using Mono.Security.Interface;
 #if !__MOBILE__ && !__IOS__
@@ -200,7 +202,7 @@ namespace Xamarin.WebTests.MonoTestProvider
 #if !__IOS__ && !__MOBILE__
 		PropertyInfo canRenegotiate;
 		MethodInfo getCanRenegotiate;
-		MethodInfo renegotiate;
+		MethodInfo renegotiateAsync;
 #endif
 
 		bool CheckRenegotiation ()
@@ -213,8 +215,8 @@ namespace Xamarin.WebTests.MonoTestProvider
 			if (canRenegotiate == null)
 				return false;
 			getCanRenegotiate = canRenegotiate.GetGetMethod ();
-			renegotiate = type.GetMethod ("Renegotiate");
-			return canRenegotiate != null;
+			renegotiateAsync = type.GetMethod ("RenegotiateAsync");
+			return renegotiateAsync != null;
 #endif
 		}
 
@@ -227,12 +229,12 @@ namespace Xamarin.WebTests.MonoTestProvider
 #endif
 		}
 
-		public void Renegotiate (IMonoSslStream stream)
+		public Task RenegotiateAsync (IMonoSslStream stream, CancellationToken cancellationToken)
 		{
 #if __IOS__ || __MOBILE__
 			throw new NotSupportedException ();
 #else
-			renegotiate.Invoke (stream, null);
+			return (Task)renegotiateAsync.Invoke (stream, new object[] { cancellationToken });
 #endif
 		}
 	}

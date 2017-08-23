@@ -25,6 +25,8 @@
 // THE SOFTWARE.
 using System;
 using System.Net;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Security.Cryptography.X509Certificates;
 using Xamarin.AsyncTests;
 using Mono.Security.Interface;
@@ -52,6 +54,6 @@ namespace Xamarin.WebTests.MonoConnectionFramework
 
 		bool CanRenegotiate (IMonoSslStream stream);
 
-		void Renegotiate (IMonoSslStream stream);
+		Task RenegotiateAsync (IMonoSslStream stream, CancellationToken cancellationToken);
 	}
 }
