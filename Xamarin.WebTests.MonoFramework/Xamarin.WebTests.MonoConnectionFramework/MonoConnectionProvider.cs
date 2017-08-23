@@ -196,7 +196,7 @@ namespace Xamarin.WebTests.MonoConnectionFramework
 
 		public override string ToString ()
 		{
-			return string.Format ("[MonoConnectionProvider: {0}", Type);
+			return string.Format ("[MonoConnectionProvider: {0}]", Type);
 		}
 	}
 }
