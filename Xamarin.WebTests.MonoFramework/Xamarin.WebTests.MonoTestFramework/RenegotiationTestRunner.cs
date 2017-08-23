@@ -24,11 +24,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 using System;
+using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using Xamarin.AsyncTests;
+using Xamarin.AsyncTests.Constraints;
 
 namespace Xamarin.WebTests.MonoTestFramework
 {
@@ -37,6 +39,8 @@ namespace Xamarin.WebTests.MonoTestFramework
 	using ConnectionFramework;
 	using TestFramework;
 	using Resources;
+	using System.Security.Authentication;
+	using Mono.Security.Interface;
 
 	[RenegotiationTestRunner]
 	public class RenegotiationTestRunner : ClientAndServer
@@ -134,14 +138,24 @@ namespace Xamarin.WebTests.MonoTestFramework
 			ctx.LogDebug (4, $"{me} - client={MonoClient.Provider} server={MonoServer.Provider} - {MonoServer.CanRenegotiate}");
 			ctx.Assert (MonoServer.CanRenegotiate, "MonoServer.CanRenegotiate");
 
-			await MonoServer.RenegotiateAsync (cancellationToken).ConfigureAwait (false);
+			var buffer = new byte[16];
+			var readTask = Client.Stream.ReadAsync (buffer, 0, buffer.Length, cancellationToken);
+
+			var renegotiateTask = MonoServer.RenegotiateAsync (cancellationToken);
 
 			ctx.LogDebug (4, $"{me} - called Renegotiate()");
 
-			var buffer = new byte[16];
-			var ret = Client.Stream.Read (buffer, 0, buffer.Length);
+			try {
+				await Task.WhenAll (readTask, renegotiateTask).ConfigureAwait (false);
+				throw ctx.AssertFail ("Expected AuthenticationException/NoRenegotiation");
+			} catch (Exception ex) {
+				ctx.Assert (ex, Is.InstanceOf<AuthenticationException> ());
+				ctx.Assert (ex.InnerException, Is.InstanceOf <TlsException> ());
+				var tlsExc = (TlsException)ex.InnerException;
+				ctx.Assert (tlsExc.Alert.Description, Is.EqualTo (AlertDescription.NoRenegotiation));
+			}
 
-			ctx.LogDebug (4, $"{me} - after client read");
+			ctx.LogDebug (4, $"{me} - after wait");
 
 			await ConnectionHandler.MainLoop (ctx, cancellationToken);
 		}
