@@ -88,8 +88,8 @@ namespace Xamarin.WebTests.Tests
 			await runner.Run (ctx, cancellationToken);
 		}
 
-		[Martin]
-		// [AsyncTest]
+		[Martin3]
+		[AsyncTest]
 		[ConnectionTestFlags (ConnectionTestFlags.RequireMono)]
 		[ConnectionTestCategory (ConnectionTestCategory.MartinTest)]
 		public async Task MartinTest (TestContext ctx, CancellationToken cancellationToken,
