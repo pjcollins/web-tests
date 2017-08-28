@@ -56,6 +56,8 @@ namespace Xamarin.WebTests.MonoConnectionFramework
 
 		Task RenegotiateAsync (IMonoSslStream stream, CancellationToken cancellationToken);
 
+		bool ProviderSupportsCleanShutdown (MonoTlsProvider provider);
+
 		void SendCloseNotify (MonoTlsSettings settings, bool value);
 	}
 }

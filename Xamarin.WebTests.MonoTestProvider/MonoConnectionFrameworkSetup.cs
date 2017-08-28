@@ -162,14 +162,15 @@ namespace Xamarin.WebTests.MonoTestProvider
 			return false;
 #else
 			var type = typeof (MonoTlsProvider);
-			var property = type.GetProperty ("SupportsCleanShutdown", BindingFlags.Instance | BindingFlags.NonPublic);
-			if (property == null)
+			supportsCleanShutdown = type.GetProperty ("SupportsCleanShutdown", BindingFlags.Instance | BindingFlags.NonPublic);
+			if (supportsCleanShutdown == null)
 				return false;
+			getSupportsCleanShutdown = supportsCleanShutdown.GetMethod;
 			var settings = typeof (MonoTlsSettings);
 			sendCloseNotify = settings.GetProperty ("SendCloseNotify", BindingFlags.Instance | BindingFlags.NonPublic);
 			if (sendCloseNotify == null)
 				return false;
-			setSendCloseNotify = sendCloseNotify.GetSetMethod ();
+			setSendCloseNotify = sendCloseNotify.SetMethod;
 			return true;
 #endif
 		}
@@ -210,6 +211,8 @@ namespace Xamarin.WebTests.MonoTestProvider
 		PropertyInfo canRenegotiate;
 		MethodInfo getCanRenegotiate;
 		MethodInfo renegotiateAsync;
+		PropertyInfo supportsCleanShutdown;
+		MethodInfo getSupportsCleanShutdown;
 		PropertyInfo sendCloseNotify;
 		MethodInfo setSendCloseNotify;
 #endif
@@ -244,6 +247,15 @@ namespace Xamarin.WebTests.MonoTestProvider
 			throw new NotSupportedException ();
 #else
 			return (Task)renegotiateAsync.Invoke (stream, new object[] { cancellationToken });
+#endif
+		}
+
+		public bool ProviderSupportsCleanShutdown (MonoTlsProvider provider)
+		{
+#if __IOS__ || __MOBILE__
+			throw new NotSupportedException ();
+#else
+			return (bool)getSupportsCleanShutdown.Invoke (provider, null);
 #endif
 		}
 
