@@ -91,15 +91,14 @@ namespace Xamarin.WebTests.TestRunners
 				yield return StreamInstrumentationType.ShortReadDuringClientAuth;
 				yield return StreamInstrumentationType.ShortReadAndClose;
 				yield return StreamInstrumentationType.RemoteClosesConnectionDuringRead;
+				yield break;
 
+			case ConnectionTestCategory.SslStreamInstrumentationShutdown:
 				yield return StreamInstrumentationType.CleanShutdown;
 				yield return StreamInstrumentationType.DoubleShutdown;
 				yield return StreamInstrumentationType.WriteAfterShutdown;
 				yield return StreamInstrumentationType.WaitForShutdown;
-
-				if (!setup.UsingAppleTls)
-					yield return StreamInstrumentationType.ReadAfterShutdown;
-
+				yield return StreamInstrumentationType.ReadAfterShutdown;
 				yield return StreamInstrumentationType.ConnectionReuse;
 				yield return StreamInstrumentationType.ConnectionReuseWithShutdown;
 				yield break;
