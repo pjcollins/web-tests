@@ -69,11 +69,8 @@ namespace Xamarin.WebTests.MonoConnectionFramework
 		{
 			if (tlsProvider.SupportsMonoExtensions) {
 				flags |= ConnectionProviderFlags.SupportsMonoExtensions | ConnectionProviderFlags.SupportsHttpListener;
-				// Legacy TLS does not support the clean shutdown.
-				if ((flags & ConnectionProviderFlags.SupportsTls12) != 0) {
-					if (DependencyInjector.Get<IConnectionFrameworkSetup> ().SupportsCleanShutdown)
-						flags |= ConnectionProviderFlags.SupportsCleanShutdown;
-				}
+				if (DependencyInjector.Get<IConnectionFrameworkSetup> ().SupportsCleanShutdown)
+					flags |= ConnectionProviderFlags.SupportsCleanShutdown;
 			}
 			return flags;
 		}
@@ -137,6 +134,12 @@ namespace Xamarin.WebTests.MonoConnectionFramework
 					var trustedRootCert = ResourceManager.GetCertificate (trustedRoot);
 					settings.TrustAnchors.Add (trustedRootCert);
 				}
+			}
+			if ((parameters.SslStreamFlags & SslStreamFlags.CleanShutdown) != 0) {
+				if (settings == null)
+					settings = MSI.MonoTlsSettings.CopyDefaultSettings ();
+				var setup = DependencyInjector.Get<IMonoConnectionFrameworkSetup> ();
+				setup.SendCloseNotify (settings, true);
 			}
 
 			return settings;

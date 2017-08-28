@@ -161,9 +161,16 @@ namespace Xamarin.WebTests.MonoTestProvider
 #if __IOS__ || __MOBILE__
 			return false;
 #else
-			var type = typeof (SslStream);
-			var method = type.GetMethod ("ShutdownAsync", BindingFlags.Instance | BindingFlags.Public);
-			return method != null;
+			var type = typeof (MonoTlsProvider);
+			var property = type.GetProperty ("SupportsCleanShutdown", BindingFlags.Instance | BindingFlags.NonPublic);
+			if (property == null)
+				return false;
+			var settings = typeof (MonoTlsSettings);
+			sendCloseNotify = settings.GetProperty ("SendCloseNotify", BindingFlags.Instance | BindingFlags.NonPublic);
+			if (sendCloseNotify == null)
+				return false;
+			setSendCloseNotify = sendCloseNotify.GetSetMethod ();
+			return true;
 #endif
 		}
 
@@ -203,6 +210,8 @@ namespace Xamarin.WebTests.MonoTestProvider
 		PropertyInfo canRenegotiate;
 		MethodInfo getCanRenegotiate;
 		MethodInfo renegotiateAsync;
+		PropertyInfo sendCloseNotify;
+		MethodInfo setSendCloseNotify;
 #endif
 
 		bool CheckRenegotiation ()
@@ -235,6 +244,15 @@ namespace Xamarin.WebTests.MonoTestProvider
 			throw new NotSupportedException ();
 #else
 			return (Task)renegotiateAsync.Invoke (stream, new object[] { cancellationToken });
+#endif
+		}
+
+		public void SendCloseNotify (MonoTlsSettings settings, bool value)
+		{
+#if __IOS__ || __MOBILE__
+			throw new NotSupportedException ();
+#else
+			setSendCloseNotify.Invoke (settings, new object[] { value });
 #endif
 		}
 	}
