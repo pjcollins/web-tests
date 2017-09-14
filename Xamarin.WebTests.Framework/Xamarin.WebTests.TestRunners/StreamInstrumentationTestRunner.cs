@@ -79,7 +79,7 @@ namespace Xamarin.WebTests.TestRunners
 			ConnectionHandler = new DefaultConnectionHandler (this);
 		}
 
-		const StreamInstrumentationType MartinTest = StreamInstrumentationType.DisposeClosesInnerStream;
+		const StreamInstrumentationType MartinTest = StreamInstrumentationType.ServerRequestsShutdown;
 
 		public static IEnumerable<StreamInstrumentationType> GetStreamInstrumentationTypes (TestContext ctx, ConnectionTestCategory category)
 		{
@@ -118,7 +118,7 @@ namespace Xamarin.WebTests.TestRunners
 				yield break;
 
 			case ConnectionTestCategory.SslStreamInstrumentationServerShutdown:
-				yield return StreamInstrumentationType.ServerShutdown;
+				yield return StreamInstrumentationType.ServerRequestsShutdown;
 				yield break;
 
 			case ConnectionTestCategory.SslStreamInstrumentationExperimental:
@@ -140,8 +140,10 @@ namespace Xamarin.WebTests.TestRunners
 		{
 			var sb = new StringBuilder ();
 			sb.Append (type);
+			if (type == StreamInstrumentationType.MartinTest)
+				sb.Append ($"({MartinTest})");
 			foreach (var arg in args) {
-				sb.AppendFormat (":{0}", arg);
+				sb.Append ($":{arg}");
 			}
 			return sb.ToString ();
 		}
@@ -151,12 +153,19 @@ namespace Xamarin.WebTests.TestRunners
 		{
 			var certificateProvider = DependencyInjector.Get<ICertificateProvider> ();
 			var acceptAll = certificateProvider.AcceptAll ();
+			var effectiveType = type == StreamInstrumentationType.MartinTest ? MartinTest : type;
 
 			var name = GetTestName (category, type);
 
 			var parameters = new StreamInstrumentationParameters (category, type, name, ResourceManager.SelfSignedServerCertificate) {
 				ClientCertificateValidator = acceptAll
 			};
+
+			switch (effectiveType) {
+			case StreamInstrumentationType.ServerRequestsShutdown:
+				parameters.SslStreamFlags |= SslStreamFlags.CleanShutdown;
+				break;
+			}
 
 			if (category == ConnectionTestCategory.SslStreamInstrumentationShutdown)
 				parameters.SslStreamFlags = SslStreamFlags.CleanShutdown;
@@ -218,6 +227,9 @@ namespace Xamarin.WebTests.TestRunners
 			case StreamInstrumentationType.DisposeClosesInnerStream:
 			case StreamInstrumentationType.PropertiesAfterDispose:
 				await DisposeInstrumentation (ctx, cancellationToken).ConfigureAwait (false);
+				break;
+			case StreamInstrumentationType.ServerRequestsShutdown:
+				await Instrumentation_ServerRequestsShutdown (ctx, cancellationToken);
 				break;
 			default:
 				throw ctx.AssertFail (EffectiveType);
@@ -284,8 +296,9 @@ namespace Xamarin.WebTests.TestRunners
 			case StreamInstrumentationType.PropertiesAfterDispose:
 				return InstrumentationFlags.ClientInstrumentation | InstrumentationFlags.SkipMainLoop |
 					InstrumentationFlags.SkipShutdown;
-			case StreamInstrumentationType.ServerShutdown:
-				return InstrumentationFlags.None;
+			case StreamInstrumentationType.ServerRequestsShutdown:
+				return InstrumentationFlags.ClientInstrumentation | InstrumentationFlags.SkipMainLoop |
+					InstrumentationFlags.SkipShutdown;
 			default:
 				throw new InternalErrorException ();
 			}
@@ -875,6 +888,20 @@ namespace Xamarin.WebTests.TestRunners
 				Interlocked.Increment (ref disposeCalled);
 				func ();
 			}
+		}
+
+		async Task Instrumentation_ServerRequestsShutdown (TestContext ctx, CancellationToken cancellationToken)
+		{
+			var me = "Instrumentation_ServerRequestsShutdown";
+			LogDebug (ctx, 4, me);
+
+			LogDebug (ctx, 4, $"{me}: server shutdown");
+			await Server.Shutdown (ctx, cancellationToken).ConfigureAwait (false);
+			LogDebug (ctx, 4, $"{me}: server shutdown done");
+
+			var buffer = new byte[16];
+			var ret = await Client.SslStream.ReadAsync (buffer, 0, buffer.Length, cancellationToken);
+			LogDebug (ctx, 4, $"{me}: complete: {ret}");
 		}
 	}
 }
