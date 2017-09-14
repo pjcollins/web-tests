@@ -79,7 +79,7 @@ namespace Xamarin.WebTests.TestRunners
 			ConnectionHandler = new DefaultConnectionHandler (this);
 		}
 
-		const StreamInstrumentationType MartinTest = StreamInstrumentationType.ServerRequestsShutdown;
+		const StreamInstrumentationType MartinTest = StreamInstrumentationType.ServerRequestsShutdownDuringWrite;
 
 		public static IEnumerable<StreamInstrumentationType> GetStreamInstrumentationTypes (TestContext ctx, ConnectionTestCategory category)
 		{
@@ -163,6 +163,7 @@ namespace Xamarin.WebTests.TestRunners
 
 			switch (effectiveType) {
 			case StreamInstrumentationType.ServerRequestsShutdown:
+			case StreamInstrumentationType.ServerRequestsShutdownDuringWrite:
 				parameters.SslStreamFlags |= SslStreamFlags.CleanShutdown;
 				break;
 			}
@@ -229,6 +230,7 @@ namespace Xamarin.WebTests.TestRunners
 				await DisposeInstrumentation (ctx, cancellationToken).ConfigureAwait (false);
 				break;
 			case StreamInstrumentationType.ServerRequestsShutdown:
+			case StreamInstrumentationType.ServerRequestsShutdownDuringWrite:
 				await Instrumentation_ServerRequestsShutdown (ctx, cancellationToken);
 				break;
 			default:
@@ -297,6 +299,7 @@ namespace Xamarin.WebTests.TestRunners
 				return InstrumentationFlags.ClientInstrumentation | InstrumentationFlags.SkipMainLoop |
 					InstrumentationFlags.SkipShutdown;
 			case StreamInstrumentationType.ServerRequestsShutdown:
+			case StreamInstrumentationType.ServerRequestsShutdownDuringWrite:
 				return InstrumentationFlags.ClientInstrumentation | InstrumentationFlags.SkipMainLoop |
 					InstrumentationFlags.SkipShutdown;
 			default:
@@ -894,6 +897,13 @@ namespace Xamarin.WebTests.TestRunners
 		{
 			var me = "Instrumentation_ServerRequestsShutdown";
 			LogDebug (ctx, 4, me);
+
+			if (EffectiveType == StreamInstrumentationType.ServerRequestsShutdownDuringWrite) {
+				var largeBuffer = ConnectionHandler.GetLargeTextBuffer (512);
+				var largeBlob = Encoding.UTF8.GetBytes (largeBuffer);
+				LogDebug (ctx, 4, $"{me} writing {largeBlob.Length} bytes");
+				var writeTask = Client.SslStream.WriteAsync (largeBlob, 0, largeBlob.Length, cancellationToken);
+			}
 
 			LogDebug (ctx, 4, $"{me}: server shutdown");
 			await Server.Shutdown (ctx, cancellationToken).ConfigureAwait (false);
