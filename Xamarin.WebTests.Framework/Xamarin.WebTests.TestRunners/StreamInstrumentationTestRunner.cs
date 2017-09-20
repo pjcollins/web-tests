@@ -928,13 +928,13 @@ namespace Xamarin.WebTests.TestRunners
 			await Server.Shutdown (ctx, cancellationToken).ConfigureAwait (false);
 			LogDebug (ctx, 4, $"{me}: server shutdown done");
 
-			shutdownEvent.TrySetResult (null);
-
 			cancellationToken.ThrowIfCancellationRequested ();
 
 			var readBuffer = new byte[32768];
 			var ret = await Client.SslStream.ReadAsync (readBuffer, 0, readBuffer.Length, cancellationToken);
 			LogDebug (ctx, 4, $"{me}: client read: {ret}");
+
+			shutdownEvent.TrySetResult (null);
 
 			cancellationToken.ThrowIfCancellationRequested ();
 
@@ -961,7 +961,11 @@ namespace Xamarin.WebTests.TestRunners
 			                         CancellationToken innerCancellationToken)
 			{
 				innerCancellationToken.ThrowIfCancellationRequested ();
-				LogDebug (ctx, 4, $"{me}: write handler: {offset} {count}");
+
+				var writeMe = $"{me}: write handler ({ctx.GetUniqueId ()})";
+				LogDebug (ctx, 4, $"{writeMe}: {offset} {count}");
+
+				clientInstrumentation.OnNextWrite (WriteHandler);
 
 				const int shortWrite = 4096;
 				if (count > shortWrite) {
@@ -969,16 +973,16 @@ namespace Xamarin.WebTests.TestRunners
 					offset += shortWrite;
 					count -= shortWrite;
 
-					LogDebug (ctx, 4, $"{me}: write handler - short write done");
+					LogDebug (ctx, 4, $"{writeMe}: short write done");
 					writeEvent.TrySetResult (null);
 
 					await shutdownEvent.Task;
 
-					LogDebug (ctx, 4, $"{me}: write handler #1: {offset} {count}");
+					LogDebug (ctx, 4, $"{writeMe}: remaining {offset} {count}");
 				}
 
 				await func (buffer, offset, count, innerCancellationToken).ConfigureAwait (false);
-				LogDebug (ctx, 4, $"{me}: write handler done");
+				LogDebug (ctx, 4, $"{writeMe}: done");
 
 				await FinishedTask;
 			}
