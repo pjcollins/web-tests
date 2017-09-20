@@ -113,11 +113,18 @@ namespace Xamarin.WebTests.ConnectionFramework
 				Context.LogDebug (LogCategories.StreamInstrumentation, 4, message);
 		}
 
+		Task BaseWriteAsync (byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+		{
+			return Task.Factory.FromAsync (
+				(ca, st) => base.BeginWrite (buffer, offset, count, ca, st),
+				(result) => base.EndWrite (result), null);
+		}
+
 		public override Task WriteAsync (byte[] buffer, int offset, int count, CancellationToken cancellationToken)
 		{
 			var message = string.Format ("{0}.WriteAsync({1},{2})", Name, offset, count);
 
-			AsyncWriteFunc asyncBaseWrite = base.WriteAsync;
+			AsyncWriteFunc asyncBaseWrite = BaseWriteAsync;
 			AsyncWriteHandler asyncWriteHandler = (b, o, c, func, ct) => func (b, o, c, ct);
 
 			var action = Interlocked.Exchange (ref writeAction, null);
