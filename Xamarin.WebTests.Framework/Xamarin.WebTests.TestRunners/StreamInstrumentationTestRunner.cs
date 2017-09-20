@@ -898,20 +898,90 @@ namespace Xamarin.WebTests.TestRunners
 			var me = "Instrumentation_ServerRequestsShutdown";
 			LogDebug (ctx, 4, me);
 
+			cancellationToken.ThrowIfCancellationRequested ();
+
+			var writeEvent = new TaskCompletionSource<object> ();
+			var shutdownEvent = new TaskCompletionSource<object> ();
+			cancellationToken.Register (() => writeEvent.TrySetCanceled ());
+			cancellationToken.Register (() => shutdownEvent.TrySetCanceled ());
+
+			clientInstrumentation.OnNextWrite (WriteHandler);
+
+			int totalBytes = 0;
+
 			if (EffectiveType == StreamInstrumentationType.ServerRequestsShutdownDuringWrite) {
 				var largeBuffer = ConnectionHandler.GetLargeTextBuffer (512);
 				var largeBlob = Encoding.UTF8.GetBytes (largeBuffer);
-				LogDebug (ctx, 4, $"{me} writing {largeBlob.Length} bytes");
+
+				totalBytes = largeBlob.Length;
+				LogDebug (ctx, 4, $"{me} writing {totalBytes} bytes");
 				var writeTask = Client.SslStream.WriteAsync (largeBlob, 0, largeBlob.Length, cancellationToken);
+
+				cancellationToken.ThrowIfCancellationRequested ();
+				await writeEvent.Task.ConfigureAwait (false);
+				LogDebug (ctx, 4, $"{me} done writing");
 			}
+
+			cancellationToken.ThrowIfCancellationRequested ();
 
 			LogDebug (ctx, 4, $"{me}: server shutdown");
 			await Server.Shutdown (ctx, cancellationToken).ConfigureAwait (false);
 			LogDebug (ctx, 4, $"{me}: server shutdown done");
 
-			var buffer = new byte[16];
-			var ret = await Client.SslStream.ReadAsync (buffer, 0, buffer.Length, cancellationToken);
-			LogDebug (ctx, 4, $"{me}: complete: {ret}");
+			shutdownEvent.TrySetResult (null);
+
+			cancellationToken.ThrowIfCancellationRequested ();
+
+			var readBuffer = new byte[32768];
+			var ret = await Client.SslStream.ReadAsync (readBuffer, 0, readBuffer.Length, cancellationToken);
+			LogDebug (ctx, 4, $"{me}: client read: {ret}");
+
+			cancellationToken.ThrowIfCancellationRequested ();
+
+			int remainingBytes = totalBytes;
+			while (remainingBytes > 0) {
+				LogDebug (ctx, 4, $"{me}: server read - {remainingBytes} / {totalBytes} remaining.");
+
+				ret = await Server.SslStream.ReadAsync (readBuffer, 0, readBuffer.Length, cancellationToken);
+				LogDebug (ctx, 4, $"{me}: server read returned: {ret}");
+
+				if (ret <= 0)
+					break;
+
+				remainingBytes -= ret;
+			}
+
+			if (remainingBytes > 0)
+				LogDebug (ctx, 4, $"{me} server read - connection closed with {remainingBytes} bytes remaining.");
+			else
+				LogDebug (ctx, 4, $"{me} server read complete.");
+
+			async Task WriteHandler (byte[] buffer, int offset, int count,
+			                         StreamInstrumentation.AsyncWriteFunc func,
+			                         CancellationToken innerCancellationToken)
+			{
+				innerCancellationToken.ThrowIfCancellationRequested ();
+				LogDebug (ctx, 4, $"{me}: write handler: {offset} {count}");
+
+				const int shortWrite = 4096;
+				if (count > shortWrite) {
+					await func (buffer, offset, shortWrite, innerCancellationToken).ConfigureAwait (false);
+					offset += shortWrite;
+					count -= shortWrite;
+
+					LogDebug (ctx, 4, $"{me}: write handler - short write done");
+					writeEvent.TrySetResult (null);
+
+					await shutdownEvent.Task;
+
+					LogDebug (ctx, 4, $"{me}: write handler #1: {offset} {count}");
+				}
+
+				await func (buffer, offset, count, innerCancellationToken).ConfigureAwait (false);
+				LogDebug (ctx, 4, $"{me}: write handler done");
+
+				await FinishedTask;
+			}
 		}
 	}
 }
