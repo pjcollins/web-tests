@@ -53,10 +53,6 @@ namespace Xamarin.WebTests.ConnectionFramework
 			get; set;
 		}
 
-		public bool Debug {
-			get; set;
-		}
-
 		public StreamInstrumentation (TestContext ctx, string name, Socket socket, bool ownsSocket = true)
 			: base (socket, ownsSocket)
 		{
@@ -109,8 +105,7 @@ namespace Xamarin.WebTests.ConnectionFramework
 
 		void LogDebug (string message)
 		{
-			if (Debug)
-				Context.LogDebug (LogCategories.StreamInstrumentation, 4, message);
+			Context.LogDebug (LogCategories.StreamInstrumentation, 4, message);
 		}
 
 		Task BaseWriteAsync (byte[] buffer, int offset, int count, CancellationToken cancellationToken)
