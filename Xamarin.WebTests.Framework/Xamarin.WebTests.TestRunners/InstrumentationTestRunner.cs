@@ -51,11 +51,11 @@ namespace Xamarin.WebTests.TestRunners
 			get;
 		}
 
-		protected Uri Uri {
+		internal Uri Uri {
 			get;
 		}
 
-		protected HttpServerFlags ServerFlags {
+		internal HttpServerFlags ServerFlags {
 			get;
 		}
 
