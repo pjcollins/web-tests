@@ -1,5 +1,5 @@
 ﻿//
-// TestSsl.cs
+// TestHttpValidation.cs
 //
 // Author:
 //       Martin Baulig <martin.baulig@xamarin.com>
@@ -45,13 +45,13 @@ namespace Xamarin.WebTests.Tests
 	using HttpOperations;
 
 	[AsyncTestFixture (Timeout = 5000)]
-	public class TestHttps
+	public class TestHttpValidation
 	{
 		[AsyncTest]
 		[ConnectionTestCategory (ConnectionTestCategory.HttpsWithMono)]
 		public async Task TestMonoConnection (TestContext ctx, CancellationToken cancellationToken,
-			ConnectionTestProvider provider, HttpsTestParameters parameters,
-			HttpsTestRunner runner)
+			ConnectionTestProvider provider, HttpValidationTestParameters parameters,
+			HttpValidationTestRunner runner)
 		{
 			await runner.Run (ctx, cancellationToken);
 		}
@@ -59,8 +59,8 @@ namespace Xamarin.WebTests.Tests
 		[AsyncTest]
 		[ConnectionTestCategory (ConnectionTestCategory.HttpsWithDotNet)]
 		public async Task TestDotNetConnection (TestContext ctx, CancellationToken cancellationToken,
-			ConnectionTestProvider provider, HttpsTestParameters parameters,
-			HttpsTestRunner runner)
+			ConnectionTestProvider provider, HttpValidationTestParameters parameters,
+			HttpValidationTestRunner runner)
 		{
 			await runner.Run (ctx, cancellationToken);
 		}
@@ -68,8 +68,8 @@ namespace Xamarin.WebTests.Tests
 		[AsyncTest]
 		[ConnectionTestCategory (ConnectionTestCategory.HttpsCertificateValidators)]
 		public async Task TestCertificateValidators (TestContext ctx, CancellationToken cancellationToken,
-			ConnectionTestProvider provider, HttpsTestParameters parameters,
-			HttpsTestRunner runner)
+			ConnectionTestProvider provider, HttpValidationTestParameters parameters,
+			HttpValidationTestRunner runner)
 		{
 			await runner.Run (ctx, cancellationToken);
 		}
@@ -77,8 +77,8 @@ namespace Xamarin.WebTests.Tests
 		[AsyncTest]
 		[ConnectionTestCategory (ConnectionTestCategory.TrustedRoots)]
 		public async Task TestTrustedRoots (TestContext ctx, CancellationToken cancellationToken,
-			ConnectionTestProvider provider, HttpsTestParameters parameters,
-			HttpsTestRunner runner)
+			ConnectionTestProvider provider, HttpValidationTestParameters parameters,
+			HttpValidationTestRunner runner)
 		{
 			await runner.Run (ctx, cancellationToken);
 		}
@@ -89,8 +89,8 @@ namespace Xamarin.WebTests.Tests
 		[ConnectionTestFlags (ConnectionTestFlags.RequireTrustedRoots)]
 		[ConnectionTestCategory (ConnectionTestCategory.CertificateStore)]
 		public async Task TestCertificateStore (TestContext ctx, CancellationToken cancellationToken,
-			ConnectionTestProvider provider, HttpsTestParameters parameters,
-			HttpsTestRunner runner)
+			ConnectionTestProvider provider, HttpValidationTestParameters parameters,
+			HttpValidationTestRunner runner)
 		{
 			await runner.Run (ctx, cancellationToken);
 		}
@@ -100,8 +100,8 @@ namespace Xamarin.WebTests.Tests
 		[ConnectionTestFlags (ConnectionTestFlags.RequireTrustedRoots)]
 		[ConnectionTestCategory (ConnectionTestCategory.MartinTest)]
 		public async Task MartinTest (TestContext ctx, CancellationToken cancellationToken,
-			ConnectionTestProvider provider, HttpsTestParameters parameters,
-			HttpsTestRunner runner)
+			ConnectionTestProvider provider, HttpValidationTestParameters parameters,
+			HttpValidationTestRunner runner)
 		{
 			await runner.Run (ctx, cancellationToken);
 		}

@@ -1,5 +1,5 @@
 ﻿//
-// HttpsTestParametersAttribute.cs
+// HttpValidationTestParametersAttribute.cs
 //
 // Author:
 //       Martin Baulig <martin.baulig@xamarin.com>
@@ -34,24 +34,24 @@ namespace Xamarin.WebTests.TestFramework
 	using TestRunners;
 
 	[AttributeUsage (AttributeTargets.Class, AllowMultiple = false)]
-	public class HttpsTestParametersAttribute : TestParameterAttribute, ITestParameterSource<HttpsTestParameters>
+	public class HttpValidationTestParametersAttribute : TestParameterAttribute, ITestParameterSource<HttpValidationTestParameters>
 	{
 		public ConnectionTestType? Type {
 			get; set;
 		}
 
-		public HttpsTestParametersAttribute (string filter = null)
+		public HttpValidationTestParametersAttribute (string filter = null)
 			: base (filter, TestFlags.Browsable | TestFlags.ContinueOnError)
 		{
 		}
 
-		public HttpsTestParametersAttribute (ConnectionTestType type)
+		public HttpValidationTestParametersAttribute (ConnectionTestType type)
 			: base (null, TestFlags.Browsable | TestFlags.ContinueOnError)
 		{
 			Type = type;
 		}
 
-		public IEnumerable<HttpsTestParameters> GetParameters (TestContext ctx, string filter)
+		public IEnumerable<HttpValidationTestParameters> GetParameters (TestContext ctx, string filter)
 		{
 			if (filter != null)
 				throw new NotImplementedException ();
@@ -59,10 +59,10 @@ namespace Xamarin.WebTests.TestFramework
 			var category = ctx.GetParameter<ConnectionTestCategory> ();
 
 			if (Type != null)
-				yield return HttpsTestRunner.GetParameters (ctx, category, Type.Value);
+				yield return HttpValidationTestRunner.GetParameters (ctx, category, Type.Value);
 
 			foreach (var type in ConnectionTestRunner.GetConnectionTestTypes (ctx, category))
-				yield return HttpsTestRunner.GetParameters (ctx, category, type);
+				yield return HttpValidationTestRunner.GetParameters (ctx, category, type);
 		}
 	}
 }

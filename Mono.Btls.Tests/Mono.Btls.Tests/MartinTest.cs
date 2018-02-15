@@ -135,7 +135,7 @@ namespace Mono.Btls.Tests
 		public Task TestWeb (
 			TestContext ctx, CancellationToken cancellationToken,
 			[ConnectionTestProvider ("btls")] ConnectionTestProvider provider,
-			HttpsTestParameters parameters, HttpsTestRunner runner)
+			HttpValidationTestParameters parameters, HttpValidationTestRunner runner)
 		{
 			return runner.Run (ctx, cancellationToken);
 		}

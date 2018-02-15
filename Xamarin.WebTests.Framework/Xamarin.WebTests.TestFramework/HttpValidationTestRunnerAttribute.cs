@@ -1,5 +1,5 @@
 ﻿//
-// HttpsTestRunnerAttribute.cs
+// HttpValidationTestRunnerAttribute.cs
 //
 // Author:
 //       Martin Baulig <martin.baulig@xamarin.com>
@@ -38,12 +38,12 @@ namespace Xamarin.WebTests.TestFramework
 	using Resources;
 
 	[AttributeUsage (AttributeTargets.Class, AllowMultiple = false)]
-	public sealed class HttpsTestRunnerAttribute : TestHostAttribute, ITestHost<HttpsTestRunner>
+	public sealed class HttpValidationTestRunnerAttribute : TestHostAttribute, ITestHost<HttpValidationTestRunner>
 	{
 		HttpServerFlags serverFlags;
 
-		public HttpsTestRunnerAttribute (HttpServerFlags serverFlags = HttpServerFlags.None)
-			: base (typeof (HttpsTestRunnerAttribute))
+		public HttpValidationTestRunnerAttribute (HttpServerFlags serverFlags = HttpServerFlags.None)
+			: base (typeof (HttpValidationTestRunnerAttribute))
 		{
 			this.serverFlags = serverFlags;
 		}
@@ -59,11 +59,11 @@ namespace Xamarin.WebTests.TestFramework
 			return flags;
 		}
 
-		public HttpsTestRunner CreateInstance (TestContext ctx)
+		public HttpValidationTestRunner CreateInstance (TestContext ctx)
 		{
 			var provider = ctx.GetParameter<ConnectionTestProvider> ();
 
-			var parameters = ctx.GetParameter<HttpsTestParameters> ();
+			var parameters = ctx.GetParameter<HttpValidationTestParameters> ();
 
 			ProtocolVersions protocolVersion;
 			if (ctx.TryGetParameter<ProtocolVersions> (out protocolVersion))
@@ -100,7 +100,7 @@ namespace Xamarin.WebTests.TestFramework
 				uri = new Uri (string.Format ("https://{0}/", parameters.TargetHost));
 			}
 
-			return new HttpsTestRunner (parameters.EndPoint, parameters, provider, uri, flags);
+			return new HttpValidationTestRunner (parameters.EndPoint, parameters, provider, uri, flags);
 		}
 	}
 }

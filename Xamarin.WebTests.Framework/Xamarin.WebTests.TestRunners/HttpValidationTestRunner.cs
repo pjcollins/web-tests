@@ -1,4 +1,5 @@
-﻿// HttpsTestRunner.cs
+﻿//
+// HttpValidationTestRunner.cs
 //
 // Author:
 //       Martin Baulig <martin.baulig@xamarin.com>
@@ -49,9 +50,9 @@ namespace Xamarin.WebTests.TestRunners
 	using Server;
 	using Resources;
 
-	[HttpsTestRunner]
-	[FriendlyName ("[HttpsTestRunner]")]
-	public class HttpsTestRunner : AbstractConnection
+	[HttpValidationTestRunner]
+	[FriendlyName ("[HttpValidationTestRunner]")]
+	public class HttpValidationTestRunner : AbstractConnection
 	{
 		public ConnectionTestProvider Provider {
 			get;
@@ -73,16 +74,16 @@ namespace Xamarin.WebTests.TestRunners
 			get;
 		}
 
-		new public HttpsTestParameters Parameters {
-			get { return (HttpsTestParameters)base.Parameters; }
+		new public HttpValidationTestParameters Parameters {
+			get { return (HttpValidationTestParameters)base.Parameters; }
 		}
 
 		public string ME {
 			get;
 		}
 
-		public HttpsTestRunner (IPortableEndPoint endpoint, HttpsTestParameters parameters,
-		                        ConnectionTestProvider provider, Uri uri, HttpServerFlags flags)
+		public HttpValidationTestRunner (IPortableEndPoint endpoint, HttpValidationTestParameters parameters,
+		                                 ConnectionTestProvider provider, Uri uri, HttpServerFlags flags)
 			: base (endpoint, parameters)
 		{
 			Provider = provider;
@@ -106,7 +107,7 @@ namespace Xamarin.WebTests.TestRunners
 
 		const ConnectionTestType MartinTest = ConnectionTestType.RejectClientCertificate;
 
-		public static HttpsTestParameters GetParameters (TestContext ctx, ConnectionTestCategory category, ConnectionTestType type)
+		public static HttpValidationTestParameters GetParameters (TestContext ctx, ConnectionTestCategory category, ConnectionTestType type)
 		{
 			var certificateProvider = DependencyInjector.Get<ICertificateProvider> ();
 			var acceptAll = certificateProvider.AcceptAll ();
@@ -121,18 +122,18 @@ namespace Xamarin.WebTests.TestRunners
 
 			switch (effectiveType) {
 			case ConnectionTestType.Default:
-				return new HttpsTestParameters (category, type, name, ResourceManager.SelfSignedServerCertificate) {
+				return new HttpValidationTestParameters (category, type, name, ResourceManager.SelfSignedServerCertificate) {
 					ClientCertificateValidator = acceptAll
 				};
 
 			case ConnectionTestType.AcceptFromLocalCA:
-				return new HttpsTestParameters (category, type, name, ResourceManager.ServerCertificateFromCA) {
+				return new HttpValidationTestParameters (category, type, name, ResourceManager.ServerCertificateFromCA) {
 					ClientCertificateValidator = acceptFromLocalCA
 				};
 
 			case ConnectionTestType.NoValidator:
 				// The default validator only allows ResourceManager.SelfSignedServerCertificate.
-				return new HttpsTestParameters (category, type, name, ResourceManager.ServerCertificateFromCA) {
+				return new HttpValidationTestParameters (category, type, name, ResourceManager.ServerCertificateFromCA) {
 					ExpectedStatus = HttpStatusCode.InternalServerError,
 					ExpectedError = WebExceptionStatus.TrustFailure,
 					Flags = HttpOperationFlags.ClientAbortsHandshake
@@ -140,7 +141,7 @@ namespace Xamarin.WebTests.TestRunners
 
 			case ConnectionTestType.RejectAll:
 				// Explicit validator overrides the default ServicePointManager.ServerCertificateValidationCallback.
-				return new HttpsTestParameters (category, type, name, ResourceManager.SelfSignedServerCertificate) {
+				return new HttpValidationTestParameters (category, type, name, ResourceManager.SelfSignedServerCertificate) {
 					ClientCertificateValidator = rejectAll,
 					ExpectedStatus = HttpStatusCode.InternalServerError,
 					ExpectedError = WebExceptionStatus.TrustFailure,
@@ -149,7 +150,7 @@ namespace Xamarin.WebTests.TestRunners
 
 			case ConnectionTestType.UnrequestedClientCertificate:
 				// Provide a client certificate, but do not require it.
-				return new HttpsTestParameters (category, type, name, ResourceManager.SelfSignedServerCertificate) {
+				return new HttpValidationTestParameters (category, type, name, ResourceManager.SelfSignedServerCertificate) {
 					ClientCertificate = ResourceManager.PenguinCertificate, ClientCertificateValidator = acceptSelfSigned,
 					ServerCertificateValidator = acceptNull
 				};
@@ -161,14 +162,14 @@ namespace Xamarin.WebTests.TestRunners
 				 * FIXME:
 				 * SslStream with Mono's old implementation fails here.
 				 */
-				return new HttpsTestParameters (category, type, name, ResourceManager.SelfSignedServerCertificate) {
+				return new HttpValidationTestParameters (category, type, name, ResourceManager.SelfSignedServerCertificate) {
 					ClientCertificate = ResourceManager.MonkeyCertificate, ClientCertificateValidator = acceptSelfSigned,
 					AskForClientCertificate = true, ServerCertificateValidator = acceptFromLocalCA
 				};
 
 			case ConnectionTestType.RequireClientCertificate:
 				// Require client certificate.
-				return new HttpsTestParameters (category, type, name, ResourceManager.SelfSignedServerCertificate) {
+				return new HttpValidationTestParameters (category, type, name, ResourceManager.SelfSignedServerCertificate) {
 					ClientCertificate = ResourceManager.MonkeyCertificate, ClientCertificateValidator = acceptSelfSigned,
 					AskForClientCertificate = true, RequireClientCertificate = true,
 					ServerCertificateValidator = acceptFromLocalCA,
@@ -185,14 +186,14 @@ namespace Xamarin.WebTests.TestRunners
 				 * FIXME:
 				 * Mono with the old TLS implementation throws SecureChannelFailure.
 				 */
-				return new HttpsTestParameters (category, type, name, ResourceManager.SelfSignedServerCertificate) {
+				return new HttpValidationTestParameters (category, type, name, ResourceManager.SelfSignedServerCertificate) {
 					ClientCertificateValidator = acceptSelfSigned, AskForClientCertificate = true,
 					ServerCertificateValidator = acceptNull
 				};
 
 			case ConnectionTestType.RejectClientCertificate:
 				// Reject client certificate.
-				return new HttpsTestParameters (category, type, name, ResourceManager.SelfSignedServerCertificate) {
+				return new HttpValidationTestParameters (category, type, name, ResourceManager.SelfSignedServerCertificate) {
 					ClientCertificate = ResourceManager.MonkeyCertificate, ClientCertificateValidator = acceptSelfSigned,
 					ServerCertificateValidator = rejectAll,
 					AskForClientCertificate = true,
@@ -203,7 +204,7 @@ namespace Xamarin.WebTests.TestRunners
 
 			case ConnectionTestType.MissingClientCertificate:
 				// Missing client certificate.
-				return new HttpsTestParameters (category, type, name, ResourceManager.SelfSignedServerCertificate) {
+				return new HttpValidationTestParameters (category, type, name, ResourceManager.SelfSignedServerCertificate) {
 					ClientCertificateValidator = acceptSelfSigned,
 					AskForClientCertificate = true, RequireClientCertificate = true,
 					ExpectedStatus = HttpStatusCode.InternalServerError,
@@ -212,13 +213,13 @@ namespace Xamarin.WebTests.TestRunners
 				};
 
 			case ConnectionTestType.DontInvokeGlobalValidator:
-				return new HttpsTestParameters (category, type, name, ResourceManager.ServerCertificateFromCA) {
+				return new HttpValidationTestParameters (category, type, name, ResourceManager.ServerCertificateFromCA) {
 					ClientCertificateValidator = acceptAll,
 					GlobalValidationFlags = GlobalValidationFlags.SetToTestRunner | GlobalValidationFlags.MustNotInvoke
 				};
 
 			case ConnectionTestType.DontInvokeGlobalValidator2:
-				return new HttpsTestParameters (category, type, name, ResourceManager.ServerCertificateFromCA) {
+				return new HttpValidationTestParameters (category, type, name, ResourceManager.ServerCertificateFromCA) {
 					ClientCertificateValidator = rejectAll,
 					GlobalValidationFlags = GlobalValidationFlags.SetToTestRunner | GlobalValidationFlags.MustNotInvoke,
 					ExpectedStatus = HttpStatusCode.InternalServerError,
@@ -227,7 +228,7 @@ namespace Xamarin.WebTests.TestRunners
 				};
 
 			case ConnectionTestType.GlobalValidatorIsNull:
-				return new HttpsTestParameters (category, type, name, ResourceManager.SelfSignedServerCertificate) {
+				return new HttpValidationTestParameters (category, type, name, ResourceManager.SelfSignedServerCertificate) {
 					GlobalValidationFlags = GlobalValidationFlags.SetToNull,
 					ExpectedStatus = HttpStatusCode.InternalServerError,
 					ExpectedError = WebExceptionStatus.TrustFailure,
@@ -235,27 +236,27 @@ namespace Xamarin.WebTests.TestRunners
 				};
 
 			case ConnectionTestType.MustInvokeGlobalValidator:
-				return new HttpsTestParameters (category, type, name, ResourceManager.SelfSignedServerCertificate) {
+				return new HttpValidationTestParameters (category, type, name, ResourceManager.SelfSignedServerCertificate) {
 					GlobalValidationFlags = GlobalValidationFlags.SetToTestRunner |
 						GlobalValidationFlags.MustInvoke | GlobalValidationFlags.AlwaysSucceed
 				};
 
 			case ConnectionTestType.CheckChain:
-				return new HttpsTestParameters (category, type, name, ResourceManager.SelfSignedServerCertificate) {
+				return new HttpValidationTestParameters (category, type, name, ResourceManager.SelfSignedServerCertificate) {
 					GlobalValidationFlags = GlobalValidationFlags.CheckChain,
 					ExpectPolicyErrors = SslPolicyErrors.RemoteCertificateChainErrors | SslPolicyErrors.RemoteCertificateNameMismatch,
 					ExpectChainStatus = X509ChainStatusFlags.UntrustedRoot
 				};
 
 			case ConnectionTestType.ExternalServer:
-				return new HttpsTestParameters (category, type, name, CertificateResourceType.TlsTestXamDevNew) {
+				return new HttpValidationTestParameters (category, type, name, CertificateResourceType.TlsTestXamDevNew) {
 					ExternalServer = new Uri ("https://tlstest-1.xamdev.com/"),
 					GlobalValidationFlags = GlobalValidationFlags.CheckChain,
 					ExpectPolicyErrors = SslPolicyErrors.None
 				};
 
 			case ConnectionTestType.ServerCertificateWithCA:
-				var parameters = new HttpsTestParameters (category, type, name, ResourceManager.ServerCertificateWithCA) {
+				var parameters = new HttpValidationTestParameters (category, type, name, ResourceManager.ServerCertificateWithCA) {
 					GlobalValidationFlags = GlobalValidationFlags.SetToTestRunner,
 					ExpectChainStatus = X509ChainStatusFlags.UntrustedRoot
 				};
@@ -266,7 +267,7 @@ namespace Xamarin.WebTests.TestRunners
 				return parameters;
 
 			case ConnectionTestType.TrustedRootCA:
-				parameters = new HttpsTestParameters (category, type, name, ResourceManager.ServerCertificateFromCA) {
+				parameters = new HttpValidationTestParameters (category, type, name, ResourceManager.ServerCertificateFromCA) {
 					GlobalValidationFlags = GlobalValidationFlags.CheckChain,
 					ExpectPolicyErrors = SslPolicyErrors.None, OverrideTargetHost = "Hamiller-Tube.local"
 				};
@@ -276,7 +277,7 @@ namespace Xamarin.WebTests.TestRunners
 				return parameters;
 
 			case ConnectionTestType.TrustedIntermediateCA:
-				parameters = new HttpsTestParameters (category, type, name, ResourceManager.GetCertificate (CertificateResourceType.IntermediateServerCertificateBare)) {
+				parameters = new HttpValidationTestParameters (category, type, name, ResourceManager.GetCertificate (CertificateResourceType.IntermediateServerCertificateBare)) {
 					GlobalValidationFlags = GlobalValidationFlags.SetToTestRunner,
 					ExpectChainStatus = X509ChainStatusFlags.NoError,
 					ExpectPolicyErrors = SslPolicyErrors.None, OverrideTargetHost = "Intermediate-Server.local"
@@ -288,7 +289,7 @@ namespace Xamarin.WebTests.TestRunners
 				return parameters;
 
 			case ConnectionTestType.TrustedSelfSigned:
-				parameters = new HttpsTestParameters (category, type, name, ResourceManager.SelfSignedServerCertificate) {
+				parameters = new HttpValidationTestParameters (category, type, name, ResourceManager.SelfSignedServerCertificate) {
 					GlobalValidationFlags = GlobalValidationFlags.SetToTestRunner,
 					ExpectChainStatus = X509ChainStatusFlags.NoError,
 					ExpectPolicyErrors = SslPolicyErrors.None, OverrideTargetHost = "Hamiller-Tube.local"
@@ -299,7 +300,7 @@ namespace Xamarin.WebTests.TestRunners
 				return parameters;
 
 			case ConnectionTestType.HostNameMismatch:
-				parameters = new HttpsTestParameters (category, type, name, ResourceManager.ServerCertificateFromCA) {
+				parameters = new HttpValidationTestParameters (category, type, name, ResourceManager.ServerCertificateFromCA) {
 					GlobalValidationFlags = GlobalValidationFlags.CheckChain,
 					ExpectPolicyErrors = SslPolicyErrors.RemoteCertificateNameMismatch,
 				};
@@ -309,7 +310,7 @@ namespace Xamarin.WebTests.TestRunners
 				return parameters;
 
 			case ConnectionTestType.IntermediateServerCertificate:
-				parameters = new HttpsTestParameters (category, type, name, ResourceManager.GetCertificate (CertificateResourceType.IntermediateServerCertificate)) {
+				parameters = new HttpValidationTestParameters (category, type, name, ResourceManager.GetCertificate (CertificateResourceType.IntermediateServerCertificate)) {
 					GlobalValidationFlags = GlobalValidationFlags.SetToTestRunner,
 					ExpectChainStatus = X509ChainStatusFlags.NoError,
 					ExpectPolicyErrors = SslPolicyErrors.None, OverrideTargetHost = "Intermediate-Server.local"
@@ -322,7 +323,7 @@ namespace Xamarin.WebTests.TestRunners
 				return parameters;
 
 			case ConnectionTestType.IntermediateServerCertificateFull:
-				parameters = new HttpsTestParameters (category, type, name, ResourceManager.GetCertificate (CertificateResourceType.IntermediateServerCertificateFull)) {
+				parameters = new HttpValidationTestParameters (category, type, name, ResourceManager.GetCertificate (CertificateResourceType.IntermediateServerCertificateFull)) {
 					GlobalValidationFlags = GlobalValidationFlags.SetToTestRunner,
 					ExpectChainStatus = X509ChainStatusFlags.NoError,
 					ExpectPolicyErrors = SslPolicyErrors.None, OverrideTargetHost = "Intermediate-Server.local"
@@ -336,7 +337,7 @@ namespace Xamarin.WebTests.TestRunners
 				return parameters;
 
 			case ConnectionTestType.IntermediateServerCertificateBare:
-				parameters = new HttpsTestParameters (category, type, name, ResourceManager.GetCertificate (CertificateResourceType.IntermediateServerCertificateBare)) {
+				parameters = new HttpValidationTestParameters (category, type, name, ResourceManager.GetCertificate (CertificateResourceType.IntermediateServerCertificateBare)) {
 					GlobalValidationFlags = GlobalValidationFlags.SetToTestRunner,
 					ExpectPolicyErrors = SslPolicyErrors.RemoteCertificateChainErrors, OverrideTargetHost = "Intermediate-Server.local"
 				};
@@ -347,7 +348,7 @@ namespace Xamarin.WebTests.TestRunners
 				return parameters;
 
 			case ConnectionTestType.CertificateStore:
-				parameters = new HttpsTestParameters (category, type, name, ResourceManager.GetCertificate (CertificateResourceType.ServerFromTrustedIntermediateCABare)) {
+				parameters = new HttpValidationTestParameters (category, type, name, ResourceManager.GetCertificate (CertificateResourceType.ServerFromTrustedIntermediateCABare)) {
 					GlobalValidationFlags = GlobalValidationFlags.SetToTestRunner,
 					ExpectChainStatus = X509ChainStatusFlags.NoError,
 					ExpectPolicyErrors = SslPolicyErrors.None, OverrideTargetHost = "Trusted-IM-Server.local"
@@ -355,7 +356,7 @@ namespace Xamarin.WebTests.TestRunners
 				return parameters;
 
 			case ConnectionTestType.Abort:
-				return new HttpsTestParameters (category, type, name, ResourceManager.SelfSignedServerCertificate) {
+				return new HttpValidationTestParameters (category, type, name, ResourceManager.SelfSignedServerCertificate) {
 					ClientCertificateValidator = acceptAll,
 					ExpectedStatus = HttpStatusCode.InternalServerError,
 					ExpectedError = WebExceptionStatus.RequestCanceled,
@@ -583,11 +584,11 @@ namespace Xamarin.WebTests.TestRunners
 
 		class Operation : HttpOperation
 		{
-			public HttpsTestRunner Parent {
+			public HttpValidationTestRunner Parent {
 				get;
 			}
 
-			public Operation (HttpsTestRunner parent, Handler handler)
+			public Operation (HttpValidationTestRunner parent, Handler handler)
 				: base (parent.Server, parent.ME, handler, parent.Parameters.Flags,
 				        parent.Parameters.ExpectedStatus, parent.Parameters.ExpectedError)
 			{

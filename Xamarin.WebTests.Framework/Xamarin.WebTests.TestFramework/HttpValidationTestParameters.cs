@@ -1,5 +1,5 @@
 ﻿//
-// HttpsTestParameters.cs
+// HttpValidationTestParameters.cs
 //
 // Author:
 //       Martin Baulig <martin.baulig@xamarin.com>
@@ -33,28 +33,28 @@ namespace Xamarin.WebTests.TestFramework
 	using HttpFramework;
 	using Resources;
 
-	[HttpsTestParameters]
-	public class HttpsTestParameters : ConnectionTestParameters
+	[HttpValidationTestParameters]
+	public class HttpValidationTestParameters : ConnectionTestParameters
 	{
 		public ConnectionTestType Type {
 			get;
 			private set;
 		}
 
-		public HttpsTestParameters (ConnectionTestCategory category, ConnectionTestType type, string identifier, X509Certificate certificate)
+		public HttpValidationTestParameters (ConnectionTestCategory category, ConnectionTestType type, string identifier, X509Certificate certificate)
 			: base (category, identifier, certificate)
 		{
 			Type = type;
 		}
 
-		public HttpsTestParameters (ConnectionTestCategory category, ConnectionTestType type, string identifier, CertificateResourceType certificate)
+		public HttpValidationTestParameters (ConnectionTestCategory category, ConnectionTestType type, string identifier, CertificateResourceType certificate)
 			: base (category, identifier, null)
 		{
 			Type = type;
 			CertificateType = certificate;
 		}
 
-		protected HttpsTestParameters (HttpsTestParameters other)
+		protected HttpValidationTestParameters (HttpValidationTestParameters other)
 			: base (other)
 		{
 			Type = other.Type;
@@ -73,7 +73,7 @@ namespace Xamarin.WebTests.TestFramework
 
 		public override ConnectionParameters DeepClone ()
 		{
-			return new HttpsTestParameters (this);
+			return new HttpValidationTestParameters (this);
 		}
 
 		public CertificateResourceType? CertificateType {

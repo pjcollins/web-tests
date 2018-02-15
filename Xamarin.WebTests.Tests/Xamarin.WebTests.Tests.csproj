@@ -31,7 +31,7 @@
     <Compile Include="Xamarin.WebTests.Tests\TestHttpClient.cs" />
     <Compile Include="Xamarin.WebTests.Tests\TestFork.cs" />
     <Compile Include="Xamarin.WebTests.Tests\RedirectStatusAttribute.cs" />
-    <Compile Include="Xamarin.WebTests.Tests\TestHttps.cs" />
+    <Compile Include="Xamarin.WebTests.Tests\TestHttpValidation.cs" />
     <Compile Include="Xamarin.WebTests.Tests\TestSslStream.cs" />
     <Compile Include="Xamarin.WebTests.Tests\TestChunked.cs" />
     <Compile Include="Xamarin.WebTests.Tests\TestCertificates.cs" />
