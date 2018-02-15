@@ -506,13 +506,13 @@ namespace Xamarin.WebTests.TestRunners
 			default:
 				return (hello, flags);
 			}
+		}
 
-			AuthenticationManager GetAuthenticationManager ()
-			{
-				var manager = new AuthenticationManager (AuthenticationType.NTLM, AuthenticationHandler.GetCredentials ());
-				var old = Interlocked.CompareExchange (ref authManager, manager, null);
-				return old ?? manager;
-			}
+		AuthenticationManager GetAuthenticationManager ()
+		{
+			var manager = new AuthenticationManager (AuthenticationType.NTLM, AuthenticationHandler.GetCredentials ());
+			var old = Interlocked.CompareExchange (ref authManager, manager, null);
+			return old ?? manager;
 		}
 
 		protected override InstrumentationOperation CreateOperation (
@@ -1462,6 +1462,10 @@ namespace Xamarin.WebTests.TestRunners
 				get;
 			}
 
+			public HttpOperationFlags OperationFlags {
+				get;
+			}
+
 			public bool IsSecondRequest {
 				get;
 				private set;
@@ -1496,6 +1500,152 @@ namespace Xamarin.WebTests.TestRunners
 					Target = new HelloWorldHandler (ME);
 					break;
 				}
+			}
+
+			public HttpInstrumentationHandler (HttpInstrumentationTestRunner parent, bool primary)
+				: base (parent.EffectiveType.ToString ())
+			{
+				TestRunner = parent;
+				ME = $"{GetType ().Name}({parent.EffectiveType})";
+				readyTcs = new TaskCompletionSource<bool> ();
+				Flags = RequestFlags.KeepAlive;
+
+				switch (parent.EffectiveType) {
+				case HttpInstrumentationTestType.RedirectOnSameConnection:
+				case HttpInstrumentationTestType.RedirectNoLength:
+					Target = new HelloWorldHandler (ME);
+					break;
+				}
+
+				switch (parent.EffectiveType) {
+				case HttpInstrumentationTestType.ReuseConnection:
+					CloseConnection = !primary;
+					break;
+				case HttpInstrumentationTestType.ReuseAfterPartialRead:
+					Content = ConnectionHandler.GetLargeStringContent (2500);
+					OperationFlags = HttpOperationFlags.ClientUsesNewConnection;
+					CloseConnection = !primary;
+					break;
+				case HttpInstrumentationTestType.ReuseConnection2:
+					Content = HttpContent.HelloWorld;
+					CloseConnection = !primary;
+					break;
+				case HttpInstrumentationTestType.CloseIdleConnection:
+				case HttpInstrumentationTestType.CloseCustomConnectionGroup:
+					CloseConnection = false;
+					break;
+				case HttpInstrumentationTestType.NtlmClosesConnection:
+					AuthManager = parent.GetAuthenticationManager ();
+					CloseConnection = true;
+					break;
+				case HttpInstrumentationTestType.NtlmReusesConnection:
+					AuthManager = parent.GetAuthenticationManager ();
+					CloseConnection = false;
+					break;
+				case HttpInstrumentationTestType.ParallelNtlm:
+				case HttpInstrumentationTestType.NtlmInstrumentation:
+				case HttpInstrumentationTestType.NtlmWhileQueued:
+				case HttpInstrumentationTestType.NtlmWhileQueued2:
+					AuthManager = parent.GetAuthenticationManager ();
+					CloseConnection = false;
+					break;
+				case HttpInstrumentationTestType.LargeHeader:
+				case HttpInstrumentationTestType.LargeHeader2:
+				case HttpInstrumentationTestType.SendResponseAsBlob:
+					Content = ConnectionHandler.TheQuickBrownFoxContent;
+					CloseConnection = true;
+					break;
+				case HttpInstrumentationTestType.CustomConnectionGroup:
+					OperationFlags = HttpOperationFlags.DontReuseConnection | HttpOperationFlags.ForceNewConnection;
+					CloseConnection = !primary;
+					break;
+				case HttpInstrumentationTestType.ReuseCustomConnectionGroup:
+				case HttpInstrumentationTestType.ReadTimeout:
+				case HttpInstrumentationTestType.AbortResponse:
+					CloseConnection = !primary;
+					break;
+				case HttpInstrumentationTestType.CloseRequestStream:
+					OperationFlags = HttpOperationFlags.AbortAfterClientExits;
+					CloseConnection = !primary;
+					break;
+				case HttpInstrumentationTestType.RedirectOnSameConnection:
+					Target = new HelloWorldHandler (ME);
+					CloseConnection = false;
+					break;
+				case HttpInstrumentationTestType.RedirectNoLength:
+					Target = new HelloWorldHandler (ME);
+					OperationFlags |= HttpOperationFlags.RedirectOnNewConnection;
+					CloseConnection = false;
+					break;
+				case HttpInstrumentationTestType.PutChunked:
+				case HttpInstrumentationTestType.PutChunkDontCloseRequest:
+					CloseConnection = true;
+					break;
+				case HttpInstrumentationTestType.ServerAbortsRedirect:
+					OperationFlags = HttpOperationFlags.ServerAbortsRedirection;
+					CloseConnection = false;
+					break;
+				case HttpInstrumentationTestType.ServerAbortsPost:
+					OperationFlags = HttpOperationFlags.ServerAbortsRedirection;
+					CloseConnection = true;
+					break;
+				case HttpInstrumentationTestType.PostChunked:
+					OperationFlags = HttpOperationFlags.DontReadRequestBody;
+					CloseConnection = false;
+					break;
+				case HttpInstrumentationTestType.EntityTooBig:
+				case HttpInstrumentationTestType.ClientAbortsPost:
+					OperationFlags = HttpOperationFlags.AbortAfterClientExits | HttpOperationFlags.DontReadRequestBody;
+					CloseConnection = false;
+					break;
+				case HttpInstrumentationTestType.PostContentLength:
+					OperationFlags = HttpOperationFlags.DontReadRequestBody;
+					CloseConnection = false;
+					break;
+				case HttpInstrumentationTestType.SimpleGZip:
+					Content = HttpContent.TheQuickBrownFox;
+					CloseConnection = true;
+					break;
+				case HttpInstrumentationTestType.TestResponseStream:
+					Content = new StringContent ("AAAA");
+					CloseConnection = true;
+					break;
+				case HttpInstrumentationTestType.LargeChunkRead:
+					Content = HttpContent.TheQuickBrownFoxChunked;
+					CloseConnection = false;
+					break;
+				case HttpInstrumentationTestType.LargeGZipRead:
+					Content = ConnectionHandler.GetLargeChunkedContent (16384);
+					CloseConnection = false;
+					break;
+				case HttpInstrumentationTestType.GZipWithLength:
+					Content = ConnectionHandler.GetLargeStringContent (16384);
+					CloseConnection = false;
+					break;
+				case HttpInstrumentationTestType.ResponseStreamCheckLength2:
+					Content = HttpContent.HelloChunked;
+					CloseConnection = false;
+					break;
+				case HttpInstrumentationTestType.ResponseStreamCheckLength:
+					Content = HttpContent.HelloWorld;
+					CloseConnection = false;
+					break;
+				case HttpInstrumentationTestType.GetNoLength:
+				case HttpInstrumentationTestType.ImplicitHost:
+				case HttpInstrumentationTestType.CustomHost:
+				case HttpInstrumentationTestType.CustomHostWithPort:
+				case HttpInstrumentationTestType.CustomHostDefaultPort:
+					CloseConnection = false;
+					break;
+				default:
+					throw new NotSupportedException (parent.EffectiveType.ToString ());
+				}
+
+				if (CloseConnection)
+					Flags |= RequestFlags.CloseConnection;
+
+				if (AuthManager != null)
+					Target = new HelloWorldHandler (ME);
 			}
 
 			HttpInstrumentationHandler (HttpInstrumentationHandler other)
