@@ -403,113 +403,37 @@ namespace Xamarin.WebTests.TestRunners
 			var postHello = new PostHandler (EffectiveType.ToString (), HttpContent.HelloWorld);
 			var chunkedPost = new PostHandler (EffectiveType.ToString (), HttpContent.HelloChunked, TransferMode.Chunked);
 
-			HttpOperationFlags flags = HttpOperationFlags.None;
-
 			switch (EffectiveType) {
 			case HttpInstrumentationTestType.InvalidDataDuringHandshake:
 			case HttpInstrumentationTestType.AbortDuringHandshake:
 			case HttpInstrumentationTestType.CancelMainWhileQueued:
 				return (hello, HttpOperationFlags.ServerAbortsHandshake | HttpOperationFlags.AbortAfterClientExits);
 			case HttpInstrumentationTestType.SimpleNtlm:
-				return (new AuthenticationHandler (AuthenticationType.NTLM, hello), flags);
-			case HttpInstrumentationTestType.ReuseConnection:
-				return (new HttpInstrumentationHandler (this, null, null, !primary), flags);
-			case HttpInstrumentationTestType.ReuseAfterPartialRead:
-				return (new HttpInstrumentationHandler (
-					this, null, ConnectionHandler.GetLargeStringContent (2500), !primary),
-					HttpOperationFlags.ClientUsesNewConnection);
-			case HttpInstrumentationTestType.ReuseConnection2:
-				if (primary)
-					return (new HttpInstrumentationHandler (this, null, HttpContent.HelloWorld, false), flags);
-				return (new HttpInstrumentationHandler (this, null, HttpContent.HelloWorld, true), flags);
+				return (new AuthenticationHandler (AuthenticationType.NTLM, hello), HttpOperationFlags.None);
 			case HttpInstrumentationTestType.SimplePost:
-				return (postHello, flags);
+				return (postHello, HttpOperationFlags.None);
 			case HttpInstrumentationTestType.SimpleRedirect:
-				return (new RedirectHandler (hello, HttpStatusCode.Redirect), flags);
+				return (new RedirectHandler (hello, HttpStatusCode.Redirect), HttpOperationFlags.None);
 			case HttpInstrumentationTestType.PostNtlm:
-				return (new AuthenticationHandler (AuthenticationType.NTLM, postHello), flags);
+				return (new AuthenticationHandler (AuthenticationType.NTLM, postHello), HttpOperationFlags.None);
 			case HttpInstrumentationTestType.PostRedirect:
-				return (new RedirectHandler (postHello, HttpStatusCode.TemporaryRedirect), flags);
+				return (new RedirectHandler (postHello, HttpStatusCode.TemporaryRedirect), HttpOperationFlags.None);
 			case HttpInstrumentationTestType.NtlmChunked:
-				return (new AuthenticationHandler (AuthenticationType.NTLM, chunkedPost), flags);
+				return (new AuthenticationHandler (AuthenticationType.NTLM, chunkedPost), HttpOperationFlags.None);
 			case HttpInstrumentationTestType.Get404:
-				return (new GetHandler (EffectiveType.ToString (), null, HttpStatusCode.NotFound), flags);
-			case HttpInstrumentationTestType.CloseIdleConnection:
-			case HttpInstrumentationTestType.CloseCustomConnectionGroup:
-				return (new HttpInstrumentationHandler (this, null, null, false), flags);
-			case HttpInstrumentationTestType.NtlmClosesConnection:
-				return (new HttpInstrumentationHandler (this, GetAuthenticationManager (), null, true), flags);
-			case HttpInstrumentationTestType.NtlmReusesConnection:
-				return (new HttpInstrumentationHandler (this, GetAuthenticationManager (), null, false), flags);
-			case HttpInstrumentationTestType.ParallelNtlm:
-			case HttpInstrumentationTestType.NtlmInstrumentation:
-			case HttpInstrumentationTestType.NtlmWhileQueued:
-			case HttpInstrumentationTestType.NtlmWhileQueued2:
-				return (new HttpInstrumentationHandler (this, GetAuthenticationManager (), null, false), flags);
-			case HttpInstrumentationTestType.LargeHeader:
-			case HttpInstrumentationTestType.LargeHeader2:
-			case HttpInstrumentationTestType.SendResponseAsBlob:
-				return (new HttpInstrumentationHandler (this, null, ConnectionHandler.TheQuickBrownFoxContent, true), flags);
-			case HttpInstrumentationTestType.CustomConnectionGroup:
-				return (new HttpInstrumentationHandler (this, null, null, !primary),
-					HttpOperationFlags.DontReuseConnection | HttpOperationFlags.ForceNewConnection);
-			case HttpInstrumentationTestType.ReuseCustomConnectionGroup:
-			case HttpInstrumentationTestType.ReadTimeout:
-			case HttpInstrumentationTestType.AbortResponse:
-				return (new HttpInstrumentationHandler (this, null, null, !primary), flags);
-			case HttpInstrumentationTestType.CloseRequestStream:
-				return (new HttpInstrumentationHandler (this, null, null, !primary), HttpOperationFlags.AbortAfterClientExits);
-			case HttpInstrumentationTestType.RedirectOnSameConnection:
-				return (new HttpInstrumentationHandler (this, null, null, false), flags);
+				return (new GetHandler (EffectiveType.ToString (), null, HttpStatusCode.NotFound), HttpOperationFlags.None);
 			case HttpInstrumentationTestType.RedirectNoReuse:
-				return (new RedirectHandler (hello, HttpStatusCode.Redirect), flags);
-			case HttpInstrumentationTestType.RedirectNoLength:
-				return (new HttpInstrumentationHandler (this, null, null, false), flags | HttpOperationFlags.RedirectOnNewConnection);
-			case HttpInstrumentationTestType.PutChunked:
-			case HttpInstrumentationTestType.PutChunkDontCloseRequest:
-				return (new HttpInstrumentationHandler (this, null, null, true), flags);
-			case HttpInstrumentationTestType.ServerAbortsRedirect:
-				return (new HttpInstrumentationHandler (this, null, null, false), HttpOperationFlags.ServerAbortsRedirection);
-			case HttpInstrumentationTestType.ServerAbortsPost:
-				return (new HttpInstrumentationHandler (this, null, null, true), HttpOperationFlags.ServerAbortsRedirection);
-			case HttpInstrumentationTestType.PostChunked:
-				return (new HttpInstrumentationHandler (this, null, null, false), HttpOperationFlags.DontReadRequestBody);
-			case HttpInstrumentationTestType.EntityTooBig:
-			case HttpInstrumentationTestType.ClientAbortsPost:
-				return (new HttpInstrumentationHandler (this, null, null, false),
-					HttpOperationFlags.AbortAfterClientExits | HttpOperationFlags.DontReadRequestBody);
-			case HttpInstrumentationTestType.PostContentLength:
-				return (new HttpInstrumentationHandler (this, null, null, false),
-					HttpOperationFlags.DontReadRequestBody);
+				return (new RedirectHandler (hello, HttpStatusCode.Redirect), HttpOperationFlags.None);
 			case HttpInstrumentationTestType.GetChunked:
-				return (new GetHandler (EffectiveType.ToString (), HttpContent.HelloChunked), flags);
-			case HttpInstrumentationTestType.SimpleGZip:
-				return (new HttpInstrumentationHandler (this, null, HttpContent.TheQuickBrownFox, true), flags);
-			case HttpInstrumentationTestType.TestResponseStream:
-				return (new HttpInstrumentationHandler (this, null, new StringContent ("AAAA"), true), flags);
-			case HttpInstrumentationTestType.LargeChunkRead:
-				return (new HttpInstrumentationHandler (this, null, HttpContent.TheQuickBrownFoxChunked, false), flags);
-			case HttpInstrumentationTestType.LargeGZipRead:
-				return (new HttpInstrumentationHandler (this, null, ConnectionHandler.GetLargeChunkedContent (16384), false), flags);
-			case HttpInstrumentationTestType.GZipWithLength:
-				return (new HttpInstrumentationHandler (this, null, ConnectionHandler.GetLargeStringContent (16384), false), flags);
-			case HttpInstrumentationTestType.ResponseStreamCheckLength2:
-				return (new HttpInstrumentationHandler (this, null, HttpContent.HelloChunked, false), flags);
-			case HttpInstrumentationTestType.ResponseStreamCheckLength:
-				return (new HttpInstrumentationHandler (this, null, HttpContent.HelloWorld, false), flags);
-			case HttpInstrumentationTestType.GetNoLength:
-			case HttpInstrumentationTestType.ImplicitHost:
-			case HttpInstrumentationTestType.CustomHost:
-			case HttpInstrumentationTestType.CustomHostWithPort:
-			case HttpInstrumentationTestType.CustomHostDefaultPort:
-				return (new HttpInstrumentationHandler (this, null, null, false), flags);
+				return (new GetHandler (EffectiveType.ToString (), HttpContent.HelloChunked), HttpOperationFlags.None);
 			case HttpInstrumentationTestType.Simple:
 			case HttpInstrumentationTestType.ParallelRequests:
 			case HttpInstrumentationTestType.SimpleQueuedRequest:
 			case HttpInstrumentationTestType.CancelQueuedRequest:
-				return (hello, flags);
+				return (hello, HttpOperationFlags.None);
 			default:
-				throw ctx.AssertFail (EffectiveType);
+				var handler = new HttpInstrumentationHandler (this, primary);
+				return (handler, handler.OperationFlags);
 			}
 		}
 
