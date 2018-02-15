@@ -503,8 +503,13 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.CustomHostWithPort:
 			case HttpInstrumentationTestType.CustomHostDefaultPort:
 				return (new HttpInstrumentationHandler (this, null, null, false), flags);
-			default:
+			case HttpInstrumentationTestType.Simple:
+			case HttpInstrumentationTestType.ParallelRequests:
+			case HttpInstrumentationTestType.SimpleQueuedRequest:
+			case HttpInstrumentationTestType.CancelQueuedRequest:
 				return (hello, flags);
+			default:
+				throw ctx.AssertFail (EffectiveType);
 			}
 		}
 
@@ -1600,7 +1605,6 @@ namespace Xamarin.WebTests.TestRunners
 					break;
 				case HttpInstrumentationTestType.PostContentLength:
 					OperationFlags = HttpOperationFlags.DontReadRequestBody;
-					CloseConnection = false;
 					break;
 				case HttpInstrumentationTestType.SimpleGZip:
 					Content = HttpContent.TheQuickBrownFox;
