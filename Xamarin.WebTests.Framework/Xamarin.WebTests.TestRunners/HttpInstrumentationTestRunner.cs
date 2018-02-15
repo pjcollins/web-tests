@@ -1378,6 +1378,10 @@ namespace Xamarin.WebTests.TestRunners
 				get;
 			}
 
+			public HttpContent ExpectedContent {
+				get;
+			}
+
 			public IPEndPoint RemoteEndPoint {
 				get;
 				private set;
@@ -1405,31 +1409,6 @@ namespace Xamarin.WebTests.TestRunners
 			}
 
 			TaskCompletionSource<bool> readyTcs;
-
-			public HttpInstrumentationHandler (HttpInstrumentationTestRunner parent, AuthenticationManager authManager,
-							   HttpContent content, bool closeConnection)
-				: base (parent.EffectiveType.ToString ())
-			{
-				TestRunner = parent;
-				AuthManager = authManager;
-				Content = content;
-				CloseConnection = closeConnection;
-				ME = $"{GetType ().Name}({parent.EffectiveType})";
-				readyTcs = new TaskCompletionSource<bool> ();
-				Flags = RequestFlags.KeepAlive;
-				if (closeConnection)
-					Flags |= RequestFlags.CloseConnection;
-
-				if (AuthManager != null)
-					Target = new HelloWorldHandler (ME);
-
-				switch (parent.EffectiveType) {
-				case HttpInstrumentationTestType.RedirectOnSameConnection:
-				case HttpInstrumentationTestType.RedirectNoLength:
-					Target = new HelloWorldHandler (ME);
-					break;
-				}
-			}
 
 			public HttpInstrumentationHandler (HttpInstrumentationTestRunner parent, bool primary)
 				: base (parent.EffectiveType.ToString ())
@@ -1540,25 +1519,33 @@ namespace Xamarin.WebTests.TestRunners
 					break;
 				case HttpInstrumentationTestType.LargeChunkRead:
 					Content = HttpContent.TheQuickBrownFoxChunked;
+					ExpectedContent = Content.RemoveTransferEncoding ();
 					CloseConnection = false;
 					break;
 				case HttpInstrumentationTestType.LargeGZipRead:
 					Content = ConnectionHandler.GetLargeChunkedContent (16384);
+					ExpectedContent = Content.RemoveTransferEncoding ();
 					CloseConnection = false;
 					break;
 				case HttpInstrumentationTestType.GZipWithLength:
 					Content = ConnectionHandler.GetLargeStringContent (16384);
+					ExpectedContent = Content;
 					CloseConnection = false;
 					break;
 				case HttpInstrumentationTestType.ResponseStreamCheckLength2:
 					Content = HttpContent.HelloChunked;
+					ExpectedContent = Content.RemoveTransferEncoding ();
 					CloseConnection = false;
 					break;
 				case HttpInstrumentationTestType.ResponseStreamCheckLength:
 					Content = HttpContent.HelloWorld;
+					ExpectedContent = Content;
 					CloseConnection = false;
 					break;
 				case HttpInstrumentationTestType.GetNoLength:
+					ExpectedContent = ConnectionHandler.TheQuickBrownFoxContent;
+					CloseConnection = false;
+					break;
 				case HttpInstrumentationTestType.ImplicitHost:
 				case HttpInstrumentationTestType.CustomHost:
 				case HttpInstrumentationTestType.CustomHostWithPort:
@@ -1574,6 +1561,9 @@ namespace Xamarin.WebTests.TestRunners
 
 				if (AuthManager != null)
 					Target = new HelloWorldHandler (ME);
+
+				if (ExpectedContent == null)
+					ExpectedContent = Content ?? new StringContent (ME);
 			}
 
 			HttpInstrumentationHandler (HttpInstrumentationHandler other)
@@ -1956,8 +1946,6 @@ namespace Xamarin.WebTests.TestRunners
 				if (Target != null)
 					return Target.CheckResponse (ctx, response);
 
-				HttpContent expectedContent = null;
-
 				switch (TestRunner.EffectiveType) {
 				case HttpInstrumentationTestType.ReadTimeout:
 				case HttpInstrumentationTestType.AbortResponse:
@@ -1968,39 +1956,12 @@ namespace Xamarin.WebTests.TestRunners
 						return false;
 
 					return ctx.Expect (response.Content.Length, Is.GreaterThan (0), "response.Content.Length");
-
-				case HttpInstrumentationTestType.PutChunked:
-				case HttpInstrumentationTestType.PutChunkDontCloseRequest:
-					break;
-
-				case HttpInstrumentationTestType.LargeChunkRead:
-					expectedContent = Content.RemoveTransferEncoding ();
-					break;
-
-				case HttpInstrumentationTestType.LargeGZipRead:
-				case HttpInstrumentationTestType.ResponseStreamCheckLength2:
-					expectedContent = Content.RemoveTransferEncoding ();
-					break;
-
-				case HttpInstrumentationTestType.ResponseStreamCheckLength:
-					expectedContent = Content;
-					break;
-
-				case HttpInstrumentationTestType.GZipWithLength:
-					expectedContent = Content;
-					break;
-
-				case HttpInstrumentationTestType.GetNoLength:
-					expectedContent = ConnectionHandler.TheQuickBrownFoxContent;
-					break;
 				}
 
-				if (expectedContent == null)
-					expectedContent = Content ?? new StringContent (ME);
 				if (!ctx.Expect (response.Content, Is.Not.Null, "response.Content != null"))
 					return false;
 
-				return HttpContent.Compare (ctx, response.Content, expectedContent, false, "response.Content");
+				return HttpContent.Compare (ctx, response.Content, ExpectedContent, false, "response.Content");
 			}
 
 			public override Task CheckResponse (TestContext ctx, Response response,
