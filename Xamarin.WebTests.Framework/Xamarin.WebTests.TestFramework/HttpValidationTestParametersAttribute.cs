@@ -36,7 +36,7 @@ namespace Xamarin.WebTests.TestFramework
 	[AttributeUsage (AttributeTargets.Class, AllowMultiple = false)]
 	public class HttpValidationTestParametersAttribute : TestParameterAttribute, ITestParameterSource<HttpValidationTestParameters>
 	{
-		public ConnectionTestType? Type {
+		public HttpValidationTestType? Type {
 			get; set;
 		}
 
@@ -45,7 +45,7 @@ namespace Xamarin.WebTests.TestFramework
 		{
 		}
 
-		public HttpValidationTestParametersAttribute (ConnectionTestType type)
+		public HttpValidationTestParametersAttribute (HttpValidationTestType type)
 			: base (null, TestFlags.Browsable | TestFlags.ContinueOnError)
 		{
 			Type = type;
@@ -61,7 +61,7 @@ namespace Xamarin.WebTests.TestFramework
 			if (Type != null)
 				yield return HttpValidationTestRunner.GetParameters (ctx, category, Type.Value);
 
-			foreach (var type in ConnectionTestRunner.GetConnectionTestTypes (ctx, category))
+			foreach (var type in HttpValidationTestRunner.GetTests (ctx, category))
 				yield return HttpValidationTestRunner.GetParameters (ctx, category, type);
 		}
 	}

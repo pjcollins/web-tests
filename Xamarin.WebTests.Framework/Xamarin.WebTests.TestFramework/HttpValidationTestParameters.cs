@@ -36,18 +36,17 @@ namespace Xamarin.WebTests.TestFramework
 	[HttpValidationTestParameters]
 	public class HttpValidationTestParameters : ConnectionTestParameters
 	{
-		public ConnectionTestType Type {
+		public HttpValidationTestType Type {
 			get;
-			private set;
 		}
 
-		public HttpValidationTestParameters (ConnectionTestCategory category, ConnectionTestType type, string identifier, X509Certificate certificate)
+		public HttpValidationTestParameters (ConnectionTestCategory category, HttpValidationTestType type, string identifier, X509Certificate certificate)
 			: base (category, identifier, certificate)
 		{
 			Type = type;
 		}
 
-		public HttpValidationTestParameters (ConnectionTestCategory category, ConnectionTestType type, string identifier, CertificateResourceType certificate)
+		public HttpValidationTestParameters (ConnectionTestCategory category, HttpValidationTestType type, string identifier, CertificateResourceType certificate)
 			: base (category, identifier, null)
 		{
 			Type = type;
