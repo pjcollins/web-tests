@@ -88,19 +88,13 @@ namespace Xamarin.WebTests.TestRunners
 
 		TaskCompletionSource<bool> readyTcs;
 
-		public HttpRequestHandler (HttpRequestTestRunner parent, bool primary)
+		public HttpRequestHandler (HttpRequestTestRunner parent)
 			: base (parent.EffectiveType.ToString ())
 		{
 			TestRunner = parent;
 			ME = $"{GetType ().Name}({parent.EffectiveType})";
 			readyTcs = new TaskCompletionSource<bool> ();
 			Flags = RequestFlags.KeepAlive;
-
-			switch (parent.EffectiveType) {
-			case HttpRequestTestType.RedirectNoLength:
-				Target = new HelloWorldHandler (ME);
-				break;
-			}
 
 			switch (parent.EffectiveType) {
 			case HttpRequestTestType.LargeHeader:
@@ -111,7 +105,7 @@ namespace Xamarin.WebTests.TestRunners
 				break;
 			case HttpRequestTestType.CloseRequestStream:
 				OperationFlags = HttpOperationFlags.AbortAfterClientExits;
-				CloseConnection = !primary;
+				CloseConnection = false;
 				break;
 			case HttpRequestTestType.RedirectNoLength:
 				Target = new HelloWorldHandler (ME);
@@ -215,8 +209,7 @@ namespace Xamarin.WebTests.TestRunners
 			return new HttpRequestHandler (this);
 		}
 
-		public Request CreateRequest (
-			TestContext ctx, bool primary, Uri uri)
+		public Request CreateRequest (Uri uri)
 		{
 			switch (TestRunner.EffectiveType) {
 			case HttpRequestTestType.CloseRequestStream:

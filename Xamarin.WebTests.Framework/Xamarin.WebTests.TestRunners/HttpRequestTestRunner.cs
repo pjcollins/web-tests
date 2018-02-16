@@ -159,6 +159,9 @@ namespace Xamarin.WebTests.TestRunners
 			var postHello = new PostHandler (EffectiveType.ToString (), HttpContent.HelloWorld);
 			var chunkedPost = new PostHandler (EffectiveType.ToString (), HttpContent.HelloChunked, TransferMode.Chunked);
 
+			if (!primary)
+				ctx.AssertFail ("Should never happen.");
+
 			switch (EffectiveType) {
 			case HttpRequestTestType.SimplePost:
 				return (postHello, HttpOperationFlags.None);
@@ -175,7 +178,7 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpRequestTestType.Simple:
 				return (hello, HttpOperationFlags.None);
 			default:
-				var handler = new HttpRequestHandler (this, primary);
+				var handler = new HttpRequestHandler (this);
 				return (handler, handler.OperationFlags);
 			}
 		}
@@ -244,7 +247,7 @@ namespace Xamarin.WebTests.TestRunners
 			{
 				var primary = Type == InstrumentationOperationType.Primary;
 				if (Handler is HttpRequestHandler instrumentationHandler)
-					return instrumentationHandler.CreateRequest (ctx, primary, uri);
+					return instrumentationHandler.CreateRequest (uri);
 
 				return new TraditionalRequest (uri);
 			}
@@ -253,31 +256,18 @@ namespace Xamarin.WebTests.TestRunners
 			{
 				var traditionalRequest = (TraditionalRequest)request;
 
-				if (Type == InstrumentationOperationType.Primary)
-					ConfigurePrimaryRequest (ctx, traditionalRequest);
-				else
-					ConfigureParallelRequest (ctx, traditionalRequest);
+				traditionalRequest.RequestExt.ReadWriteTimeout = int.MaxValue;
+				traditionalRequest.RequestExt.Timeout = int.MaxValue;
+
+				switch (EffectiveType) {
+				case HttpRequestTestType.SimplePost:
+					request.SetContentLength(((PostHandler)Handler).Content.Length);
+					break;
+				}
 
 				Handler.ConfigureRequest (request, uri);
 
 				request.SetProxy (Parent.Server.GetProxy ());
-			}
-
-			void ConfigureParallelRequest (TestContext ctx, TraditionalRequest request)
-			{
-				throw ctx.AssertFail (Parent.EffectiveType);
-			}
-
-			void ConfigurePrimaryRequest (TestContext ctx, TraditionalRequest request)
-			{
-				request.RequestExt.ReadWriteTimeout = int.MaxValue;
-				request.RequestExt.Timeout = int.MaxValue;
-
-				switch (EffectiveType) {
-				case HttpRequestTestType.SimplePost:
-					request.SetContentLength (((PostHandler)Handler).Content.Length);
-					break;
-				}
 			}
 
 			protected override Task<Response> RunInner (TestContext ctx, Request request, CancellationToken cancellationToken)
