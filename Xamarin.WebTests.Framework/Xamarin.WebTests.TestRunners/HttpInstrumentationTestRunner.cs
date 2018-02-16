@@ -71,7 +71,6 @@ namespace Xamarin.WebTests.TestRunners
 		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.NtlmWhileQueued;
 
 		static readonly (HttpInstrumentationTestType type, HttpInstrumentationTestFlags flags) [] TestRegistration = {
-			(HttpInstrumentationTestType.Simple, HttpInstrumentationTestFlags.Working),
 			(HttpInstrumentationTestType.InvalidDataDuringHandshake, HttpInstrumentationTestFlags.WorkingRequireSSL),
 			(HttpInstrumentationTestType.AbortDuringHandshake, HttpInstrumentationTestFlags.WorkingRequireSSL),
 			(HttpInstrumentationTestType.ParallelRequests, HttpInstrumentationTestFlags.Working),
@@ -86,52 +85,20 @@ namespace Xamarin.WebTests.TestRunners
 			(HttpInstrumentationTestType.NtlmWhileQueued, HttpInstrumentationTestFlags.NewWebStackRequireSSL),
 			(HttpInstrumentationTestType.NtlmWhileQueued2, HttpInstrumentationTestFlags.NewWebStackRequireSSL),
 			(HttpInstrumentationTestType.ReuseConnection, HttpInstrumentationTestFlags.Working),
-			(HttpInstrumentationTestType.SimplePost, HttpInstrumentationTestFlags.Working),
-			(HttpInstrumentationTestType.SimpleRedirect, HttpInstrumentationTestFlags.Working),
-			(HttpInstrumentationTestType.PostRedirect, HttpInstrumentationTestFlags.Working),
 			(HttpInstrumentationTestType.PostNtlm, HttpInstrumentationTestFlags.Working),
 			(HttpInstrumentationTestType.NtlmChunked, HttpInstrumentationTestFlags.Working),
 			(HttpInstrumentationTestType.ReuseConnection2, HttpInstrumentationTestFlags.Working),
-			(HttpInstrumentationTestType.Get404, HttpInstrumentationTestFlags.Working),
 			(HttpInstrumentationTestType.CloseIdleConnection, HttpInstrumentationTestFlags.NewWebStack),
 			(HttpInstrumentationTestType.NtlmInstrumentation, HttpInstrumentationTestFlags.NewWebStack),
 			(HttpInstrumentationTestType.NtlmClosesConnection, HttpInstrumentationTestFlags.NewWebStack),
 			(HttpInstrumentationTestType.NtlmReusesConnection, HttpInstrumentationTestFlags.NewWebStack),
 			(HttpInstrumentationTestType.ParallelNtlm, HttpInstrumentationTestFlags.NewWebStack),
-			(HttpInstrumentationTestType.LargeHeader, HttpInstrumentationTestFlags.Working),
-			(HttpInstrumentationTestType.LargeHeader2, HttpInstrumentationTestFlags.Working),
-			(HttpInstrumentationTestType.SendResponseAsBlob, HttpInstrumentationTestFlags.Working),
 			(HttpInstrumentationTestType.ReuseAfterPartialRead, HttpInstrumentationTestFlags.WorkingRequireSSL),
 			(HttpInstrumentationTestType.CustomConnectionGroup, HttpInstrumentationTestFlags.Working),
 			(HttpInstrumentationTestType.ReuseCustomConnectionGroup, HttpInstrumentationTestFlags.Working),
 			(HttpInstrumentationTestType.CloseCustomConnectionGroup, HttpInstrumentationTestFlags.Working),
-			(HttpInstrumentationTestType.CloseRequestStream, HttpInstrumentationTestFlags.Working),
-			(HttpInstrumentationTestType.ReadTimeout, HttpInstrumentationTestFlags.NewWebStack),
 			(HttpInstrumentationTestType.AbortResponse, HttpInstrumentationTestFlags.Working),
 			(HttpInstrumentationTestType.RedirectOnSameConnection, HttpInstrumentationTestFlags.Working),
-			(HttpInstrumentationTestType.RedirectNoReuse, HttpInstrumentationTestFlags.Working),
-			(HttpInstrumentationTestType.RedirectNoLength, HttpInstrumentationTestFlags.NewWebStack),
-			(HttpInstrumentationTestType.PutChunked, HttpInstrumentationTestFlags.Working),
-			(HttpInstrumentationTestType.PutChunkDontCloseRequest, HttpInstrumentationTestFlags.NewWebStack),
-			(HttpInstrumentationTestType.ServerAbortsRedirect, HttpInstrumentationTestFlags.Unstable),
-			(HttpInstrumentationTestType.ServerAbortsPost, HttpInstrumentationTestFlags.NewWebStack),
-			(HttpInstrumentationTestType.PostChunked, HttpInstrumentationTestFlags.Working),
-			(HttpInstrumentationTestType.EntityTooBig, HttpInstrumentationTestFlags.NewWebStack),
-			(HttpInstrumentationTestType.PostContentLength, HttpInstrumentationTestFlags.Working),
-			(HttpInstrumentationTestType.ClientAbortsPost, HttpInstrumentationTestFlags.NewWebStack),
-			(HttpInstrumentationTestType.GetChunked, HttpInstrumentationTestFlags.Working),
-			(HttpInstrumentationTestType.SimpleGZip, HttpInstrumentationTestFlags.Working),
-			(HttpInstrumentationTestType.TestResponseStream, HttpInstrumentationTestFlags.Working),
-			(HttpInstrumentationTestType.LargeChunkRead, HttpInstrumentationTestFlags.Working),
-			(HttpInstrumentationTestType.LargeGZipRead, HttpInstrumentationTestFlags.GZip),
-			(HttpInstrumentationTestType.GZipWithLength, HttpInstrumentationTestFlags.GZip),
-			(HttpInstrumentationTestType.ResponseStreamCheckLength2, HttpInstrumentationTestFlags.GZip),
-			(HttpInstrumentationTestType.ResponseStreamCheckLength, HttpInstrumentationTestFlags.GZip),
-			(HttpInstrumentationTestType.GetNoLength, HttpInstrumentationTestFlags.Working),
-			(HttpInstrumentationTestType.ImplicitHost, HttpInstrumentationTestFlags.Working),
-			(HttpInstrumentationTestType.CustomHost, HttpInstrumentationTestFlags.Working),
-			(HttpInstrumentationTestType.CustomHostWithPort, HttpInstrumentationTestFlags.Working),
-			(HttpInstrumentationTestType.CustomHostDefaultPort, HttpInstrumentationTestFlags.Working),
 		};
 
 		public static IList<HttpInstrumentationTestType> GetInstrumentationTypes (TestContext ctx, HttpServerTestCategory category)
@@ -251,23 +218,10 @@ namespace Xamarin.WebTests.TestRunners
 				return (hello, HttpOperationFlags.ServerAbortsHandshake | HttpOperationFlags.AbortAfterClientExits);
 			case HttpInstrumentationTestType.SimpleNtlm:
 				return (new AuthenticationHandler (AuthenticationType.NTLM, hello), HttpOperationFlags.None);
-			case HttpInstrumentationTestType.SimplePost:
-				return (postHello, HttpOperationFlags.None);
-			case HttpInstrumentationTestType.SimpleRedirect:
-				return (new RedirectHandler (hello, HttpStatusCode.Redirect), HttpOperationFlags.None);
 			case HttpInstrumentationTestType.PostNtlm:
 				return (new AuthenticationHandler (AuthenticationType.NTLM, postHello), HttpOperationFlags.None);
-			case HttpInstrumentationTestType.PostRedirect:
-				return (new RedirectHandler (postHello, HttpStatusCode.TemporaryRedirect), HttpOperationFlags.None);
 			case HttpInstrumentationTestType.NtlmChunked:
 				return (new AuthenticationHandler (AuthenticationType.NTLM, chunkedPost), HttpOperationFlags.None);
-			case HttpInstrumentationTestType.Get404:
-				return (new GetHandler (EffectiveType.ToString (), null, HttpStatusCode.NotFound), HttpOperationFlags.None);
-			case HttpInstrumentationTestType.RedirectNoReuse:
-				return (new RedirectHandler (hello, HttpStatusCode.Redirect), HttpOperationFlags.None);
-			case HttpInstrumentationTestType.GetChunked:
-				return (new GetHandler (EffectiveType.ToString (), HttpContent.HelloChunked), HttpOperationFlags.None);
-			case HttpInstrumentationTestType.Simple:
 			case HttpInstrumentationTestType.ParallelRequests:
 			case HttpInstrumentationTestType.SimpleQueuedRequest:
 			case HttpInstrumentationTestType.CancelQueuedRequest:
@@ -308,7 +262,6 @@ namespace Xamarin.WebTests.TestRunners
 				break;
 			case HttpInstrumentationTestType.AbortDuringHandshake:
 			case HttpInstrumentationTestType.AbortResponse:
-			case HttpInstrumentationTestType.CloseRequestStream:
 				expectedStatus = HttpStatusCode.InternalServerError;
 				expectedError = WebExceptionStatus.RequestCanceled;
 				break;
@@ -321,23 +274,6 @@ namespace Xamarin.WebTests.TestRunners
 					expectedStatus = HttpStatusCode.OK;
 					expectedError = WebExceptionStatus.Success;
 				}
-				break;
-			case HttpInstrumentationTestType.ReadTimeout:
-				expectedStatus = HttpStatusCode.InternalServerError;
-				expectedError = WebExceptionStatus.Timeout;
-				break;
-			case HttpInstrumentationTestType.Get404:
-				expectedStatus = HttpStatusCode.NotFound;
-				expectedError = WebExceptionStatus.ProtocolError;
-				break;
-			case HttpInstrumentationTestType.ServerAbortsPost:
-				expectedStatus = HttpStatusCode.BadRequest;
-				expectedError = WebExceptionStatus.ProtocolError;
-				break;
-			case HttpInstrumentationTestType.EntityTooBig:
-			case HttpInstrumentationTestType.ClientAbortsPost:
-				expectedStatus = HttpStatusCode.InternalServerError;
-				expectedError = WebExceptionStatus.AnyErrorStatus;
 				break;
 			case HttpInstrumentationTestType.CancelQueuedRequest:
 				if (type == InstrumentationOperationType.Queued) {
@@ -647,9 +583,6 @@ namespace Xamarin.WebTests.TestRunners
 				request.RequestExt.Timeout = int.MaxValue;
 
 				switch (EffectiveType) {
-				case HttpInstrumentationTestType.SimplePost:
-					request.SetContentLength (((PostHandler)Handler).Content.Length);
-					break;
 				case HttpInstrumentationTestType.CustomConnectionGroup:
 				case HttpInstrumentationTestType.ReuseCustomConnectionGroup:
 					request.RequestExt.ConnectionGroupName = "custom";
@@ -686,12 +619,7 @@ namespace Xamarin.WebTests.TestRunners
 			protected override Task<Response> RunInner (TestContext ctx, Request request, CancellationToken cancellationToken)
 			{
 				ctx.LogDebug (2, $"{ME} RUN INNER");
-				switch (EffectiveType) {
-				case HttpInstrumentationTestType.ServerAbortsPost:
-					return ((TraditionalRequest)request).Send (ctx, cancellationToken);
-				default:
-					return ((TraditionalRequest)request).SendAsync (ctx, cancellationToken);
-				}
+				return ((TraditionalRequest)request).SendAsync (ctx, cancellationToken);
 			}
 
 			protected override void ConfigureNetworkStream (TestContext ctx, StreamInstrumentation instrumentation)
