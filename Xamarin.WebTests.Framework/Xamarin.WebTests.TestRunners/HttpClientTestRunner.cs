@@ -62,17 +62,12 @@ namespace Xamarin.WebTests.TestRunners
 			return type;
 		}
 
-		public sealed override string ME {
-			get;
-		}
-
-		public HttpClientTestRunner (IPortableEndPoint endpoint, HttpClientTestParameters parameters,
-					     ConnectionTestProvider provider, Uri uri, HttpServerFlags flags,
-		                             HttpClientTestType type)
-			: base (endpoint, parameters, provider, uri, flags)
+		public HttpClientTestRunner (
+			IPortableEndPoint endpoint, Uri uri, HttpServerFlags flags,
+			HttpClientTestType type)
+			: base (endpoint, uri, flags, type.ToString ())
 		{
 			Type = type;
-			ME = $"{GetType ().Name}({EffectiveType})";
 		}
 
 		const HttpClientTestType MartinTest = HttpClientTestType.ReuseHandlerGZip;

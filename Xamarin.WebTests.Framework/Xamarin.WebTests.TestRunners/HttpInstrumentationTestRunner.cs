@@ -62,17 +62,12 @@ namespace Xamarin.WebTests.TestRunners
 			return type;
 		}
 
-		public sealed override string ME {
-			get;
-		}
-
-		public HttpInstrumentationTestRunner (IPortableEndPoint endpoint, HttpInstrumentationTestParameters parameters,
-						      ConnectionTestProvider provider, Uri uri, HttpServerFlags flags,
-		                                      HttpInstrumentationTestType type)
-			: base (endpoint, parameters, provider, uri, flags)
+		public HttpInstrumentationTestRunner (
+			IPortableEndPoint endpoint, Uri uri, HttpServerFlags flags,
+			HttpInstrumentationTestType type)
+			: base (endpoint, uri, flags, type.ToString ())
 		{
 			Type = type;
-			ME = $"{GetType ().Name}({EffectiveType})";
 		}
 
 		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.NtlmWhileQueued;

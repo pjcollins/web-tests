@@ -46,11 +46,8 @@ namespace Xamarin.WebTests.TestRunners
 	using HttpClient;
 	using Resources;
 
-	public abstract class InstrumentationTestRunner : AbstractConnection {
-		public ConnectionTestProvider Provider {
-			get;
-		}
-
+	public abstract class InstrumentationTestRunner : AbstractConnection
+	{
 		internal Uri Uri {
 			get;
 		}
@@ -63,19 +60,31 @@ namespace Xamarin.WebTests.TestRunners
 			get;
 		}
 
-		public abstract string ME {
+		public string ME {
 			get;
 		}
 
-		public InstrumentationTestRunner (IPortableEndPoint endpoint, InstrumentationTestParameters parameters,
-						  ConnectionTestProvider provider, Uri uri, HttpServerFlags flags)
+		public InstrumentationTestRunner (
+			IPortableEndPoint endpoint, Uri uri, HttpServerFlags flags,
+			string identifier)
 		{
-			Provider = provider;
 			Uri = uri;
-
 			ServerFlags = flags | HttpServerFlags.InstrumentationListener;
+			ME = $"{GetType ().Name}({identifier})";
+
+			var parameters = GetParameters (identifier);
 
 			Server = new BuiltinHttpServer (uri, endpoint, ServerFlags, parameters, null);
+		}
+
+		static ConnectionParameters GetParameters (string identifier)
+		{
+			var certificateProvider = DependencyInjector.Get<ICertificateProvider> ();
+			var acceptAll = certificateProvider.AcceptAll ();
+
+			return new ConnectionParameters (identifier, ResourceManager.SelfSignedServerCertificate) {
+				ClientCertificateValidator = acceptAll
+			};
 		}
 
 		InstrumentationOperation currentOperation;
