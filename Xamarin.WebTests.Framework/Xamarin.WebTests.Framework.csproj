@@ -150,11 +150,9 @@
     <Compile Include="Xamarin.WebTests.TestFramework\StreamInstrumentationType.cs" />
     <Compile Include="ReferenceSource\TaskToApm.cs" />
     <Compile Include="Xamarin.WebTests.HttpHandlers\HttpListenerHandler.cs" />
-    <Compile Include="Xamarin.WebTests.TestFramework\HttpListenerTestType.cs" />
     <Compile Include="Xamarin.WebTests.HttpHandlers\DelayHandler.cs" />
     <Compile Include="Xamarin.WebTests.HttpHandlers\AbortHandler.cs" />
     <Compile Include="Xamarin.WebTests.TestRunners\HttpInstrumentationTestRunner.cs" />
-    <Compile Include="Xamarin.WebTests.TestFramework\HttpInstrumentationTestType.cs" />
     <Compile Include="Xamarin.WebTests.HttpFramework\HttpOperation.cs" />
     <Compile Include="Xamarin.WebTests.HttpFramework\HttpOperationFlags.cs" />
     <Compile Include="Xamarin.WebTests.HttpOperations\TraditionalOperation.cs" />
@@ -169,7 +167,6 @@
     <Compile Include="Xamarin.WebTests.Server\ProxyConnection.cs" />
     <Compile Include="Xamarin.WebTests.TestRunners\HttpStressTestRunner.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\HttpStressTestParameters.cs" />
-    <Compile Include="Xamarin.WebTests.TestFramework\HttpStressTestType.cs" />
     <Compile Include="Xamarin.WebTests.ConnectionFramework\AsyncManualResetEvent.cs" />
     <Compile Include="Xamarin.WebTests.Server\ListenerBackend.cs" />
     <Compile Include="Xamarin.WebTests.Server\SocketBackend.cs" />
@@ -183,7 +180,6 @@
     <Compile Include="Xamarin.WebTests.ConnectionFramework\IWebClientExtension.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\LogCategories.cs" />
     <Compile Include="Xamarin.WebTests.HttpFramework\FormContent.cs" />
-    <Compile Include="Xamarin.WebTests.TestFramework\HttpClientTestType.cs" />
     <Compile Include="Xamarin.WebTests.TestRunners\HttpClientTestRunner.cs" />
     <Compile Include="Xamarin.WebTests.HttpClient\ICustomHttpContent.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\StreamExtensions.cs" />
@@ -198,14 +194,11 @@
     <Compile Include="Xamarin.WebTests.TestRunners\HttpListenerTestRunner.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\HttpListenerTestFlags.cs" />
     <Compile Include="Xamarin.WebTests.TestRunners\HttpInstrumentationHandler.cs" />
-    <Compile Include="Xamarin.WebTests.TestFramework\HttpValidationTestType.cs" />
-    <Compile Include="Xamarin.WebTests.TestFramework\SslStreamTestType.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\HttpServerProvider.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\HttpServerTestCategory.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\HttpServerProviderFilter.cs" />
     <Compile Include="Xamarin.WebTests.TestRunners\HttpRequestTestRunner.cs" />
     <Compile Include="Xamarin.WebTests.TestRunners\HttpRequestHandler.cs" />
-    <Compile Include="Xamarin.WebTests.TestFramework\HttpRequestTestType.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\HttpRequestTestFlags.cs" />
     <Compile Include="Xamarin.WebTests.TestAttributes\HttpClientTestRunnerAttribute.cs" />
     <Compile Include="Xamarin.WebTests.TestAttributes\HttpClientTestTypeAttribute.cs" />
@@ -250,6 +243,13 @@
     <Compile Include="Xamarin.WebTests.TestAttributes\StressAttribute.cs" />
     <Compile Include="Xamarin.WebTests.TestAttributes\Tls12Attribute.cs" />
     <Compile Include="Xamarin.WebTests.TestAttributes\WorkAttribute.cs" />
+    <Compile Include="Xamarin.WebTests.TestRunners\HttpClientTestType.cs" />
+    <Compile Include="Xamarin.WebTests.TestRunners\HttpInstrumentationTestType.cs" />
+    <Compile Include="Xamarin.WebTests.TestRunners\HttpRequestTestType.cs" />
+    <Compile Include="Xamarin.WebTests.TestRunners\HttpValidationTestType.cs" />
+    <Compile Include="Xamarin.WebTests.TestRunners\HttpListenerTestType.cs" />
+    <Compile Include="Xamarin.WebTests.TestRunners\HttpStressTestType.cs" />
+    <Compile Include="Xamarin.WebTests.TestRunners\SslStreamTestType.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="..\CA\invalid-server-cert.pfx">

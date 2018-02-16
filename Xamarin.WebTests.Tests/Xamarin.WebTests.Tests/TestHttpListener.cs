@@ -36,6 +36,7 @@ namespace Xamarin.WebTests.Tests {
 	using HttpFramework;
 	using HttpHandlers;
 	using HttpOperations;
+	using TestRunners;
 
 	[AsyncTestFixture]
 	public class TestHttpListener : ITestParameterSource<HttpListenerHandler> {

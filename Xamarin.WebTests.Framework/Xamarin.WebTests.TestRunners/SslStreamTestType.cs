@@ -1,10 +1,10 @@
 ﻿//
-// HttpClientTestType.cs
+// SslStreamTestType.cs
 //
 // Author:
 //       Martin Baulig <mabaul@microsoft.com>
 //
-// Copyright (c) 2017 Xamarin Inc. (http://www.xamarin.com)
+// Copyright (c) 2018 Xamarin Inc. (http://www.xamarin.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,49 +23,23 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-namespace Xamarin.WebTests.TestFramework
+namespace Xamarin.WebTests.TestRunners
 {
-	using TestAttributes;
-
-	[HttpClientTestType]
-	public enum HttpClientTestType
+	public enum SslStreamTestType
 	{
-		Simple,
-		GetString,
-		PostString,
-		PostStringWithResult,
-		PutString,
-		PutChunked,
-		SendAsyncEmptyBody,
-		// Bug 31830
-		SendAsyncObscureVerb,
-		SendAsyncGet,
-		SendAsyncHead,
-		// Bug 41206
-		SendLargeBlob,
-		SendLargeBlobOddSize,
-		// Bug 20583
-		ChunkSizeWithLeadingZero,
-		PutRedirectEmptyBody,
-		PutRedirect,
-		PutRedirectKeepAlive,
-		RedirectCustomContent,
-
-		GetError,
-
-		ParallelRequests,
-		SimpleQueuedRequest,
-		SimpleGZip,
-		ParallelGZip,
-		ParallelGZipNoClose,
-		SequentialRequests,
-		SequentialChunked,
-		SequentialGZip,
-
-		ReuseHandler,
-		ReuseHandlerNoClose,
-		ReuseHandlerChunked,
-		ReuseHandlerGZip,
+		Default,
+		AcceptFromLocalCA,
+		NoValidator,
+		RejectAll,
+		UnrequestedClientCertificate,
+		RequestClientCertificate,
+		RequireClientCertificate,
+		OptionalClientCertificate,
+		RejectClientCertificate,
+		MissingClientCertificate,
+		MustNotInvokeGlobalValidator,
+		MustNotInvokeGlobalValidator2,
+		SyncAuthenticate,
 
 		MartinTest
 	}

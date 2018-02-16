@@ -32,6 +32,7 @@ namespace Xamarin.WebTests.TestFramework
 	using ConnectionFramework;
 	using TestAttributes;
 	using HttpFramework;
+	using TestRunners;
 
 	[HttpStressTestParameters]
 	public class HttpStressTestParameters : ConnectionTestParameters

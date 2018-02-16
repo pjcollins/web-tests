@@ -1,10 +1,10 @@
 ﻿//
-// HttpInstrumentationTestType.cs
+// HttpRequestTestType.cs
 //
 // Author:
 //       Martin Baulig <mabaul@microsoft.com>
 //
-// Copyright (c) 2017 Xamarin Inc. (http://www.xamarin.com)
+// Copyright (c) 2018 Xamarin Inc. (http://www.xamarin.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,41 +23,48 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-namespace Xamarin.WebTests.TestFramework
+namespace Xamarin.WebTests.TestRunners
 {
 	using TestAttributes;
 
-	[HttpInstrumentationTestType]
-	public enum HttpInstrumentationTestType
+	[HttpRequestTestType]
+	public enum HttpRequestTestType
 	{
-		InvalidDataDuringHandshake,
-		AbortDuringHandshake,
-		ParallelRequests,
-		ThreeParallelRequests,
-		ParallelRequestsSomeQueued,
-		ManyParallelRequests,
-		ManyParallelRequestsStress,
-		SimpleQueuedRequest,
-		CancelQueuedRequest,
-		CancelMainWhileQueued,
-		NtlmWhileQueued,
-		NtlmWhileQueued2,
-		ReuseConnection,
-		ReuseConnection2,
-		CloseIdleConnection,
-		ReuseAfterPartialRead,
-		CustomConnectionGroup,
-		ReuseCustomConnectionGroup,
-		CloseCustomConnectionGroup,
-		AbortResponse,
-		ParallelNtlm,
-		SimpleNtlm,
-		PostNtlm,
-		NtlmInstrumentation,
-		NtlmClosesConnection,
-		NtlmReusesConnection,
-		NtlmChunked,
-		RedirectOnSameConnection,
+		Simple,
+		SimplePost,
+		SimpleRedirect,
+		PostRedirect,
+		Get404,
+		LargeHeader,
+		LargeHeader2,
+		SendResponseAsBlob,
+		CloseRequestStream,
+		ReadTimeout,
+
+		RedirectNoReuse,
+		RedirectNoLength,
+		PutChunked,
+		PutChunkDontCloseRequest,
+		ServerAbortsRedirect,
+		ServerAbortsPost,
+		PostChunked,
+		EntityTooBig,
+		PostContentLength,
+		ClientAbortsPost,
+		GetChunked,
+		SimpleGZip,
+		TestResponseStream,
+		LargeChunkRead,
+		LargeGZipRead,
+		GZipWithLength,
+		ResponseStreamCheckLength,
+		ResponseStreamCheckLength2,
+		GetNoLength,
+
+		ImplicitHost,
+		CustomHost,
+		CustomHostWithPort,
+		CustomHostDefaultPort,
 
 		MartinTest
 	}
