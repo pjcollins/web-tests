@@ -82,7 +82,6 @@
     <Compile Include="Xamarin.WebTests.TestFramework\ConnectionTestCategory.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\ConnectionTestParameters.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\ConnectionTestProvider.cs" />
-    <Compile Include="Xamarin.WebTests.TestFramework\ConnectionTestType.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\HttpValidationTestParameters.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\SslStreamTestParameters.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\ConnectionTestProviderFilter.cs" />
