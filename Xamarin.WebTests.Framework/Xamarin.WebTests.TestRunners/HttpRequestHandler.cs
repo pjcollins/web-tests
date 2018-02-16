@@ -1,5 +1,5 @@
 ﻿//
-// HttpInstrumentationHandler.cs
+// HttpRequestHandler.cs
 //
 // Author:
 //       Martin Baulig <mabaul@microsoft.com>
@@ -46,9 +46,9 @@ namespace Xamarin.WebTests.TestRunners
 	using Resources;
 	using Xamarin.WebTests.Server;
 
-	public class HttpInstrumentationHandler : Handler
+	public class HttpRequestHandler : Handler
 	{
-		public HttpInstrumentationTestRunner TestRunner {
+		public HttpRequestTestRunner TestRunner {
 			get;
 		}
 
@@ -92,7 +92,7 @@ namespace Xamarin.WebTests.TestRunners
 
 		TaskCompletionSource<bool> readyTcs;
 
-		public HttpInstrumentationHandler (HttpInstrumentationTestRunner parent, bool primary)
+		public HttpRequestHandler (HttpRequestTestRunner parent, bool primary)
 			: base (parent.EffectiveType.ToString ())
 		{
 			TestRunner = parent;
@@ -101,137 +101,137 @@ namespace Xamarin.WebTests.TestRunners
 			Flags = RequestFlags.KeepAlive;
 
 			switch (parent.EffectiveType) {
-			case HttpInstrumentationTestType.RedirectOnSameConnection:
-			case HttpInstrumentationTestType.RedirectNoLength:
+			case HttpRequestTestType.RedirectOnSameConnection:
+			case HttpRequestTestType.RedirectNoLength:
 				Target = new HelloWorldHandler (ME);
 				break;
 			}
 
 			switch (parent.EffectiveType) {
-			case HttpInstrumentationTestType.ReuseConnection:
+			case HttpRequestTestType.ReuseConnection:
 				CloseConnection = !primary;
 				break;
-			case HttpInstrumentationTestType.ReuseAfterPartialRead:
+			case HttpRequestTestType.ReuseAfterPartialRead:
 				Content = ConnectionHandler.GetLargeStringContent (2500);
 				OperationFlags = HttpOperationFlags.ClientUsesNewConnection;
 				CloseConnection = !primary;
 				break;
-			case HttpInstrumentationTestType.ReuseConnection2:
+			case HttpRequestTestType.ReuseConnection2:
 				Content = HttpContent.HelloWorld;
 				CloseConnection = !primary;
 				break;
-			case HttpInstrumentationTestType.CloseIdleConnection:
-			case HttpInstrumentationTestType.CloseCustomConnectionGroup:
+			case HttpRequestTestType.CloseIdleConnection:
+			case HttpRequestTestType.CloseCustomConnectionGroup:
 				CloseConnection = false;
 				break;
-			case HttpInstrumentationTestType.NtlmClosesConnection:
+			case HttpRequestTestType.NtlmClosesConnection:
 				AuthManager = parent.GetAuthenticationManager ();
 				CloseConnection = true;
 				break;
-			case HttpInstrumentationTestType.NtlmReusesConnection:
+			case HttpRequestTestType.NtlmReusesConnection:
 				AuthManager = parent.GetAuthenticationManager ();
 				CloseConnection = false;
 				break;
-			case HttpInstrumentationTestType.ParallelNtlm:
-			case HttpInstrumentationTestType.NtlmInstrumentation:
-			case HttpInstrumentationTestType.NtlmWhileQueued:
-			case HttpInstrumentationTestType.NtlmWhileQueued2:
+			case HttpRequestTestType.ParallelNtlm:
+			case HttpRequestTestType.NtlmInstrumentation:
+			case HttpRequestTestType.NtlmWhileQueued:
+			case HttpRequestTestType.NtlmWhileQueued2:
 				AuthManager = parent.GetAuthenticationManager ();
 				CloseConnection = false;
 				break;
-			case HttpInstrumentationTestType.LargeHeader:
-			case HttpInstrumentationTestType.LargeHeader2:
-			case HttpInstrumentationTestType.SendResponseAsBlob:
+			case HttpRequestTestType.LargeHeader:
+			case HttpRequestTestType.LargeHeader2:
+			case HttpRequestTestType.SendResponseAsBlob:
 				Content = ConnectionHandler.TheQuickBrownFoxContent;
 				CloseConnection = true;
 				break;
-			case HttpInstrumentationTestType.CustomConnectionGroup:
+			case HttpRequestTestType.CustomConnectionGroup:
 				OperationFlags = HttpOperationFlags.DontReuseConnection | HttpOperationFlags.ForceNewConnection;
 				CloseConnection = !primary;
 				break;
-			case HttpInstrumentationTestType.ReuseCustomConnectionGroup:
-			case HttpInstrumentationTestType.ReadTimeout:
-			case HttpInstrumentationTestType.AbortResponse:
+			case HttpRequestTestType.ReuseCustomConnectionGroup:
+			case HttpRequestTestType.ReadTimeout:
+			case HttpRequestTestType.AbortResponse:
 				CloseConnection = !primary;
 				break;
-			case HttpInstrumentationTestType.CloseRequestStream:
+			case HttpRequestTestType.CloseRequestStream:
 				OperationFlags = HttpOperationFlags.AbortAfterClientExits;
 				CloseConnection = !primary;
 				break;
-			case HttpInstrumentationTestType.RedirectOnSameConnection:
+			case HttpRequestTestType.RedirectOnSameConnection:
 				Target = new HelloWorldHandler (ME);
 				CloseConnection = false;
 				break;
-			case HttpInstrumentationTestType.RedirectNoLength:
+			case HttpRequestTestType.RedirectNoLength:
 				Target = new HelloWorldHandler (ME);
 				OperationFlags |= HttpOperationFlags.RedirectOnNewConnection;
 				CloseConnection = false;
 				break;
-			case HttpInstrumentationTestType.PutChunked:
-			case HttpInstrumentationTestType.PutChunkDontCloseRequest:
+			case HttpRequestTestType.PutChunked:
+			case HttpRequestTestType.PutChunkDontCloseRequest:
 				CloseConnection = true;
 				break;
-			case HttpInstrumentationTestType.ServerAbortsRedirect:
+			case HttpRequestTestType.ServerAbortsRedirect:
 				OperationFlags = HttpOperationFlags.ServerAbortsRedirection;
 				CloseConnection = false;
 				break;
-			case HttpInstrumentationTestType.ServerAbortsPost:
+			case HttpRequestTestType.ServerAbortsPost:
 				OperationFlags = HttpOperationFlags.ServerAbortsRedirection;
 				CloseConnection = true;
 				break;
-			case HttpInstrumentationTestType.PostChunked:
+			case HttpRequestTestType.PostChunked:
 				OperationFlags = HttpOperationFlags.DontReadRequestBody;
 				CloseConnection = false;
 				break;
-			case HttpInstrumentationTestType.EntityTooBig:
-			case HttpInstrumentationTestType.ClientAbortsPost:
+			case HttpRequestTestType.EntityTooBig:
+			case HttpRequestTestType.ClientAbortsPost:
 				OperationFlags = HttpOperationFlags.AbortAfterClientExits | HttpOperationFlags.DontReadRequestBody;
 				CloseConnection = false;
 				break;
-			case HttpInstrumentationTestType.PostContentLength:
+			case HttpRequestTestType.PostContentLength:
 				OperationFlags = HttpOperationFlags.DontReadRequestBody;
 				break;
-			case HttpInstrumentationTestType.SimpleGZip:
+			case HttpRequestTestType.SimpleGZip:
 				Content = HttpContent.TheQuickBrownFox;
 				CloseConnection = true;
 				break;
-			case HttpInstrumentationTestType.TestResponseStream:
+			case HttpRequestTestType.TestResponseStream:
 				Content = new StringContent ("AAAA");
 				CloseConnection = true;
 				break;
-			case HttpInstrumentationTestType.LargeChunkRead:
+			case HttpRequestTestType.LargeChunkRead:
 				Content = HttpContent.TheQuickBrownFoxChunked;
 				ExpectedContent = Content.RemoveTransferEncoding ();
 				CloseConnection = false;
 				break;
-			case HttpInstrumentationTestType.LargeGZipRead:
+			case HttpRequestTestType.LargeGZipRead:
 				Content = ConnectionHandler.GetLargeChunkedContent (16384);
 				ExpectedContent = Content.RemoveTransferEncoding ();
 				CloseConnection = false;
 				break;
-			case HttpInstrumentationTestType.GZipWithLength:
+			case HttpRequestTestType.GZipWithLength:
 				Content = ConnectionHandler.GetLargeStringContent (16384);
 				ExpectedContent = Content;
 				CloseConnection = false;
 				break;
-			case HttpInstrumentationTestType.ResponseStreamCheckLength2:
+			case HttpRequestTestType.ResponseStreamCheckLength2:
 				Content = HttpContent.HelloChunked;
 				ExpectedContent = Content.RemoveTransferEncoding ();
 				CloseConnection = false;
 				break;
-			case HttpInstrumentationTestType.ResponseStreamCheckLength:
+			case HttpRequestTestType.ResponseStreamCheckLength:
 				Content = HttpContent.HelloWorld;
 				ExpectedContent = Content;
 				CloseConnection = false;
 				break;
-			case HttpInstrumentationTestType.GetNoLength:
+			case HttpRequestTestType.GetNoLength:
 				ExpectedContent = ConnectionHandler.TheQuickBrownFoxContent;
 				CloseConnection = false;
 				break;
-			case HttpInstrumentationTestType.ImplicitHost:
-			case HttpInstrumentationTestType.CustomHost:
-			case HttpInstrumentationTestType.CustomHostWithPort:
-			case HttpInstrumentationTestType.CustomHostDefaultPort:
+			case HttpRequestTestType.ImplicitHost:
+			case HttpRequestTestType.CustomHost:
+			case HttpRequestTestType.CustomHostWithPort:
+			case HttpRequestTestType.CustomHostDefaultPort:
 				CloseConnection = false;
 				break;
 			default:
@@ -248,7 +248,7 @@ namespace Xamarin.WebTests.TestRunners
 				ExpectedContent = Content ?? new StringContent (ME);
 		}
 
-		HttpInstrumentationHandler (HttpInstrumentationHandler other)
+		HttpRequestHandler (HttpRequestHandler other)
 			: base (other.Value)
 		{
 			TestRunner = other.TestRunner;
@@ -261,46 +261,46 @@ namespace Xamarin.WebTests.TestRunners
 			readyTcs = new TaskCompletionSource<bool> ();
 		}
 
-		HttpInstrumentationRequest currentRequest;
+		HttpRequestRequest currentRequest;
 
 		public override object Clone ()
 		{
-			return new HttpInstrumentationHandler (this);
+			return new HttpRequestHandler (this);
 		}
 
 		public Request CreateRequest (
 			TestContext ctx, bool primary, Uri uri)
 		{
 			switch (TestRunner.EffectiveType) {
-			case HttpInstrumentationTestType.ReuseAfterPartialRead:
-			case HttpInstrumentationTestType.CloseRequestStream:
-			case HttpInstrumentationTestType.ReadTimeout:
-			case HttpInstrumentationTestType.AbortResponse:
-				return new HttpInstrumentationRequest (this, uri);
-			case HttpInstrumentationTestType.NtlmWhileQueued:
-			case HttpInstrumentationTestType.NtlmWhileQueued2:
+			case HttpRequestTestType.ReuseAfterPartialRead:
+			case HttpRequestTestType.CloseRequestStream:
+			case HttpRequestTestType.ReadTimeout:
+			case HttpRequestTestType.AbortResponse:
+				return new HttpRequestRequest (this, uri);
+			case HttpRequestTestType.NtlmWhileQueued:
+			case HttpRequestTestType.NtlmWhileQueued2:
 				if (primary)
-					return new HttpInstrumentationRequest (this, uri);
+					return new HttpRequestRequest (this, uri);
 				return new TraditionalRequest (uri);
 
-			case HttpInstrumentationTestType.PutChunked:
-			case HttpInstrumentationTestType.PutChunkDontCloseRequest:
-				return new HttpInstrumentationRequest (this, uri) {
+			case HttpRequestTestType.PutChunked:
+			case HttpRequestTestType.PutChunkDontCloseRequest:
+				return new HttpRequestRequest (this, uri) {
 					Content = ConnectionHandler.GetLargeStringContent (50)
 				};
-			case HttpInstrumentationTestType.PostChunked:
-			case HttpInstrumentationTestType.EntityTooBig:
-			case HttpInstrumentationTestType.PostContentLength:
-			case HttpInstrumentationTestType.ClientAbortsPost:
-			case HttpInstrumentationTestType.SimpleGZip:
-			case HttpInstrumentationTestType.TestResponseStream:
-			case HttpInstrumentationTestType.LargeChunkRead:
-			case HttpInstrumentationTestType.LargeGZipRead:
-			case HttpInstrumentationTestType.GZipWithLength:
-			case HttpInstrumentationTestType.ResponseStreamCheckLength2:
-			case HttpInstrumentationTestType.ResponseStreamCheckLength:
-			case HttpInstrumentationTestType.GetNoLength:
-				return new HttpInstrumentationRequest (this, uri);
+			case HttpRequestTestType.PostChunked:
+			case HttpRequestTestType.EntityTooBig:
+			case HttpRequestTestType.PostContentLength:
+			case HttpRequestTestType.ClientAbortsPost:
+			case HttpRequestTestType.SimpleGZip:
+			case HttpRequestTestType.TestResponseStream:
+			case HttpRequestTestType.LargeChunkRead:
+			case HttpRequestTestType.LargeGZipRead:
+			case HttpRequestTestType.GZipWithLength:
+			case HttpRequestTestType.ResponseStreamCheckLength2:
+			case HttpRequestTestType.ResponseStreamCheckLength:
+			case HttpRequestTestType.GetNoLength:
+				return new HttpRequestRequest (this, uri);
 			default:
 				return new TraditionalRequest (uri);
 			}
@@ -311,13 +311,13 @@ namespace Xamarin.WebTests.TestRunners
 			if (AuthManager != null)
 				AuthManager.ConfigureRequest (request);
 
-			if (request is HttpInstrumentationRequest instrumentationRequest) {
+			if (request is HttpRequestRequest instrumentationRequest) {
 				if (Interlocked.CompareExchange (ref currentRequest, instrumentationRequest, null) != null)
 					throw new InvalidOperationException ();
 			}
 
 			switch (TestRunner.EffectiveType) {
-			case HttpInstrumentationTestType.ReuseConnection2:
+			case HttpRequestTestType.ReuseConnection2:
 				request.Method = "POST";
 				if (Content != null) {
 					request.SetContentType ("text/plain");
@@ -325,47 +325,47 @@ namespace Xamarin.WebTests.TestRunners
 				}
 				break;
 
-			case HttpInstrumentationTestType.ReadTimeout:
+			case HttpRequestTestType.ReadTimeout:
 				currentRequest.RequestExt.ReadWriteTimeout = 100;
 				break;
 
-			case HttpInstrumentationTestType.PutChunked:
-			case HttpInstrumentationTestType.PutChunkDontCloseRequest:
+			case HttpRequestTestType.PutChunked:
+			case HttpRequestTestType.PutChunkDontCloseRequest:
 				request.Method = "PUT";
 				request.SetContentType ("application/octet-stream");
 				request.SetContentLength (request.Content.Length);
 				request.SendChunked ();
 				break;
 
-			case HttpInstrumentationTestType.ServerAbortsPost:
+			case HttpRequestTestType.ServerAbortsPost:
 				request.Method = "POST";
 				request.SetContentType ("application/x-www-form-urlencoded");
 				request.Content = new FormContent (("foo", "bar"), ("hello", "world"), ("escape", "this needs % escaping"));
 				break;
 
-			case HttpInstrumentationTestType.EntityTooBig:
-			case HttpInstrumentationTestType.PostContentLength:
-			case HttpInstrumentationTestType.ClientAbortsPost:
+			case HttpRequestTestType.EntityTooBig:
+			case HttpRequestTestType.PostContentLength:
+			case HttpRequestTestType.ClientAbortsPost:
 				request.Method = "POST";
 				request.SetContentType ("text/plain");
 				request.SetContentLength (request.Content.Length);
 				break;
 
-			case HttpInstrumentationTestType.SimpleGZip:
+			case HttpRequestTestType.SimpleGZip:
 				break;
 
-			case HttpInstrumentationTestType.ImplicitHost:
+			case HttpRequestTestType.ImplicitHost:
 				break;
 
-			case HttpInstrumentationTestType.CustomHost:
+			case HttpRequestTestType.CustomHost:
 				((TraditionalRequest)request).RequestExt.Host = "custom";
 				break;
 
-			case HttpInstrumentationTestType.CustomHostWithPort:
+			case HttpRequestTestType.CustomHostWithPort:
 				((TraditionalRequest)request).RequestExt.Host = "custom:8888";
 				break;
 
-			case HttpInstrumentationTestType.CustomHostDefaultPort:
+			case HttpRequestTestType.CustomHostDefaultPort:
 				var defaultPort = TestRunner.Server.UseSSL ? 443 : 80;
 				((TraditionalRequest)request).RequestExt.Host = $"custom:{defaultPort}";
 				break;
@@ -388,7 +388,7 @@ namespace Xamarin.WebTests.TestRunners
 			if (state == AuthenticationState.Unauthenticated) {
 				ctx.Assert (RemoteEndPoint, Is.Null, "first request");
 				RemoteEndPoint = connection.RemoteEndPoint;
-			} else if (TestRunner.EffectiveType == HttpInstrumentationTestType.NtlmInstrumentation) {
+			} else if (TestRunner.EffectiveType == HttpRequestTestType.NtlmInstrumentation) {
 				if (state == AuthenticationState.Challenge) {
 					ctx.LogDebug (3, $"{me}: {connection.RemoteEndPoint} {RemoteEndPoint}");
 					RemoteEndPoint = connection.RemoteEndPoint;
@@ -407,13 +407,13 @@ namespace Xamarin.WebTests.TestRunners
 
 			cancellationToken.ThrowIfCancellationRequested ();
 
-			HttpInstrumentationContent content;
+			HttpRequestContent content;
 			switch (TestRunner.EffectiveType) {
-			case HttpInstrumentationTestType.NtlmWhileQueued:
-				content = new HttpInstrumentationContent (TestRunner, currentRequest);
+			case HttpRequestTestType.NtlmWhileQueued:
+				content = new HttpRequestContent (TestRunner, currentRequest);
 				return new HttpResponse (HttpStatusCode.OK, content);
-			case HttpInstrumentationTestType.NtlmWhileQueued2:
-				content = new HttpInstrumentationContent (TestRunner, currentRequest);
+			case HttpRequestTestType.NtlmWhileQueued2:
+				content = new HttpRequestContent (TestRunner, currentRequest);
 				return new HttpResponse (HttpStatusCode.OK, content) { CloseConnection = true };
 			}
 
@@ -457,80 +457,80 @@ namespace Xamarin.WebTests.TestRunners
 			RequestFlags effectiveFlags, CancellationToken cancellationToken)
 		{
 			switch (TestRunner.EffectiveType) {
-			case HttpInstrumentationTestType.ReuseConnection:
-			case HttpInstrumentationTestType.CloseIdleConnection:
-			case HttpInstrumentationTestType.CloseCustomConnectionGroup:
-			case HttpInstrumentationTestType.LargeHeader:
-			case HttpInstrumentationTestType.LargeHeader2:
-			case HttpInstrumentationTestType.SendResponseAsBlob:
-			case HttpInstrumentationTestType.ReuseAfterPartialRead:
-			case HttpInstrumentationTestType.CustomConnectionGroup:
-			case HttpInstrumentationTestType.ReuseCustomConnectionGroup:
-			case HttpInstrumentationTestType.CloseRequestStream:
-			case HttpInstrumentationTestType.ReadTimeout:
-			case HttpInstrumentationTestType.AbortResponse:
-			case HttpInstrumentationTestType.RedirectOnSameConnection:
-			case HttpInstrumentationTestType.SimpleGZip:
-			case HttpInstrumentationTestType.TestResponseStream:
-			case HttpInstrumentationTestType.LargeChunkRead:
-			case HttpInstrumentationTestType.LargeGZipRead:
-			case HttpInstrumentationTestType.GZipWithLength:
-			case HttpInstrumentationTestType.ResponseStreamCheckLength2:
-			case HttpInstrumentationTestType.ResponseStreamCheckLength:
-			case HttpInstrumentationTestType.GetNoLength:
+			case HttpRequestTestType.ReuseConnection:
+			case HttpRequestTestType.CloseIdleConnection:
+			case HttpRequestTestType.CloseCustomConnectionGroup:
+			case HttpRequestTestType.LargeHeader:
+			case HttpRequestTestType.LargeHeader2:
+			case HttpRequestTestType.SendResponseAsBlob:
+			case HttpRequestTestType.ReuseAfterPartialRead:
+			case HttpRequestTestType.CustomConnectionGroup:
+			case HttpRequestTestType.ReuseCustomConnectionGroup:
+			case HttpRequestTestType.CloseRequestStream:
+			case HttpRequestTestType.ReadTimeout:
+			case HttpRequestTestType.AbortResponse:
+			case HttpRequestTestType.RedirectOnSameConnection:
+			case HttpRequestTestType.SimpleGZip:
+			case HttpRequestTestType.TestResponseStream:
+			case HttpRequestTestType.LargeChunkRead:
+			case HttpRequestTestType.LargeGZipRead:
+			case HttpRequestTestType.GZipWithLength:
+			case HttpRequestTestType.ResponseStreamCheckLength2:
+			case HttpRequestTestType.ResponseStreamCheckLength:
+			case HttpRequestTestType.GetNoLength:
 				ctx.Assert (request.Method, Is.EqualTo ("GET"), "method");
 				break;
 
-			case HttpInstrumentationTestType.ReuseConnection2:
-			case HttpInstrumentationTestType.ServerAbortsPost:
+			case HttpRequestTestType.ReuseConnection2:
+			case HttpRequestTestType.ServerAbortsPost:
 				ctx.Assert (request.Method, Is.EqualTo ("POST"), "method");
 				break;
 
-			case HttpInstrumentationTestType.NtlmInstrumentation:
-			case HttpInstrumentationTestType.NtlmClosesConnection:
-			case HttpInstrumentationTestType.NtlmReusesConnection:
-			case HttpInstrumentationTestType.ParallelNtlm:
-			case HttpInstrumentationTestType.NtlmWhileQueued:
-			case HttpInstrumentationTestType.NtlmWhileQueued2:
+			case HttpRequestTestType.NtlmInstrumentation:
+			case HttpRequestTestType.NtlmClosesConnection:
+			case HttpRequestTestType.NtlmReusesConnection:
+			case HttpRequestTestType.ParallelNtlm:
+			case HttpRequestTestType.NtlmWhileQueued:
+			case HttpRequestTestType.NtlmWhileQueued2:
 				return await HandleNtlmRequest (
 					ctx, operation, connection, request, effectiveFlags, cancellationToken).ConfigureAwait (false);
 
-			case HttpInstrumentationTestType.RedirectNoLength:
-			case HttpInstrumentationTestType.PutChunked:
-			case HttpInstrumentationTestType.PutChunkDontCloseRequest:
-			case HttpInstrumentationTestType.ServerAbortsRedirect:
+			case HttpRequestTestType.RedirectNoLength:
+			case HttpRequestTestType.PutChunked:
+			case HttpRequestTestType.PutChunkDontCloseRequest:
+			case HttpRequestTestType.ServerAbortsRedirect:
 				break;
 
-			case HttpInstrumentationTestType.EntityTooBig:
+			case HttpRequestTestType.EntityTooBig:
 				await EntityTooBig ().ConfigureAwait (false);
 				return null;
 
-			case HttpInstrumentationTestType.PostChunked:
+			case HttpRequestTestType.PostChunked:
 				return await HandlePostChunked (
 					ctx, operation, connection, request, effectiveFlags, cancellationToken).ConfigureAwait (false);
 
-			case HttpInstrumentationTestType.PostContentLength:
+			case HttpRequestTestType.PostContentLength:
 				await PostContentLength ().ConfigureAwait (false);
 				break;
 
-			case HttpInstrumentationTestType.ClientAbortsPost:
+			case HttpRequestTestType.ClientAbortsPost:
 				await ClientAbortsPost ().ConfigureAwait (false);
 				return null;
 
-			case HttpInstrumentationTestType.ImplicitHost:
+			case HttpRequestTestType.ImplicitHost:
 				var hostAndPort = TestRunner.Uri.GetComponents (UriComponents.HostAndPort, UriFormat.Unescaped);
 				ctx.Assert (request.Headers["Host"], Is.EqualTo (hostAndPort), "host");
 				break;
 
-			case HttpInstrumentationTestType.CustomHost:
+			case HttpRequestTestType.CustomHost:
 				ctx.Assert (request.Headers["Host"], Is.EqualTo ("custom"), "host");
 				break;
 
-			case HttpInstrumentationTestType.CustomHostWithPort:
+			case HttpRequestTestType.CustomHostWithPort:
 				ctx.Assert (request.Headers["Host"], Is.EqualTo ("custom:8888"), "host");
 				break;
 
-			case HttpInstrumentationTestType.CustomHostDefaultPort:
+			case HttpRequestTestType.CustomHostDefaultPort:
 				var defaultPort = TestRunner.Server.UseSSL ? 443 : 80;
 				ctx.Assert (request.Headers["Host"], Is.EqualTo ($"custom:{defaultPort}"), "host");
 				break;
@@ -545,95 +545,95 @@ namespace Xamarin.WebTests.TestRunners
 				ctx, this, connection, request, AuthenticationState.None, cancellationToken).ConfigureAwait (false);
 
 			HttpResponse response;
-			HttpInstrumentationContent content;
+			HttpRequestContent content;
 			ListenerOperation redirect;
 
 			switch (TestRunner.EffectiveType) {
-			case HttpInstrumentationTestType.LargeHeader:
+			case HttpRequestTestType.LargeHeader:
 				response = new HttpResponse (HttpStatusCode.OK, Content);
 				response.AddHeader ("LargeTest", ConnectionHandler.GetLargeText (100));
 				return response;
 
-			case HttpInstrumentationTestType.LargeHeader2:
+			case HttpRequestTestType.LargeHeader2:
 				response = new HttpResponse (HttpStatusCode.OK, Content);
 				response.AddHeader ("LargeTest", ConnectionHandler.GetLargeText (100));
 				response.WriteAsBlob = true;
 				return response;
 
-			case HttpInstrumentationTestType.SendResponseAsBlob:
+			case HttpRequestTestType.SendResponseAsBlob:
 				return new HttpResponse (HttpStatusCode.OK, Content) {
 					WriteAsBlob = true
 				};
 
-			case HttpInstrumentationTestType.ReuseAfterPartialRead:
+			case HttpRequestTestType.ReuseAfterPartialRead:
 				return new HttpResponse (HttpStatusCode.OK, Content) {
 					WriteAsBlob = true
 				};
 
-			case HttpInstrumentationTestType.ReadTimeout:
-			case HttpInstrumentationTestType.AbortResponse:
-				content = new HttpInstrumentationContent (TestRunner, currentRequest);
+			case HttpRequestTestType.ReadTimeout:
+			case HttpRequestTestType.AbortResponse:
+				content = new HttpRequestContent (TestRunner, currentRequest);
 				return new HttpResponse (HttpStatusCode.OK, content);
 
-			case HttpInstrumentationTestType.ReuseConnection2:
+			case HttpRequestTestType.ReuseConnection2:
 				return new HttpResponse (HttpStatusCode.OK, Content);
 
-			case HttpInstrumentationTestType.RedirectOnSameConnection:
+			case HttpRequestTestType.RedirectOnSameConnection:
 				redirect = operation.RegisterRedirect (ctx, Target);
 				response = HttpResponse.CreateRedirect (HttpStatusCode.Redirect, redirect);
 				response.SetBody (new StringContent ($"{ME} Redirecting"));
 				response.WriteAsBlob = true;
 				return response;
 
-			case HttpInstrumentationTestType.RedirectNoLength:
+			case HttpRequestTestType.RedirectNoLength:
 				redirect = operation.RegisterRedirect (ctx, Target);
 				response = HttpResponse.CreateRedirect (HttpStatusCode.Redirect, redirect);
 				response.NoContentLength = true;
 				return response;
 
-			case HttpInstrumentationTestType.ServerAbortsRedirect:
+			case HttpRequestTestType.ServerAbortsRedirect:
 				if (IsSecondRequest)
 					throw ctx.AssertFail ("Should never happen.");
-				var cloned = new HttpInstrumentationHandler (this);
+				var cloned = new HttpRequestHandler (this);
 				cloned.IsSecondRequest = true;
 				redirect = operation.RegisterRedirect (ctx, cloned);
 				response = HttpResponse.CreateRedirect (HttpStatusCode.Redirect, redirect);
 				return response;
 
-			case HttpInstrumentationTestType.ServerAbortsPost:
+			case HttpRequestTestType.ServerAbortsPost:
 				return new HttpResponse (HttpStatusCode.BadRequest, Content);
 
-			case HttpInstrumentationTestType.SimpleGZip:
+			case HttpRequestTestType.SimpleGZip:
 				var gzipContent = new GZipContent (ConnectionHandler.TheQuickBrownFoxBuffer);
 				return new HttpResponse (HttpStatusCode.OK, gzipContent);
 
-			case HttpInstrumentationTestType.TestResponseStream:
+			case HttpRequestTestType.TestResponseStream:
 				response = new HttpResponse (HttpStatusCode.OK, Content);
 				response.WriteAsBlob = true;
 				return response;
 
-			case HttpInstrumentationTestType.LargeChunkRead:
+			case HttpRequestTestType.LargeChunkRead:
 				response = new HttpResponse (HttpStatusCode.OK, Content);
 				response.WriteBodyAsBlob = true;
 				return response;
 
-			case HttpInstrumentationTestType.LargeGZipRead:
+			case HttpRequestTestType.LargeGZipRead:
 				gzipContent = new GZipContent ((ChunkedContent)Content);
 				response = new HttpResponse (HttpStatusCode.OK, gzipContent);
 				return response;
 
-			case HttpInstrumentationTestType.GZipWithLength:
+			case HttpRequestTestType.GZipWithLength:
 				gzipContent = new GZipContent ((StringContent)Content);
 				response = new HttpResponse (HttpStatusCode.OK, gzipContent);
 				return response;
 
-			case HttpInstrumentationTestType.ResponseStreamCheckLength2:
-			case HttpInstrumentationTestType.ResponseStreamCheckLength:
+			case HttpRequestTestType.ResponseStreamCheckLength2:
+			case HttpRequestTestType.ResponseStreamCheckLength:
 				response = new HttpResponse (HttpStatusCode.OK, Content);
 				return response;
 
-			case HttpInstrumentationTestType.GetNoLength:
-				content = new HttpInstrumentationContent (TestRunner, currentRequest);
+			case HttpRequestTestType.GetNoLength:
+				content = new HttpRequestContent (TestRunner, currentRequest);
 				return new HttpResponse (HttpStatusCode.OK, content);
 
 			default:
@@ -667,11 +667,11 @@ namespace Xamarin.WebTests.TestRunners
 				return Target.CheckResponse (ctx, response);
 
 			switch (TestRunner.EffectiveType) {
-			case HttpInstrumentationTestType.ReadTimeout:
-			case HttpInstrumentationTestType.AbortResponse:
+			case HttpRequestTestType.ReadTimeout:
+			case HttpRequestTestType.AbortResponse:
 				return ctx.Expect (response.Status, Is.EqualTo (HttpStatusCode.OK), "response.StatusCode");
 
-			case HttpInstrumentationTestType.ReuseAfterPartialRead:
+			case HttpRequestTestType.ReuseAfterPartialRead:
 				if (!ctx.Expect (response.Content, Is.Not.Null, "response.Content != null"))
 					return false;
 
@@ -690,19 +690,19 @@ namespace Xamarin.WebTests.TestRunners
 						    WebExceptionStatus expectedError = WebExceptionStatus.Success)
 		{
 			switch (TestRunner.EffectiveType) {
-			case HttpInstrumentationTestType.EntityTooBig:
+			case HttpRequestTestType.EntityTooBig:
 			default:
 				return base.CheckResponse (ctx, response, cancellationToken, expectedStatus, expectedError);
 			}
 		}
 
-		class HttpInstrumentationRequest : TraditionalRequest
+		class HttpRequestRequest : TraditionalRequest
 		{
-			public HttpInstrumentationHandler Handler {
+			public HttpRequestHandler Handler {
 				get;
 			}
 
-			public HttpInstrumentationTestRunner TestRunner {
+			public HttpRequestTestRunner TestRunner {
 				get;
 			}
 
@@ -717,7 +717,7 @@ namespace Xamarin.WebTests.TestRunners
 				return finishedTcs.Task;
 			}
 
-			public HttpInstrumentationRequest (HttpInstrumentationHandler handler, Uri uri)
+			public HttpRequestRequest (HttpRequestHandler handler, Uri uri)
 				: base (uri)
 			{
 				Handler = handler;
@@ -726,20 +726,20 @@ namespace Xamarin.WebTests.TestRunners
 				ME = $"{GetType ().Name}({TestRunner.EffectiveType})";
 
 				switch (TestRunner.EffectiveType) {
-				case HttpInstrumentationTestType.PostChunked:
-					Content = new HttpInstrumentationContent (TestRunner, this);
+				case HttpRequestTestType.PostChunked:
+					Content = new HttpRequestContent (TestRunner, this);
 					Method = "POST";
 					SendChunked ();
 					break;
-				case HttpInstrumentationTestType.EntityTooBig:
-				case HttpInstrumentationTestType.PostContentLength:
-				case HttpInstrumentationTestType.ClientAbortsPost:
-					Content = new HttpInstrumentationContent (TestRunner, this);
+				case HttpRequestTestType.EntityTooBig:
+				case HttpRequestTestType.PostContentLength:
+				case HttpRequestTestType.ClientAbortsPost:
+					Content = new HttpRequestContent (TestRunner, this);
 					Method = "POST";
 					break;
-				case HttpInstrumentationTestType.SimpleGZip:
-				case HttpInstrumentationTestType.LargeGZipRead:
-				case HttpInstrumentationTestType.GZipWithLength:
+				case HttpRequestTestType.SimpleGZip:
+				case HttpRequestTestType.LargeGZipRead:
+				case HttpRequestTestType.GZipWithLength:
 					RequestExt.AutomaticDecompression = true;
 					break;
 				}
@@ -748,17 +748,17 @@ namespace Xamarin.WebTests.TestRunners
 			protected override Task WriteBody (TestContext ctx, CancellationToken cancellationToken)
 			{
 				switch (TestRunner.EffectiveType) {
-				case HttpInstrumentationTestType.PutChunked:
-				case HttpInstrumentationTestType.PutChunkDontCloseRequest:
+				case HttpRequestTestType.PutChunked:
+				case HttpRequestTestType.PutChunkDontCloseRequest:
 					return PutChunked ();
 
-				case HttpInstrumentationTestType.EntityTooBig:
+				case HttpRequestTestType.EntityTooBig:
 					return EntityTooBig ();
 
-				case HttpInstrumentationTestType.PostContentLength:
+				case HttpRequestTestType.PostContentLength:
 					return PostContentLength ();
 
-				case HttpInstrumentationTestType.ClientAbortsPost:
+				case HttpRequestTestType.ClientAbortsPost:
 					return ClientAbortsPost ();
 
 				default:
@@ -789,7 +789,7 @@ namespace Xamarin.WebTests.TestRunners
 						await Content.WriteToAsync (ctx, stream, cancellationToken).ConfigureAwait (false);
 						await stream.FlushAsync ();
 					} finally {
-						if (TestRunner.EffectiveType == HttpInstrumentationTestType.PutChunked)
+						if (TestRunner.EffectiveType == HttpRequestTestType.PutChunked)
 							stream.Dispose ();
 					}
 				}
@@ -808,7 +808,7 @@ namespace Xamarin.WebTests.TestRunners
 			public override async Task<Response> SendAsync (TestContext ctx, CancellationToken cancellationToken)
 			{
 				var portable = DependencyInjector.Get<IPortableSupport> ();
-				if (TestRunner.EffectiveType == HttpInstrumentationTestType.CloseRequestStream) {
+				if (TestRunner.EffectiveType == HttpRequestTestType.CloseRequestStream) {
 					Request.Method = "POST";
 					RequestExt.SetContentLength (16384);
 					var stream = await RequestExt.GetRequestStreamAsync ().ConfigureAwait (false);
@@ -832,45 +832,45 @@ namespace Xamarin.WebTests.TestRunners
 				ctx.LogDebug (4, $"{ME} GET RESPONSE FROM HTTP");
 
 				switch (TestRunner.EffectiveType) {
-				case HttpInstrumentationTestType.ReadTimeout:
+				case HttpRequestTestType.ReadTimeout:
 					return await ReadWithTimeout (5000, WebExceptionStatus.Timeout).ConfigureAwait (false);
 
-				case HttpInstrumentationTestType.AbortResponse:
-				case HttpInstrumentationTestType.NtlmWhileQueued:
+				case HttpRequestTestType.AbortResponse:
+				case HttpRequestTestType.NtlmWhileQueued:
 					return await ReadWithTimeout (0, WebExceptionStatus.RequestCanceled).ConfigureAwait (false);
 				}
 
 				using (var stream = response.GetResponseStream ()) {
 					switch (TestRunner.EffectiveType) {
-					case HttpInstrumentationTestType.ReuseAfterPartialRead:
+					case HttpRequestTestType.ReuseAfterPartialRead:
 						content = await ReadStringAsBuffer (stream, 1234).ConfigureAwait (false);
 						break;
 
-					case HttpInstrumentationTestType.TestResponseStream:
+					case HttpRequestTestType.TestResponseStream:
 						content = await TestResponseStream (stream).ConfigureAwait (false);
 						break;
 
-					case HttpInstrumentationTestType.LargeChunkRead:
+					case HttpRequestTestType.LargeChunkRead:
 						content = await LargeChunkRead (stream).ConfigureAwait (false);
 						break;
 
-					case HttpInstrumentationTestType.LargeGZipRead:
+					case HttpRequestTestType.LargeGZipRead:
 						content = await ReadAsString (stream).ConfigureAwait (false);
 						break;
 
-					case HttpInstrumentationTestType.GZipWithLength:
+					case HttpRequestTestType.GZipWithLength:
 						content = await GZipWithLength (stream).ConfigureAwait (false);
 						break;
 
-					case HttpInstrumentationTestType.ResponseStreamCheckLength2:
+					case HttpRequestTestType.ResponseStreamCheckLength2:
 						content = await ResponseStreamCheckLength (stream, true).ConfigureAwait (false);
 						break;
 
-					case HttpInstrumentationTestType.ResponseStreamCheckLength:
+					case HttpRequestTestType.ResponseStreamCheckLength:
 						content = await ResponseStreamCheckLength (stream, false).ConfigureAwait (false);
 						break;
 
-					case HttpInstrumentationTestType.GetNoLength:
+					case HttpRequestTestType.GetNoLength:
 						content = await GetNoLength (stream).ConfigureAwait (false);
 						break;
 
@@ -979,13 +979,13 @@ namespace Xamarin.WebTests.TestRunners
 			}
 		}
 
-		class HttpInstrumentationContent : HttpContent
+		class HttpRequestContent : HttpContent
 		{
-			public HttpInstrumentationTestRunner TestRunner {
+			public HttpRequestTestRunner TestRunner {
 				get;
 			}
 
-			public HttpInstrumentationRequest Request {
+			public HttpRequestRequest Request {
 				get;
 			}
 
@@ -993,29 +993,29 @@ namespace Xamarin.WebTests.TestRunners
 				get;
 			}
 
-			public HttpInstrumentationContent (HttpInstrumentationTestRunner runner, HttpInstrumentationRequest request)
+			public HttpRequestContent (HttpRequestTestRunner runner, HttpRequestRequest request)
 			{
 				TestRunner = runner;
 				Request = request;
 				ME = $"{GetType ().Name}({runner.EffectiveType})";
 
 				switch (runner.EffectiveType) {
-				case HttpInstrumentationTestType.EntityTooBig:
-				case HttpInstrumentationTestType.ClientAbortsPost:
+				case HttpRequestTestType.EntityTooBig:
+				case HttpRequestTestType.ClientAbortsPost:
 					HasLength = true;
 					Length = 16;
 					break;
-				case HttpInstrumentationTestType.PostContentLength:
+				case HttpRequestTestType.PostContentLength:
 					HasLength = true;
 					Length = ConnectionHandler.TheQuickBrownFoxBuffer.Length;
 					break;
-				case HttpInstrumentationTestType.NtlmWhileQueued2:
+				case HttpRequestTestType.NtlmWhileQueued2:
 					HasLength = true;
 					Length = ((HelloWorldHandler)request.Handler.Target).Message.Length;
 					break;
-				case HttpInstrumentationTestType.LargeChunkRead:
+				case HttpRequestTestType.LargeChunkRead:
 					break;
-				case HttpInstrumentationTestType.GetNoLength:
+				case HttpRequestTestType.GetNoLength:
 					NoLength = true;
 					break;
 				default:
@@ -1064,21 +1064,21 @@ namespace Xamarin.WebTests.TestRunners
 				ctx.LogDebug (4, $"{ME} WRITE BODY");
 
 				switch (TestRunner.EffectiveType) {
-				case HttpInstrumentationTestType.NtlmWhileQueued:
+				case HttpRequestTestType.NtlmWhileQueued:
 					await HandleNtlmWhileQueued ().ConfigureAwait (false);
 					break;
 
-				case HttpInstrumentationTestType.NtlmWhileQueued2:
+				case HttpRequestTestType.NtlmWhileQueued2:
 					await HandleNtlmWhileQueued2 ().ConfigureAwait (false);
 					break;
 
-				case HttpInstrumentationTestType.ReadTimeout:
+				case HttpRequestTestType.ReadTimeout:
 					await stream.WriteAsync (ConnectionHandler.TheQuickBrownFoxBuffer, cancellationToken).ConfigureAwait (false);
 					await stream.FlushAsync (cancellationToken);
 					await Task.WhenAny (Request.WaitForCompletion (), Task.Delay (10000));
 					break;
 
-				case HttpInstrumentationTestType.AbortResponse:
+				case HttpRequestTestType.AbortResponse:
 					await stream.WriteAsync (ConnectionHandler.TheQuickBrownFoxBuffer, cancellationToken).ConfigureAwait (false);
 					await stream.FlushAsync (cancellationToken);
 					await Task.Delay (500).ConfigureAwait (false);
@@ -1086,26 +1086,26 @@ namespace Xamarin.WebTests.TestRunners
 					await Task.WhenAny (Request.WaitForCompletion (), Task.Delay (10000));
 					break;
 
-				case HttpInstrumentationTestType.PostChunked:
+				case HttpRequestTestType.PostChunked:
 					await HandlePostChunked ().ConfigureAwait (false);
 					break;
 
-				case HttpInstrumentationTestType.EntityTooBig:
+				case HttpRequestTestType.EntityTooBig:
 					await ctx.AssertException<ProtocolViolationException> (() =>
 						stream.WriteAsync (ConnectionHandler.TheQuickBrownFoxBuffer, cancellationToken),
 						"writing too many bytes").ConfigureAwait (false);
 					break;
 
-				case HttpInstrumentationTestType.PostContentLength:
+				case HttpRequestTestType.PostContentLength:
 					await stream.WriteAsync (ConnectionHandler.TheQuickBrownFoxBuffer, cancellationToken).ConfigureAwait (false);
 					await stream.FlushAsync (cancellationToken);
 					break;
 
-				case HttpInstrumentationTestType.LargeChunkRead:
+				case HttpRequestTestType.LargeChunkRead:
 					await HandleLargeChunkRead ().ConfigureAwait (false);
 					break;
 
-				case HttpInstrumentationTestType.GetNoLength:
+				case HttpRequestTestType.GetNoLength:
 					await stream.WriteAsync (ConnectionHandler.TheQuickBrownFoxBuffer, cancellationToken).ConfigureAwait (false);
 					await stream.FlushAsync (cancellationToken);
 					stream.Dispose ();
@@ -1188,9 +1188,9 @@ namespace Xamarin.WebTests.TestRunners
 			}
 		}
 
-		class HttpInstrumentationResponse : Response
+		class HttpRequestResponse : Response
 		{
-			public HttpInstrumentationTestRunner TestRunner {
+			public HttpRequestTestRunner TestRunner {
 				get;
 			}
 
@@ -1209,7 +1209,7 @@ namespace Xamarin.WebTests.TestRunners
 				return finishedTcs.Task;
 			}
 
-			public HttpInstrumentationResponse (HttpInstrumentationRequest request, HttpWebResponse response)
+			public HttpRequestResponse (HttpRequestRequest request, HttpWebResponse response)
 				: base (request)
 			{
 				TestRunner = request.TestRunner;
@@ -1218,7 +1218,7 @@ namespace Xamarin.WebTests.TestRunners
 				ME = $"{GetType ().Name}({TestRunner.EffectiveType})";
 			}
 
-			public HttpInstrumentationResponse (HttpInstrumentationRequest request, WebException error)
+			public HttpRequestResponse (HttpRequestRequest request, WebException error)
 				: base (request)
 			{
 				TestRunner = request.TestRunner;

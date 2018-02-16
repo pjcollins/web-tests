@@ -1,10 +1,10 @@
 ﻿//
-// TestHttpInstrumentation.cs
+// TestHttpRequests.cs
 //
 // Author:
 //       Martin Baulig <mabaul@microsoft.com>
 //
-// Copyright (c) 2017 Xamarin Inc. (http://www.xamarin.com)
+// Copyright (c) 2018 Xamarin Inc. (http://www.xamarin.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -24,7 +24,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 using System;
-using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Xamarin.AsyncTests;
@@ -34,15 +33,15 @@ using Xamarin.WebTests.TestRunners;
 namespace Xamarin.WebTests.Tests
 {
 	[AsyncTestFixture]
-	public class TestHttpInstrumentation
+	public class TestHttpRequest
 	{
 		[Work]
 		[AsyncTest]
 		[HttpServerTestCategory (HttpServerTestCategory.Default)]
 		public Task Run (TestContext ctx, CancellationToken cancellationToken,
-		                 HttpServerProvider provider,
-		                 HttpInstrumentationTestType type,
-				 HttpInstrumentationTestRunner runner)
+				 HttpServerProvider provider,
+				 HttpRequestTestType type,
+				 HttpRequestTestRunner runner)
 		{
 			return runner.Run (ctx, cancellationToken);
 		}
@@ -51,9 +50,9 @@ namespace Xamarin.WebTests.Tests
 		[AsyncTest]
 		[HttpServerTestCategory (HttpServerTestCategory.NoSsl)]
 		public Task RunNoSSL (TestContext ctx, CancellationToken cancellationToken,
-		                      HttpServerProvider provider,
-		                      HttpInstrumentationTestType type,
-		                      HttpInstrumentationTestRunner runner)
+				      HttpServerProvider provider,
+				      HttpRequestTestType type,
+				      HttpRequestTestRunner runner)
 		{
 			return runner.Run (ctx, cancellationToken);
 		}
@@ -62,10 +61,10 @@ namespace Xamarin.WebTests.Tests
 		[AsyncTest]
 		[HttpServerTestCategory (HttpServerTestCategory.Stress)]
 		public Task RunStress (TestContext ctx, CancellationToken cancellationToken,
-		                       HttpServerProvider provider,
+				       HttpServerProvider provider,
 				       [Repeat (50)] int repeat,
-		                       HttpInstrumentationTestType type,
-		                       HttpInstrumentationTestRunner runner)
+				       HttpRequestTestType type,
+				       HttpRequestTestRunner runner)
 		{
 			ctx.LogDebug (1, $"RunStress: {repeat}");
 			return runner.Run (ctx, cancellationToken);
@@ -75,9 +74,9 @@ namespace Xamarin.WebTests.Tests
 		[NewWebStack]
 		[HttpServerTestCategory (HttpServerTestCategory.NewWebStack)]
 		public Task RunNewWebStack (TestContext ctx, CancellationToken cancellationToken,
-		                            HttpServerProvider provider,
-		                            HttpInstrumentationTestType type,
-					    HttpInstrumentationTestRunner runner)
+					    HttpServerProvider provider,
+					    HttpRequestTestType type,
+					    HttpRequestTestRunner runner)
 		{
 			return runner.Run (ctx, cancellationToken);
 		}
@@ -86,9 +85,9 @@ namespace Xamarin.WebTests.Tests
 		[NewWebStack]
 		[HttpServerTestCategory (HttpServerTestCategory.NewWebStack)]
 		public Task RunNewWebStackNoSSL (TestContext ctx, CancellationToken cancellationToken,
-		                                 HttpServerProvider provider,
-		                                 HttpInstrumentationTestType type,
-		                                 HttpInstrumentationTestRunner runner)
+						 HttpServerProvider provider,
+						 HttpRequestTestType type,
+						 HttpRequestTestRunner runner)
 		{
 			return runner.Run (ctx, cancellationToken);
 		}
@@ -98,20 +97,20 @@ namespace Xamarin.WebTests.Tests
 		[Experimental]
 		[HttpServerTestCategory (HttpServerTestCategory.Experimental)]
 		public Task RunExperimental (TestContext ctx, CancellationToken cancellationToken,
-		                             HttpServerProvider provider,
-		                             HttpInstrumentationTestType type,
-		                             HttpInstrumentationTestRunner runner)
+					     HttpServerProvider provider,
+					     HttpRequestTestType type,
+					     HttpRequestTestRunner runner)
 		{
 			return runner.Run (ctx, cancellationToken);
 		}
 
-		[Martin ("HttpInstrumentation")]
+		[Martin ("HttpRequest")]
 		[HttpServerTestCategory (HttpServerTestCategory.MartinTest)]
 		[AsyncTest (ParameterFilter = "martin", Unstable = true)]
 		public Task MartinTest (TestContext ctx, CancellationToken cancellationToken,
-		                        HttpServerProvider provider,
-		                        HttpInstrumentationTestType type,
-		                        HttpInstrumentationTestRunner runner)
+					HttpServerProvider provider,
+					HttpRequestTestType type,
+					HttpRequestTestRunner runner)
 		{
 			return runner.Run (ctx, cancellationToken);
 		}

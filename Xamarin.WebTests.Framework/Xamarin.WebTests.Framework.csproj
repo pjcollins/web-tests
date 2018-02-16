@@ -244,6 +244,12 @@
     <Compile Include="Xamarin.WebTests.TestFramework\HttpServerProviderFilter.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\HttpClientTestTypeAttribute.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\HttpListenerTestTypeAttribute.cs" />
+    <Compile Include="Xamarin.WebTests.TestRunners\HttpRequestTestRunner.cs" />
+    <Compile Include="Xamarin.WebTests.TestFramework\HttpRequestTestRunnerAttribute.cs" />
+    <Compile Include="Xamarin.WebTests.TestRunners\HttpRequestHandler.cs" />
+    <Compile Include="Xamarin.WebTests.TestFramework\HttpRequestTestType.cs" />
+    <Compile Include="Xamarin.WebTests.TestFramework\HttpRequestTestTypeAttribute.cs" />
+    <Compile Include="Xamarin.WebTests.TestFramework\HttpRequestTestFlags.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="..\CA\invalid-server-cert.pfx">
