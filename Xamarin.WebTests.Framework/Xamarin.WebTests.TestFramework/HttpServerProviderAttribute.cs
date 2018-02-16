@@ -57,8 +57,8 @@ namespace Xamarin.WebTests.TestFramework
 		bool UsingSsl (HttpServerTestCategory category)
 		{
 			switch (category) {
-			case HttpServerTestCategory.HttpInstrumentationNoSSL:
-			case HttpServerTestCategory.HttpInstrumentationNewWebStackNoSSL:
+			case HttpServerTestCategory.NoSsl:
+			case HttpServerTestCategory.NewWebStackNoSsl:
 				return false;
 			default:
 				return true;

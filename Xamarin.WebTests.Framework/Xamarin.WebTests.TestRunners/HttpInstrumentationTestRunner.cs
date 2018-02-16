@@ -155,24 +155,24 @@ namespace Xamarin.WebTests.TestRunners
 				switch (category) {
 				case HttpServerTestCategory.MartinTest:
 					return false;
-				case HttpServerTestCategory.HttpInstrumentation:
+				case HttpServerTestCategory.Default:
 					return flags == HttpInstrumentationTestFlags.Working ||
 						flags == HttpInstrumentationTestFlags.WorkingRequireSSL;
-				case HttpServerTestCategory.HttpInstrumentationNoSSL:
+				case HttpServerTestCategory.NoSsl:
 					return flags == HttpInstrumentationTestFlags.Working;
-				case HttpServerTestCategory.HttpInstrumentationStress:
+				case HttpServerTestCategory.Stress:
 					return flags == HttpInstrumentationTestFlags.Stress;
-				case HttpServerTestCategory.HttpInstrumentationNewWebStack:
+				case HttpServerTestCategory.NewWebStack:
 					if (!setup.UsingDotNet &&
 					    (flags == HttpInstrumentationTestFlags.NewWebStackMono ||
 					     flags == HttpInstrumentationTestFlags.NewWebStackRequireSSL))
 						return true;
 					return flags == HttpInstrumentationTestFlags.NewWebStack;
-				case HttpServerTestCategory.HttpInstrumentationNewWebStackNoSSL:
+				case HttpServerTestCategory.NewWebStackNoSsl:
 					if (flags == HttpInstrumentationTestFlags.NewWebStackMono && !setup.UsingDotNet)
 						return true;
 					return flags == HttpInstrumentationTestFlags.NewWebStack;
-				case HttpServerTestCategory.HttpInstrumentationExperimental:
+				case HttpServerTestCategory.Experimental:
 					return flags == HttpInstrumentationTestFlags.Unstable;
 				default:
 					throw ctx.AssertFail (category);

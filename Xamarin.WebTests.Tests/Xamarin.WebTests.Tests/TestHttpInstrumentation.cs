@@ -42,7 +42,7 @@ namespace Xamarin.WebTests.Tests
 	{
 		[Work]
 		[AsyncTest]
-		[HttpServerTestCategory (HttpServerTestCategory.HttpInstrumentation)]
+		[HttpServerTestCategory (HttpServerTestCategory.Default)]
 		public Task Run (TestContext ctx, CancellationToken cancellationToken,
 		                 HttpServerProvider provider,
 		                 HttpInstrumentationTestType type,
@@ -53,7 +53,7 @@ namespace Xamarin.WebTests.Tests
 
 		[Work]
 		[AsyncTest]
-		[HttpServerTestCategory (HttpServerTestCategory.HttpInstrumentationNoSSL)]
+		[HttpServerTestCategory (HttpServerTestCategory.NoSsl)]
 		public Task RunNoSSL (TestContext ctx, CancellationToken cancellationToken,
 		                      HttpServerProvider provider,
 		                      HttpInstrumentationTestType type,
@@ -64,7 +64,7 @@ namespace Xamarin.WebTests.Tests
 
 		[Stress]
 		[AsyncTest]
-		[HttpServerTestCategory (HttpServerTestCategory.HttpInstrumentationStress)]
+		[HttpServerTestCategory (HttpServerTestCategory.Stress)]
 		public Task RunStress (TestContext ctx, CancellationToken cancellationToken,
 		                       HttpServerProvider provider,
 				       [Repeat (50)] int repeat,
@@ -77,7 +77,7 @@ namespace Xamarin.WebTests.Tests
 
 		[AsyncTest]
 		[NewWebStack]
-		[HttpServerTestCategory (HttpServerTestCategory.HttpInstrumentationNewWebStack)]
+		[HttpServerTestCategory (HttpServerTestCategory.NewWebStack)]
 		public Task RunNewWebStack (TestContext ctx, CancellationToken cancellationToken,
 		                            HttpServerProvider provider,
 		                            HttpInstrumentationTestType type,
@@ -88,7 +88,7 @@ namespace Xamarin.WebTests.Tests
 
 		[AsyncTest]
 		[NewWebStack]
-		[HttpServerTestCategory (HttpServerTestCategory.HttpInstrumentationNewWebStack)]
+		[HttpServerTestCategory (HttpServerTestCategory.NewWebStack)]
 		public Task RunNewWebStackNoSSL (TestContext ctx, CancellationToken cancellationToken,
 		                                 HttpServerProvider provider,
 		                                 HttpInstrumentationTestType type,
@@ -100,7 +100,7 @@ namespace Xamarin.WebTests.Tests
 		[Work]
 		[AsyncTest]
 		[Experimental]
-		[HttpServerTestCategory (HttpServerTestCategory.HttpInstrumentationExperimental)]
+		[HttpServerTestCategory (HttpServerTestCategory.Experimental)]
 		public Task RunExperimental (TestContext ctx, CancellationToken cancellationToken,
 		                             HttpServerProvider provider,
 		                             HttpInstrumentationTestType type,

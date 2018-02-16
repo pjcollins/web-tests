@@ -30,12 +30,12 @@ namespace Xamarin.WebTests.TestFramework
 	[Flags]
 	public enum HttpServerTestCategory
 	{
-		HttpInstrumentation,
-		HttpInstrumentationNoSSL,
-		HttpInstrumentationStress,
-		HttpInstrumentationNewWebStack,
-		HttpInstrumentationNewWebStackNoSSL,
-		HttpInstrumentationExperimental,
+		Default,
+		NoSsl,
+		Stress,
+		NewWebStack,
+		NewWebStackNoSsl,
+		Experimental,
 
 		MartinTest
 	}
