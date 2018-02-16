@@ -102,6 +102,9 @@ namespace Xamarin.WebTests.TestRunners
 				OperationFlags = HttpOperationFlags.AbortAfterClientExits;
 				CloseConnection = false;
 				break;
+			case HttpRequestTestType.ReadTimeout:
+				CloseConnection = false;
+				break;
 			case HttpRequestTestType.RedirectNoLength:
 				Target = new HelloWorldHandler (ME);
 				OperationFlags |= HttpOperationFlags.RedirectOnNewConnection;
