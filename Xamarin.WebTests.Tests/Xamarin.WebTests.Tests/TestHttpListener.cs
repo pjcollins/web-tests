@@ -1,5 +1,5 @@
 ﻿//
-// TestHttpListenerInstrumentation.cs
+// TestHttpListener.cs
 //
 // Author:
 //       Martin Baulig <mabaul@microsoft.com>
@@ -38,7 +38,7 @@ namespace Xamarin.WebTests
 {
 	[New]
 	[AsyncTestFixture]
-	public class TestHttpListenerInstrumentation
+	public class TestHttpListener
 	{
 		[Work]
 		[AsyncTest]
