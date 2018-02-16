@@ -53,6 +53,11 @@ namespace Xamarin.WebTests.TestFramework
 			return true;
 		}
 
+		bool SupportsHttpListener (ConnectionProvider provider)
+		{
+			return provider.HasFlag (ConnectionProviderFlags.SupportsHttpListener);
+		}
+
 		bool HasNewWebStack ()
 		{
 			var setup = DependencyInjector.Get<IConnectionFrameworkSetup> ();
@@ -74,6 +79,8 @@ namespace Xamarin.WebTests.TestFramework
 				return HasNewWebStack () && SupportsSsl (provider);
 			case HttpServerTestCategory.NewWebStackNoSsl:
 				return HasNewWebStack ();
+			case HttpServerTestCategory.HttpListener:
+				return SupportsHttpListener (provider);
 			case HttpServerTestCategory.MartinTest:
 				return SupportsSsl (provider);
 			default:

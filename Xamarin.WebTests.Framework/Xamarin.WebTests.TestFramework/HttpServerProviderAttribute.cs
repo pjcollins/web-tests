@@ -59,6 +59,7 @@ namespace Xamarin.WebTests.TestFramework
 			switch (category) {
 			case HttpServerTestCategory.NoSsl:
 			case HttpServerTestCategory.NewWebStackNoSsl:
+			case HttpServerTestCategory.HttpListener:
 				return false;
 			default:
 				return true;
@@ -91,7 +92,7 @@ namespace Xamarin.WebTests.TestFramework
 				var endPoint = ConnectionTestHelper.GetEndPoint (ctx);
 				var uri = new Uri ($"https://{endPoint.Address}:{endPoint.Port}/");
 				return new HttpServerProvider (
-					$"https:{provider.Name}", uri, endPoint,
+					$"https:{category}:{provider.Name}", uri, endPoint,
 					HttpServerFlags.SSL, provider.SslStreamProvider);
 			}
 
@@ -100,7 +101,7 @@ namespace Xamarin.WebTests.TestFramework
 				var endPoint = ConnectionTestHelper.GetEndPoint (ctx);
 				var uri = new Uri ($"http://{endPoint.Address}:{endPoint.Port}/");
 				return new HttpServerProvider (
-					$"http", uri, endPoint, HttpServerFlags.NoSSL, null);
+					$"http:{category}", uri, endPoint, HttpServerFlags.NoSSL, null);
 			}
 		}
 	}

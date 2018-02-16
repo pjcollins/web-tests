@@ -43,23 +43,21 @@ namespace Xamarin.WebTests
 	{
 		[Work]
 		[AsyncTest]
-		[ConnectionTestFlags (ConnectionTestFlags.RequireDotNet)]
-		[ConnectionTestCategory (ConnectionTestCategory.HttpListener)]
+		[HttpServerTestCategory (HttpServerTestCategory.HttpListener)]
 		public Task Run (TestContext ctx, CancellationToken cancellationToken,
-				 ConnectionTestProvider provider,
-				 HttpListenerTestParameters parameters,
+		                 HttpServerProvider provider,
+		                 HttpListenerTestType type,
 				 HttpListenerTestRunner runner)
 		{
 			return runner.Run (ctx, cancellationToken);
 		}
 
 		[Martin ("HttpListenerInstrumentation")]
-		[ConnectionTestFlags (ConnectionTestFlags.RequireDotNet)]
-		[ConnectionTestCategory (ConnectionTestCategory.MartinTest)]
+		[HttpServerTestCategory (HttpServerTestCategory.MartinTest)]
 		[AsyncTest (Unstable = true)]
 		public Task MartinTest (TestContext ctx, CancellationToken cancellationToken,
-					ConnectionTestProvider provider,
-					HttpListenerTestParameters parameters,
+		                        HttpServerProvider provider,
+		                        HttpListenerTestType type,
 					HttpListenerTestRunner runner)
 		{
 			return runner.Run (ctx, cancellationToken);

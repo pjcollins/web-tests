@@ -24,13 +24,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 using System;
-using System.Linq;
 using System.Collections.Generic;
 using Xamarin.AsyncTests;
 
 namespace Xamarin.WebTests.TestFramework
 {
-	using ConnectionFramework;
 	using TestRunners;
 
 	[AttributeUsage (AttributeTargets.Enum | AttributeTargets.Parameter, AllowMultiple = false)]

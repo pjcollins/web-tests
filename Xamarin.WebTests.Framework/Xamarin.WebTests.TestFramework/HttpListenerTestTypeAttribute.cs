@@ -1,5 +1,5 @@
 ﻿//
-// HttpListenerTestParameters.cs
+// HttpListenerTestTypeAttribute.cs
 //
 // Author:
 //       Martin Baulig <mabaul@microsoft.com>
@@ -24,37 +24,45 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 using System;
-using System.Net;
-using System.Security.Cryptography.X509Certificates;
+using System.Collections.Generic;
+using Xamarin.AsyncTests;
 
 namespace Xamarin.WebTests.TestFramework
 {
-	using ConnectionFramework;
-	using HttpFramework;
+	using TestRunners;
 
-	[HttpListenerTestParameters]
-	public class HttpListenerTestParameters : InstrumentationTestParameters
+	[AttributeUsage (AttributeTargets.Enum | AttributeTargets.Parameter, AllowMultiple = false)]
+	public class HttpListenerTestTypeAttribute : TestParameterAttribute, ITestParameterSource<HttpListenerTestType>
 	{
-		public HttpListenerTestType Type {
-			get;
+		public HttpListenerTestType? Type {
+			get; set;
 		}
 
-		public HttpListenerTestParameters (ConnectionTestCategory category, HttpListenerTestType type,
-		                                   string identifier, X509Certificate certificate)
-			: base (category, identifier, certificate, type.ToString ())
+		public HttpListenerTestTypeAttribute (string filter = null)
+			: base (filter, TestFlags.Browsable | TestFlags.ContinueOnError)
+		{
+		}
+
+		public HttpListenerTestTypeAttribute (HttpListenerTestType type)
+			: base (null, TestFlags.Browsable | TestFlags.ContinueOnError)
 		{
 			Type = type;
 		}
 
-		protected HttpListenerTestParameters (HttpListenerTestParameters other)
-			: base (other)
+		public IEnumerable<HttpListenerTestType> GetParameters (TestContext ctx, string filter)
 		{
-			Type = other.Type;
-		}
+			if (filter != null)
+				throw new NotImplementedException ();
 
-		public override ConnectionParameters DeepClone ()
-		{
-			return new HttpListenerTestParameters (this);
+			var category = ctx.GetParameter<HttpServerTestCategory> ();
+
+			if (Type != null) {
+				yield return Type.Value;
+				yield break;
+			}
+
+			foreach (var type in HttpListenerTestRunner.GetTestTypes (ctx, category))
+				yield return type;
 		}
 	}
 }

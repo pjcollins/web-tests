@@ -52,39 +52,13 @@ namespace Xamarin.WebTests.TestFramework
 
 		public HttpListenerTestRunner CreateInstance (TestContext ctx)
 		{
-			var provider = ctx.GetParameter<ConnectionTestProvider> ();
-
-			var parameters = ctx.GetParameter<HttpListenerTestParameters> ();
-
-			ProtocolVersions protocolVersion;
-			if (ctx.TryGetParameter<ProtocolVersions> (out protocolVersion))
-				parameters.ProtocolVersion = protocolVersion;
-
-			IPortableEndPoint serverEndPoint;
-
-			if (parameters.ListenAddress != null)
-				serverEndPoint = parameters.ListenAddress;
-			else if (parameters.EndPoint != null)
-				serverEndPoint = parameters.EndPoint;
-			else
-				serverEndPoint = ConnectionTestHelper.GetEndPoint (ctx);
-
-			if (parameters.EndPoint == null)
-				parameters.EndPoint = serverEndPoint;
-			if (parameters.ListenAddress == null)
-				parameters.ListenAddress = serverEndPoint;
-
 			var flags = ServerFlags | HttpServerFlags.HttpListener | HttpServerFlags.NoSSL;
 
-			Uri uri;
-			if (parameters.TargetHost == null) {
-				parameters.TargetHost = parameters.EndPoint.HostName;
-				uri = new Uri ($"http://{parameters.EndPoint.Address}:{parameters.EndPoint.Port}/");
-			} else {
-				uri = new Uri ($"http://{parameters.TargetHost}/");
-			}
+			var provider = ctx.GetParameter<HttpServerProvider> ();
 
-			return new HttpListenerTestRunner (parameters.EndPoint, uri, flags, parameters.Type);
+			var type = ctx.GetParameter<HttpListenerTestType> ();
+
+			return new HttpListenerTestRunner (provider, type);
 		}
 	}
 }

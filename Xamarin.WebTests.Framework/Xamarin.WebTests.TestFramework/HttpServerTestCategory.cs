@@ -36,6 +36,7 @@ namespace Xamarin.WebTests.TestFramework
 		NewWebStack,
 		NewWebStackNoSsl,
 		Experimental,
+		HttpListener,
 
 		MartinTest
 	}

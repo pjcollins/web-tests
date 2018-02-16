@@ -63,9 +63,9 @@ namespace Xamarin.WebTests.TestRunners
 		}
 
 		public HttpListenerTestRunner (
-			IPortableEndPoint endpoint, Uri uri, HttpServerFlags flags,
-			HttpListenerTestType type)
-			: base (endpoint, uri, flags, type.ToString ())
+			HttpServerProvider provider, HttpListenerTestType type)
+			: base (provider.EndPoint, provider.Uri, provider.ServerFlags,
+				type.ToString ())
 		{
 			Type = type;
 		}
@@ -77,9 +77,9 @@ namespace Xamarin.WebTests.TestRunners
 			(HttpListenerTestType.SimpleInstrumentation, HttpListenerTestFlags.Working),
 		};
 
-		public static IList<HttpListenerTestType> GetTestTypes (TestContext ctx, ConnectionTestCategory category)
+		public static IList<HttpListenerTestType> GetTestTypes (TestContext ctx, HttpServerTestCategory category)
 		{
-			if (category == ConnectionTestCategory.MartinTest)
+			if (category == HttpServerTestCategory.MartinTest)
 				return new[] { MartinTest };
 
 			var setup = DependencyInjector.Get<IConnectionFrameworkSetup> ();
@@ -88,9 +88,9 @@ namespace Xamarin.WebTests.TestRunners
 			bool Filter (HttpListenerTestFlags flags)
 			{
 				switch (category) {
-				case ConnectionTestCategory.MartinTest:
+				case HttpServerTestCategory.MartinTest:
 					return false;
-				case ConnectionTestCategory.HttpListener:
+				case HttpServerTestCategory.HttpListener:
 					if (flags == HttpListenerTestFlags.Working)
 						return true;
 					return false;
@@ -98,31 +98,6 @@ namespace Xamarin.WebTests.TestRunners
 					throw ctx.AssertFail (category);
 				}
 			}
-		}
-
-		static string GetTestName (ConnectionTestCategory category, HttpListenerTestType type, params object[] args)
-		{
-			var sb = new StringBuilder ();
-			sb.Append (type);
-			foreach (var arg in args) {
-				sb.AppendFormat (":{0}", arg);
-			}
-			return sb.ToString ();
-		}
-
-		public static HttpListenerTestParameters GetParameters (TestContext ctx, ConnectionTestCategory category,
-		                                                        HttpListenerTestType type)
-		{
-			var certificateProvider = DependencyInjector.Get<ICertificateProvider> ();
-			var acceptAll = certificateProvider.AcceptAll ();
-
-			var name = GetTestName (category, type);
-
-			var parameters = new HttpListenerTestParameters (category, type, name, ResourceManager.SelfSignedServerCertificate) {
-				ClientCertificateValidator = acceptAll
-			};
-
-			return parameters;
 		}
 
 		protected override (Handler handler, HttpOperationFlags flags) CreateHandler (TestContext ctx, bool primary)
