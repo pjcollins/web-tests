@@ -84,7 +84,7 @@ namespace Xamarin.WebTests.TestFramework
 				uri = new Uri ($"http://{parameters.TargetHost}/");
 			}
 
-			return new HttpListenerTestRunner (parameters.EndPoint, parameters, provider, uri, flags);
+			return new HttpListenerTestRunner (parameters.EndPoint, parameters, provider, uri, flags, parameters.Type);
 		}
 	}
 }

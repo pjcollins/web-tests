@@ -92,7 +92,7 @@ namespace Xamarin.WebTests.TestFramework
 				uri = new Uri (string.Format ("http{0}://{1}/", ssl ? "s" : "", parameters.TargetHost));
 			}
 
-			return new HttpClientTestRunner (parameters.EndPoint, parameters, provider, uri, flags);
+			return new HttpClientTestRunner (parameters.EndPoint, parameters, provider, uri, flags, parameters.Type);
 		}
 	}
 }

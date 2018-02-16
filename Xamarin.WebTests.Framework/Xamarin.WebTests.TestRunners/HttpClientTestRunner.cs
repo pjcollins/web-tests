@@ -49,11 +49,11 @@ namespace Xamarin.WebTests.TestRunners
 	[HttpClientTestRunner]
 	public class HttpClientTestRunner : InstrumentationTestRunner
 	{
-		new public HttpClientTestParameters Parameters {
-			get { return (HttpClientTestParameters)base.Parameters; }
+		public HttpClientTestType Type {
+			get;
 		}
 
-		public HttpClientTestType EffectiveType => GetEffectiveType (Parameters.Type);
+		public HttpClientTestType EffectiveType => GetEffectiveType (Type);
 
 		static HttpClientTestType GetEffectiveType (HttpClientTestType type)
 		{
@@ -67,9 +67,11 @@ namespace Xamarin.WebTests.TestRunners
 		}
 
 		public HttpClientTestRunner (IPortableEndPoint endpoint, HttpClientTestParameters parameters,
-					     ConnectionTestProvider provider, Uri uri, HttpServerFlags flags)
+					     ConnectionTestProvider provider, Uri uri, HttpServerFlags flags,
+		                             HttpClientTestType type)
 			: base (endpoint, parameters, provider, uri, flags)
 		{
+			Type = type;
 			ME = $"{GetType ().Name}({EffectiveType})";
 		}
 

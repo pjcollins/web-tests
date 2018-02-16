@@ -59,10 +59,6 @@ namespace Xamarin.WebTests.TestRunners
 			get;
 		}
 
-		new public InstrumentationTestParameters Parameters {
-			get { return (InstrumentationTestParameters)base.Parameters; }
-		}
-
 		public HttpServer Server {
 			get;
 		}
