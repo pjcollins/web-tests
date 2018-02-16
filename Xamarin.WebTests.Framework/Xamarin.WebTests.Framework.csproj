@@ -183,8 +183,6 @@
     <Compile Include="Xamarin.WebTests.TestRunners\HttpInstrumentationTestRunner.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\HttpInstrumentationTestType.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\HttpInstrumentationTestRunnerAttribute.cs" />
-    <Compile Include="Xamarin.WebTests.TestFramework\HttpInstrumentationTestParameters.cs" />
-    <Compile Include="Xamarin.WebTests.TestFramework\HttpInstrumentationTestParametersAttribute.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\LongRunningAttribute.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\StressAttribute.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\NewWebStackAttribute.cs" />
@@ -242,6 +240,7 @@
     <Compile Include="Xamarin.WebTests.TestRunners\HttpInstrumentationHandler.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\HttpValidationTestType.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\SslStreamTestType.cs" />
+    <Compile Include="Xamarin.WebTests.TestFramework\HttpInstrumentationTestTypeAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="..\CA\invalid-server-cert.pfx">

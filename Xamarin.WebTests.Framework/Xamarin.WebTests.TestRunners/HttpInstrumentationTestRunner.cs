@@ -192,21 +192,6 @@ namespace Xamarin.WebTests.TestRunners
 
 		const int IdleTime = 750;
 
-		public static HttpInstrumentationTestParameters GetParameters (TestContext ctx, ConnectionTestCategory category,
-									       HttpInstrumentationTestType type)
-		{
-			var certificateProvider = DependencyInjector.Get<ICertificateProvider> ();
-			var acceptAll = certificateProvider.AcceptAll ();
-
-			var name = GetTestName (category, type);
-
-			var parameters = new HttpInstrumentationTestParameters (category, type, name, ResourceManager.SelfSignedServerCertificate) {
-				ClientCertificateValidator = acceptAll
-			};
-
-			return parameters;
-		}
-
 		protected override async Task RunSecondary (TestContext ctx, CancellationToken cancellationToken)
 		{
 			var me = $"{ME}.{nameof (RunSecondary)}()";

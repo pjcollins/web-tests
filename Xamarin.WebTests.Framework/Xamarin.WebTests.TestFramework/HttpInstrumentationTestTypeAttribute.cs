@@ -1,5 +1,5 @@
 ﻿//
-// HttpInstrumentationTestParameters.cs
+// HttpInstrumentationTestTypeAttribute.cs
 //
 // Author:
 //       Martin Baulig <mabaul@microsoft.com>
@@ -23,39 +23,48 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-
 using System;
-using System.Net;
-using System.Security.Cryptography.X509Certificates;
+using System.Linq;
+using System.Collections.Generic;
+using Xamarin.AsyncTests;
 
 namespace Xamarin.WebTests.TestFramework
 {
 	using ConnectionFramework;
-	using HttpFramework;
+	using TestRunners;
 
-	[HttpInstrumentationTestParameters]
-	public class HttpInstrumentationTestParameters : InstrumentationTestParameters
+	[AttributeUsage (AttributeTargets.Enum | AttributeTargets.Parameter, AllowMultiple = false)]
+	public class HttpInstrumentationTestTypeAttribute : TestParameterAttribute, ITestParameterSource<HttpInstrumentationTestType>
 	{
-		public HttpInstrumentationTestType Type {
-			get;
+		public HttpInstrumentationTestType? Type {
+			get; set;
 		}
 
-		public HttpInstrumentationTestParameters (ConnectionTestCategory category, HttpInstrumentationTestType type,
-		                                          string identifier, X509Certificate certificate)
-			: base (category, identifier, certificate, type.ToString ())
+		public HttpInstrumentationTestTypeAttribute (string filter = null)
+			: base (filter, TestFlags.Browsable | TestFlags.ContinueOnError)
+		{
+		}
+
+		public HttpInstrumentationTestTypeAttribute (HttpInstrumentationTestType type)
+			: base (null, TestFlags.Browsable | TestFlags.ContinueOnError)
 		{
 			Type = type;
 		}
 
-		protected HttpInstrumentationTestParameters (HttpInstrumentationTestParameters other)
-			: base (other)
+		public IEnumerable<HttpInstrumentationTestType> GetParameters (TestContext ctx, string filter)
 		{
-			Type = other.Type;
-		}
+			if (filter != null)
+				throw new NotImplementedException ();
 
-		public override ConnectionParameters DeepClone ()
-		{
-			return new HttpInstrumentationTestParameters (this);
+			var category = ctx.GetParameter<ConnectionTestCategory> ();
+
+			if (Type != null) {
+				yield return Type.Value;
+				yield break;
+			}
+
+			foreach (var type in HttpInstrumentationTestRunner.GetInstrumentationTypes (ctx, category))
+				yield return type;
 		}
 	}
 }
