@@ -193,6 +193,8 @@ namespace Xamarin.WebTests.TestRunners
 			return sb.ToString ();
 		}
 
+		const int IdleTime = 750;
+
 		public static HttpInstrumentationTestParameters GetParameters (TestContext ctx, ConnectionTestCategory category,
 									       HttpInstrumentationTestType type)
 		{
@@ -226,40 +228,29 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.SimpleQueuedRequest:
 			case HttpInstrumentationTestType.CancelQueuedRequest:
 				parameters.HasReadHandler = true;
-				parameters.ConnectionLimit = 1;
 				break;
 			case HttpInstrumentationTestType.CancelMainWhileQueued:
 			case HttpInstrumentationTestType.NtlmWhileQueued:
-				parameters.ConnectionLimit = 1;
 				parameters.ExpectedStatus = HttpStatusCode.InternalServerError;
 				parameters.ExpectedError = WebExceptionStatus.RequestCanceled;
 				parameters.HasReadHandler = true;
 				break;
 			case HttpInstrumentationTestType.NtlmWhileQueued2:
-				parameters.ConnectionLimit = 1;
 				parameters.HasReadHandler = true;
 				break;
 			case HttpInstrumentationTestType.ThreeParallelRequests:
-				parameters.ConnectionLimit = 5;
 				parameters.HasReadHandler = true;
 				break;
 			case HttpInstrumentationTestType.ParallelRequestsSomeQueued:
-				parameters.CountParallelRequests = 5;
-				parameters.ConnectionLimit = 3;
 				parameters.HasReadHandler = true;
 				break;
 			case HttpInstrumentationTestType.ManyParallelRequests:
-				parameters.CountParallelRequests = 10;
-				parameters.ConnectionLimit = 5;
 				parameters.HasReadHandler = true;
 				break;
 			case HttpInstrumentationTestType.ManyParallelRequestsStress:
-				parameters.CountParallelRequests = 100;
-				parameters.ConnectionLimit = 25;
 				parameters.HasReadHandler = true;
 				break;
 			case HttpInstrumentationTestType.CloseIdleConnection:
-				parameters.IdleTime = 750;
 				break;
 			case HttpInstrumentationTestType.ReadTimeout:
 				parameters.ExpectedStatus = HttpStatusCode.InternalServerError;
@@ -371,7 +362,7 @@ namespace Xamarin.WebTests.TestRunners
 				break;
 			case HttpInstrumentationTestType.CloseIdleConnection:
 				ctx.LogDebug (5, $"{me}: active connections: {PrimaryOperation.ServicePoint.CurrentConnections}");
-				await Task.Delay ((int)(Parameters.IdleTime * 2.5)).ConfigureAwait (false);
+				await Task.Delay ((int)(IdleTime * 2.5)).ConfigureAwait (false);
 				ctx.LogDebug (5, $"{me}: active connections #1: {PrimaryOperation.ServicePoint.CurrentConnections}");
 				ctx.Assert (PrimaryOperation.ServicePoint.CurrentConnections, Is.EqualTo (0), "current connections");
 				break;
@@ -562,8 +553,9 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.ManyParallelRequests:
 			case HttpInstrumentationTestType.ManyParallelRequestsStress:
 				ctx.Assert (PrimaryOperation.HasRequest, "current request");
-				var parallelTasks = new Task [Parameters.CountParallelRequests];
-				var parallelOperations = new InstrumentationOperation [Parameters.CountParallelRequests];
+				var countParallel = CountParallelRequests ();
+				var parallelTasks = new Task [countParallel];
+				var parallelOperations = new InstrumentationOperation [countParallel];
 				for (int i = 0; i < parallelOperations.Length; i++)
 					parallelOperations [i] = StartOperation (
 						ctx, cancellationToken, HelloWorldHandler.GetSimple (),
@@ -625,6 +617,20 @@ namespace Xamarin.WebTests.TestRunners
 
 			default:
 				throw ctx.AssertFail (EffectiveType);
+			}
+
+			int CountParallelRequests ()
+			{
+				switch (EffectiveType) {
+				case HttpInstrumentationTestType.ParallelRequestsSomeQueued:
+					return 5;
+				case HttpInstrumentationTestType.ManyParallelRequests:
+					return 10;
+				case HttpInstrumentationTestType.ManyParallelRequestsStress:
+					return 100;
+				default:
+					throw ctx.AssertFail (EffectiveType);
+				}
 			}
 
 			Task RunSimpleHello ()
@@ -733,10 +739,6 @@ namespace Xamarin.WebTests.TestRunners
 
 			void ConfigurePrimaryRequest (TestContext ctx, TraditionalRequest request)
 			{
-				if (Parent.Parameters.ConnectionLimit != 0)
-					ServicePoint.ConnectionLimit = Parent.Parameters.ConnectionLimit;
-				if (Parent.Parameters.IdleTime != 0)
-					ServicePoint.MaxIdleTime = Parent.Parameters.IdleTime;
 				request.RequestExt.ReadWriteTimeout = int.MaxValue;
 				request.RequestExt.Timeout = int.MaxValue;
 
@@ -747,6 +749,32 @@ namespace Xamarin.WebTests.TestRunners
 				case HttpInstrumentationTestType.CustomConnectionGroup:
 				case HttpInstrumentationTestType.ReuseCustomConnectionGroup:
 					request.RequestExt.ConnectionGroupName = "custom";
+					break;
+				case HttpInstrumentationTestType.CloseIdleConnection:
+					ServicePoint.MaxIdleTime = IdleTime;
+					break;
+				case HttpInstrumentationTestType.SimpleQueuedRequest:
+				case HttpInstrumentationTestType.CancelQueuedRequest:
+					ServicePoint.ConnectionLimit = 1;
+					break;
+				case HttpInstrumentationTestType.CancelMainWhileQueued:
+				case HttpInstrumentationTestType.NtlmWhileQueued:
+					ServicePoint.ConnectionLimit = 1;
+					break;
+				case HttpInstrumentationTestType.NtlmWhileQueued2:
+					ServicePoint.ConnectionLimit = 1;
+					break;
+				case HttpInstrumentationTestType.ThreeParallelRequests:
+					ServicePoint.ConnectionLimit = 5;
+					break;
+				case HttpInstrumentationTestType.ParallelRequestsSomeQueued:
+					ServicePoint.ConnectionLimit = 3;
+					break;
+				case HttpInstrumentationTestType.ManyParallelRequests:
+					ServicePoint.ConnectionLimit = 5;
+					break;
+				case HttpInstrumentationTestType.ManyParallelRequestsStress:
+					ServicePoint.ConnectionLimit = 25;
 					break;
 				}
 			}

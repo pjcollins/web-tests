@@ -50,11 +50,6 @@ namespace Xamarin.WebTests.TestFramework
 			: base (other)
 		{
 			Type = other.Type;
-			NeedsServicePoint = other.NeedsServicePoint;
-		}
-
-		public bool NeedsServicePoint {
-			get; set;
 		}
 
 		public override ConnectionParameters DeepClone ()

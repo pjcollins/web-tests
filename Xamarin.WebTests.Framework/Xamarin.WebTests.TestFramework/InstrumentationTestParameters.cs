@@ -62,10 +62,6 @@ namespace Xamarin.WebTests.TestFramework {
 			get; set;
 		}
 
-		public int ConnectionLimit {
-			get; set;
-		}
-
 		public bool HasReadHandler {
 			get; set;
 		}

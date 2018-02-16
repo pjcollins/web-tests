@@ -51,17 +51,6 @@ namespace Xamarin.WebTests.TestFramework
 			: base (other)
 		{
 			Type = other.Type;
-			CountParallelRequests = other.CountParallelRequests;
-			ConnectionLimit = other.ConnectionLimit;
-			IdleTime = other.IdleTime;
-		}
-
-		public int CountParallelRequests {
-			get; set;
-		}
-
-		public int IdleTime {
-			get; set;
 		}
 
 		public override ConnectionParameters DeepClone ()

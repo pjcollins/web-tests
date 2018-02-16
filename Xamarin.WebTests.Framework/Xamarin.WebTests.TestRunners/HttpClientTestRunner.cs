@@ -177,17 +177,13 @@ namespace Xamarin.WebTests.TestRunners
 				parameters.ExpectedStatus = HttpStatusCode.OK;
 				break;
 			case HttpClientTestType.SimpleQueuedRequest:
-				parameters.NeedsServicePoint = true;
 				parameters.HasReadHandler = true;
-				parameters.ConnectionLimit = 1;
 				parameters.ExpectedError = WebExceptionStatus.Success;
 				parameters.ExpectedStatus = HttpStatusCode.OK;
 				break;
 			case HttpClientTestType.ParallelGZip:
 			case HttpClientTestType.ParallelGZipNoClose:
-				parameters.NeedsServicePoint = true;
 				parameters.HasReadHandler = true;
-				parameters.ConnectionLimit = 1;
 				parameters.ExpectedError = WebExceptionStatus.Success;
 				parameters.ExpectedStatus = HttpStatusCode.OK;
 				break;
@@ -198,8 +194,6 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpClientTestType.ReuseHandlerNoClose:
 			case HttpClientTestType.ReuseHandlerChunked:
 			case HttpClientTestType.ReuseHandlerGZip:
-				parameters.NeedsServicePoint = true;
-				parameters.ConnectionLimit = 1;
 				parameters.ExpectedError = WebExceptionStatus.Success;
 				parameters.ExpectedStatus = HttpStatusCode.OK;
 				break;
@@ -525,10 +519,21 @@ namespace Xamarin.WebTests.TestRunners
 			protected override void ConfigureRequest (TestContext ctx, Uri uri, Request request)
 			{
 				if (Type == InstrumentationOperationType.Primary) {
-					if (Parent.Parameters.NeedsServicePoint)
+					switch (Parent.EffectiveType) {
+					case HttpClientTestType.SimpleQueuedRequest:
+					case HttpClientTestType.ParallelGZip:
+					case HttpClientTestType.ParallelGZipNoClose:
+					case HttpClientTestType.SequentialRequests:
+					case HttpClientTestType.SequentialChunked:
+					case HttpClientTestType.SequentialGZip:
+					case HttpClientTestType.ReuseHandler:
+					case HttpClientTestType.ReuseHandlerNoClose:
+					case HttpClientTestType.ReuseHandlerChunked:
+					case HttpClientTestType.ReuseHandlerGZip:
 						ServicePoint = ServicePointManager.FindServicePoint (uri);
-					if (Parent.Parameters.ConnectionLimit != 0)
-						ServicePoint.ConnectionLimit = Parent.Parameters.ConnectionLimit;
+						ServicePoint.ConnectionLimit = 1;
+						break;
+					}
 				}
 
 				if (request is HttpClientInstrumentationRequest instrumentationRequest) {
