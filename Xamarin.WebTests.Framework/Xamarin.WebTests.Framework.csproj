@@ -88,7 +88,6 @@
     <Compile Include="Xamarin.WebTests.TestFramework\ConnectionTestFlags.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\ConnectionTestHelper.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\SharedWebTestFeatures.cs" />
-    <Compile Include="Xamarin.WebTests.TestFramework\WorkAttribute.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\IsSupportedConstraint.cs" />
     <Compile Include="Xamarin.WebTests.ConnectionFramework\DotNetSslStreamProvider.cs" />
     <Compile Include="Xamarin.WebTests.ConnectionFramework\DummyClient.cs" />
@@ -141,7 +140,6 @@
     <Compile Include="Xamarin.WebTests.Server\SocketConnection.cs" />
     <Compile Include="Xamarin.WebTests.Server\HttpListenerConnection.cs" />
     <Compile Include="Xamarin.WebTests.Resources\TlsTestXamDevNewData.cs" />
-    <Compile Include="Xamarin.WebTests.TestFramework\Tls12Attribute.cs" />
     <Compile Include="Xamarin.WebTests.Server\SocketHelper.cs" />
     <Compile Include="Xamarin.WebTests.HttpFramework\HttpStreamReader.cs" />
     <Compile Include="Xamarin.WebTests.ConnectionFramework\SslStreamFlags.cs" />
@@ -157,7 +155,6 @@
     <Compile Include="Xamarin.WebTests.HttpHandlers\AbortHandler.cs" />
     <Compile Include="Xamarin.WebTests.TestRunners\HttpInstrumentationTestRunner.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\HttpInstrumentationTestType.cs" />
-    <Compile Include="Xamarin.WebTests.TestFramework\StressAttribute.cs" />
     <Compile Include="Xamarin.WebTests.HttpFramework\HttpOperation.cs" />
     <Compile Include="Xamarin.WebTests.HttpFramework\HttpOperationFlags.cs" />
     <Compile Include="Xamarin.WebTests.HttpOperations\TraditionalOperation.cs" />
@@ -250,6 +247,9 @@
     <Compile Include="Xamarin.WebTests.TestAttributes\NotWorkingAttribute.cs" />
     <Compile Include="Xamarin.WebTests.TestAttributes\ProtocolVersionAttribute.cs" />
     <Compile Include="Xamarin.WebTests.TestAttributes\RecentlyFixedAttribute.cs" />
+    <Compile Include="Xamarin.WebTests.TestAttributes\StressAttribute.cs" />
+    <Compile Include="Xamarin.WebTests.TestAttributes\Tls12Attribute.cs" />
+    <Compile Include="Xamarin.WebTests.TestAttributes\WorkAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="..\CA\invalid-server-cert.pfx">
