@@ -73,6 +73,11 @@ namespace Xamarin.WebTests.TestFramework
 			if (!string.IsNullOrEmpty (argument))
 				throw new NotSupportedException ();
 
+			if (category == HttpServerTestCategory.MartinTest) {
+				yield return CreateDefaultSsl ();
+				yield break;
+			}
+
 			var filter = new HttpServerProviderFilter (category);
 			var supportedProviders = filter.GetSupportedProviders (ctx);
 			if (supportedProviders.Count () == 0)
@@ -92,7 +97,7 @@ namespace Xamarin.WebTests.TestFramework
 				var endPoint = ConnectionTestHelper.GetEndPoint (ctx);
 				var uri = new Uri ($"https://{endPoint.Address}:{endPoint.Port}/");
 				return new HttpServerProvider (
-					$"https:{category}:{provider.Name}", uri, endPoint,
+					$"https:{provider.Name}", uri, endPoint,
 					HttpServerFlags.SSL, provider.SslStreamProvider);
 			}
 
@@ -101,7 +106,15 @@ namespace Xamarin.WebTests.TestFramework
 				var endPoint = ConnectionTestHelper.GetEndPoint (ctx);
 				var uri = new Uri ($"http://{endPoint.Address}:{endPoint.Port}/");
 				return new HttpServerProvider (
-					$"http:{category}", uri, endPoint, HttpServerFlags.NoSSL, null);
+					$"http", uri, endPoint, HttpServerFlags.NoSSL, null);
+			}
+
+			HttpServerProvider CreateDefaultSsl ()
+			{
+				var endPoint = ConnectionTestHelper.GetEndPoint (ctx);
+				var uri = new Uri ($"https://{endPoint.Address}:{endPoint.Port}/");
+				return new HttpServerProvider (
+					$"https", uri, endPoint, HttpServerFlags.SSL, null);
 			}
 		}
 	}
