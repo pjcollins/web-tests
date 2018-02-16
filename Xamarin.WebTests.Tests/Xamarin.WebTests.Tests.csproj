@@ -37,7 +37,6 @@
     <Compile Include="Xamarin.WebTests.Tests\TestCertificates.cs" />
     <Compile Include="Xamarin.WebTests.Tests\NetworkTests.cs" />
     <Compile Include="Xamarin.WebTests.Tests\SimpleWebTests.cs" />
-    <Compile Include="Xamarin.WebTests.Tests\TestHttpListener.cs" />
     <Compile Include="Xamarin.WebTests.Tests\TestStreamInstrumentation.cs" />
     <Compile Include="Xamarin.WebTests.Tests\TestHttpInstrumentation.cs" />
     <Compile Include="Xamarin.WebTests.Tests\MartinTest.cs" />

@@ -163,7 +163,6 @@
     <Compile Include="Xamarin.WebTests.HttpOperations\WebClientOperationType.cs" />
     <Compile Include="Xamarin.WebTests.HttpOperations\HttpClientOperation.cs" />
     <Compile Include="Xamarin.WebTests.HttpOperations\HttpClientOperationType.cs" />
-    <Compile Include="Xamarin.WebTests.HttpOperations\HttpListenerOperation.cs" />
     <Compile Include="Xamarin.WebTests.Server\ProxyConnection.cs" />
     <Compile Include="Xamarin.WebTests.TestRunners\HttpStressTestRunner.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\HttpStressTestParameters.cs" />
