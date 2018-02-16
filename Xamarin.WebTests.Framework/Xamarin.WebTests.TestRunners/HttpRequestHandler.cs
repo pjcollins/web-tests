@@ -108,22 +108,6 @@ namespace Xamarin.WebTests.TestRunners
 			}
 
 			switch (parent.EffectiveType) {
-			case HttpRequestTestType.ReuseConnection:
-				CloseConnection = !primary;
-				break;
-			case HttpRequestTestType.ReuseAfterPartialRead:
-				Content = ConnectionHandler.GetLargeStringContent (2500);
-				OperationFlags = HttpOperationFlags.ClientUsesNewConnection;
-				CloseConnection = !primary;
-				break;
-			case HttpRequestTestType.ReuseConnection2:
-				Content = HttpContent.HelloWorld;
-				CloseConnection = !primary;
-				break;
-			case HttpRequestTestType.CloseIdleConnection:
-			case HttpRequestTestType.CloseCustomConnectionGroup:
-				CloseConnection = false;
-				break;
 			case HttpRequestTestType.NtlmClosesConnection:
 				AuthManager = parent.GetAuthenticationManager ();
 				CloseConnection = true;
@@ -142,14 +126,6 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpRequestTestType.SendResponseAsBlob:
 				Content = ConnectionHandler.TheQuickBrownFoxContent;
 				CloseConnection = true;
-				break;
-			case HttpRequestTestType.CustomConnectionGroup:
-				OperationFlags = HttpOperationFlags.DontReuseConnection | HttpOperationFlags.ForceNewConnection;
-				CloseConnection = !primary;
-				break;
-			case HttpRequestTestType.ReuseCustomConnectionGroup:
-			case HttpRequestTestType.ReadTimeout:
-				CloseConnection = !primary;
 				break;
 			case HttpRequestTestType.CloseRequestStream:
 				OperationFlags = HttpOperationFlags.AbortAfterClientExits;
@@ -269,7 +245,6 @@ namespace Xamarin.WebTests.TestRunners
 			TestContext ctx, bool primary, Uri uri)
 		{
 			switch (TestRunner.EffectiveType) {
-			case HttpRequestTestType.ReuseAfterPartialRead:
 			case HttpRequestTestType.CloseRequestStream:
 			case HttpRequestTestType.ReadTimeout:
 				return new HttpRequestRequest (this, uri);
@@ -308,14 +283,6 @@ namespace Xamarin.WebTests.TestRunners
 			}
 
 			switch (TestRunner.EffectiveType) {
-			case HttpRequestTestType.ReuseConnection2:
-				request.Method = "POST";
-				if (Content != null) {
-					request.SetContentType ("text/plain");
-					request.Content = Content.RemoveTransferEncoding ();
-				}
-				break;
-
 			case HttpRequestTestType.ReadTimeout:
 				currentRequest.RequestExt.ReadWriteTimeout = 100;
 				break;
@@ -438,15 +405,9 @@ namespace Xamarin.WebTests.TestRunners
 			RequestFlags effectiveFlags, CancellationToken cancellationToken)
 		{
 			switch (TestRunner.EffectiveType) {
-			case HttpRequestTestType.ReuseConnection:
-			case HttpRequestTestType.CloseIdleConnection:
-			case HttpRequestTestType.CloseCustomConnectionGroup:
 			case HttpRequestTestType.LargeHeader:
 			case HttpRequestTestType.LargeHeader2:
 			case HttpRequestTestType.SendResponseAsBlob:
-			case HttpRequestTestType.ReuseAfterPartialRead:
-			case HttpRequestTestType.CustomConnectionGroup:
-			case HttpRequestTestType.ReuseCustomConnectionGroup:
 			case HttpRequestTestType.CloseRequestStream:
 			case HttpRequestTestType.ReadTimeout:
 			case HttpRequestTestType.RedirectOnSameConnection:
@@ -461,7 +422,6 @@ namespace Xamarin.WebTests.TestRunners
 				ctx.Assert (request.Method, Is.EqualTo ("GET"), "method");
 				break;
 
-			case HttpRequestTestType.ReuseConnection2:
 			case HttpRequestTestType.ServerAbortsPost:
 				ctx.Assert (request.Method, Is.EqualTo ("POST"), "method");
 				break;
@@ -543,17 +503,9 @@ namespace Xamarin.WebTests.TestRunners
 					WriteAsBlob = true
 				};
 
-			case HttpRequestTestType.ReuseAfterPartialRead:
-				return new HttpResponse (HttpStatusCode.OK, Content) {
-					WriteAsBlob = true
-				};
-
 			case HttpRequestTestType.ReadTimeout:
 				content = new HttpRequestContent (TestRunner, currentRequest);
 				return new HttpResponse (HttpStatusCode.OK, content);
-
-			case HttpRequestTestType.ReuseConnection2:
-				return new HttpResponse (HttpStatusCode.OK, Content);
 
 			case HttpRequestTestType.RedirectOnSameConnection:
 				redirect = operation.RegisterRedirect (ctx, Target);
@@ -646,12 +598,6 @@ namespace Xamarin.WebTests.TestRunners
 			switch (TestRunner.EffectiveType) {
 			case HttpRequestTestType.ReadTimeout:
 				return ctx.Expect (response.Status, Is.EqualTo (HttpStatusCode.OK), "response.StatusCode");
-
-			case HttpRequestTestType.ReuseAfterPartialRead:
-				if (!ctx.Expect (response.Content, Is.Not.Null, "response.Content != null"))
-					return false;
-
-				return ctx.Expect (response.Content.Length, Is.GreaterThan (0), "response.Content.Length");
 			}
 
 			if (!ctx.Expect (response.Content, Is.Not.Null, "response.Content != null"))
@@ -814,10 +760,6 @@ namespace Xamarin.WebTests.TestRunners
 
 				using (var stream = response.GetResponseStream ()) {
 					switch (TestRunner.EffectiveType) {
-					case HttpRequestTestType.ReuseAfterPartialRead:
-						content = await ReadStringAsBuffer (stream, 1234).ConfigureAwait (false);
-						break;
-
 					case HttpRequestTestType.TestResponseStream:
 						content = await TestResponseStream (stream).ConfigureAwait (false);
 						break;

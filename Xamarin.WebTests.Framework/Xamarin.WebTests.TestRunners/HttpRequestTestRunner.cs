@@ -71,15 +71,12 @@ namespace Xamarin.WebTests.TestRunners
 		static readonly (HttpRequestTestType type, HttpRequestTestFlags flags)[] TestRegistration = {
 			(HttpRequestTestType.Simple, HttpRequestTestFlags.Working),
 			(HttpRequestTestType.SimpleNtlm, HttpRequestTestFlags.Working),
-			(HttpRequestTestType.ReuseConnection, HttpRequestTestFlags.Working),
 			(HttpRequestTestType.SimplePost, HttpRequestTestFlags.Working),
 			(HttpRequestTestType.SimpleRedirect, HttpRequestTestFlags.Working),
 			(HttpRequestTestType.PostRedirect, HttpRequestTestFlags.Working),
 			(HttpRequestTestType.PostNtlm, HttpRequestTestFlags.Working),
 			(HttpRequestTestType.NtlmChunked, HttpRequestTestFlags.Working),
-			(HttpRequestTestType.ReuseConnection2, HttpRequestTestFlags.Working),
 			(HttpRequestTestType.Get404, HttpRequestTestFlags.Working),
-			(HttpRequestTestType.CloseIdleConnection, HttpRequestTestFlags.NewWebStack),
 			(HttpRequestTestType.NtlmInstrumentation, HttpRequestTestFlags.NewWebStack),
 			(HttpRequestTestType.NtlmClosesConnection, HttpRequestTestFlags.NewWebStack),
 			(HttpRequestTestType.NtlmReusesConnection, HttpRequestTestFlags.NewWebStack),
@@ -87,10 +84,6 @@ namespace Xamarin.WebTests.TestRunners
 			(HttpRequestTestType.LargeHeader, HttpRequestTestFlags.Working),
 			(HttpRequestTestType.LargeHeader2, HttpRequestTestFlags.Working),
 			(HttpRequestTestType.SendResponseAsBlob, HttpRequestTestFlags.Working),
-			(HttpRequestTestType.ReuseAfterPartialRead, HttpRequestTestFlags.WorkingRequireSSL),
-			(HttpRequestTestType.CustomConnectionGroup, HttpRequestTestFlags.Working),
-			(HttpRequestTestType.ReuseCustomConnectionGroup, HttpRequestTestFlags.Working),
-			(HttpRequestTestType.CloseCustomConnectionGroup, HttpRequestTestFlags.Working),
 			(HttpRequestTestType.CloseRequestStream, HttpRequestTestFlags.Working),
 			(HttpRequestTestType.ReadTimeout, HttpRequestTestFlags.NewWebStack),
 			(HttpRequestTestType.RedirectOnSameConnection, HttpRequestTestFlags.Working),
@@ -164,45 +157,6 @@ namespace Xamarin.WebTests.TestRunners
 		}
 
 		const int IdleTime = 750;
-
-		protected override async Task RunSecondary (TestContext ctx, CancellationToken cancellationToken)
-		{
-			var me = $"{ME}.{nameof (RunSecondary)}()";
-
-			Operation secondOperation = null;
-
-			switch (EffectiveType) {
-			case HttpRequestTestType.ReuseConnection:
-			case HttpRequestTestType.ReuseConnection2:
-			case HttpRequestTestType.ReuseAfterPartialRead:
-			case HttpRequestTestType.CustomConnectionGroup:
-			case HttpRequestTestType.ReuseCustomConnectionGroup:
-				secondOperation = StartSecond (ctx, cancellationToken);
-				break;
-			case HttpRequestTestType.CloseIdleConnection:
-				ctx.LogDebug (5, $"{me}: active connections: {PrimaryOperation.ServicePoint.CurrentConnections}");
-				await Task.Delay ((int)(IdleTime * 2.5)).ConfigureAwait (false);
-				ctx.LogDebug (5, $"{me}: active connections #1: {PrimaryOperation.ServicePoint.CurrentConnections}");
-				ctx.Assert (PrimaryOperation.ServicePoint.CurrentConnections, Is.EqualTo (0), "current connections");
-				break;
-			case HttpRequestTestType.CloseCustomConnectionGroup:
-				ctx.LogDebug (5, $"{me}: active connections: {PrimaryOperation.ServicePoint.CurrentConnections}");
-				PrimaryOperation.ServicePoint.CloseConnectionGroup (((TraditionalRequest)PrimaryOperation.Request).RequestExt.ConnectionGroupName);
-				ctx.LogDebug (5, $"{me}: active connections #1: {PrimaryOperation.ServicePoint.CurrentConnections}");
-				break;
-			}
-
-			if (secondOperation != null) {
-				ctx.LogDebug (2, $"{me} waiting for second operation.");
-				try {
-					await secondOperation.WaitForCompletion ().ConfigureAwait (false);
-					ctx.LogDebug (2, $"{me} done waiting for second operation.");
-				} catch (Exception ex) {
-					ctx.LogDebug (2, $"{me} waiting for second operation failed: {ex.Message}.");
-					throw;
-				}
-			}
-		}
 
 		protected override (Handler handler, HttpOperationFlags flags) CreateHandler (TestContext ctx, bool primary)
 		{
@@ -290,24 +244,12 @@ namespace Xamarin.WebTests.TestRunners
 			AuthenticationState state, CancellationToken cancellationToken)
 		{
 			switch (EffectiveType) {
-			case HttpRequestTestType.ReuseConnection:
-			case HttpRequestTestType.ReuseCustomConnectionGroup:
 			case HttpRequestTestType.RedirectOnSameConnection:
 				MustReuseConnection ();
 				break;
 
 			case HttpRequestTestType.ParallelNtlm:
 				await ParallelNtlm ().ConfigureAwait (false);
-				break;
-
-			case HttpRequestTestType.ReuseAfterPartialRead:
-				// We can't reuse the connection because we did not read the entire response.
-				MustNotReuseConnection ();
-				break;
-
-			case HttpRequestTestType.CustomConnectionGroup:
-				// We can't reuse the connection because we're in a different connection group.
-				MustNotReuseConnection ();
 				break;
 
 			case HttpRequestTestType.NtlmInstrumentation:
@@ -328,15 +270,6 @@ namespace Xamarin.WebTests.TestRunners
 				await operation.WaitForRequest ();
 			}
 
-			void MustNotReuseConnection ()
-			{
-				var firstHandler = (HttpRequestHandler)PrimaryOperation.Handler;
-				ctx.LogDebug (2, $"{handler.ME}: {handler == firstHandler} {handler.RemoteEndPoint}");
-				if (handler == firstHandler)
-					return;
-				ctx.Assert (connection.RemoteEndPoint, Is.Not.EqualTo (firstHandler.RemoteEndPoint), "RemoteEndPoint");
-			}
-
 			void MustReuseConnection ()
 			{
 				var firstHandler = (HttpRequestHandler)PrimaryOperation.Handler;
@@ -345,26 +278,6 @@ namespace Xamarin.WebTests.TestRunners
 					return;
 				ctx.Assert (connection.RemoteEndPoint, Is.EqualTo (firstHandler.RemoteEndPoint), "RemoteEndPoint");
 			}
-		}
-
-		Operation StartSecond (TestContext ctx, CancellationToken cancellationToken,
-				       HttpStatusCode expectedStatus = HttpStatusCode.OK,
-				       WebExceptionStatus expectedError = WebExceptionStatus.Success)
-		{
-			var (handler, flags) = CreateHandler (ctx, false);
-			var operation = new Operation (this, handler, InstrumentationOperationType.Parallel, flags, expectedStatus, expectedError);
-			operation.Start (ctx, cancellationToken);
-			return operation;
-		}
-
-		protected override Task PrimaryReadHandler (TestContext ctx, CancellationToken cancellationToken)
-		{
-			throw new NotImplementedException();
-		}
-
-		protected override Task SecondaryReadHandler (TestContext ctx, CancellationToken cancellationToken)
-		{
-			throw new NotImplementedException();
 		}
 
 		class Operation : InstrumentationOperation
@@ -409,14 +322,7 @@ namespace Xamarin.WebTests.TestRunners
 			void ConfigureParallelRequest (TestContext ctx, TraditionalRequest request)
 			{
 				switch (EffectiveType) {
-				case HttpRequestTestType.ReuseConnection:
-				case HttpRequestTestType.ReuseConnection2:
-				case HttpRequestTestType.ReuseAfterPartialRead:
 				case HttpRequestTestType.ParallelNtlm:
-				case HttpRequestTestType.CustomConnectionGroup:
-					break;
-				case HttpRequestTestType.ReuseCustomConnectionGroup:
-					request.RequestExt.ConnectionGroupName = "custom";
 					break;
 				default:
 					throw ctx.AssertFail (Parent.EffectiveType);
@@ -431,13 +337,6 @@ namespace Xamarin.WebTests.TestRunners
 				switch (EffectiveType) {
 				case HttpRequestTestType.SimplePost:
 					request.SetContentLength (((PostHandler)Handler).Content.Length);
-					break;
-				case HttpRequestTestType.CustomConnectionGroup:
-				case HttpRequestTestType.ReuseCustomConnectionGroup:
-					request.RequestExt.ConnectionGroupName = "custom";
-					break;
-				case HttpRequestTestType.CloseIdleConnection:
-					ServicePoint.MaxIdleTime = IdleTime;
 					break;
 				}
 			}
@@ -455,16 +354,6 @@ namespace Xamarin.WebTests.TestRunners
 
 			protected override void ConfigureNetworkStream (TestContext ctx, StreamInstrumentation instrumentation)
 			{
-				switch (EffectiveType) {
-				case HttpRequestTestType.CloseCustomConnectionGroup:
-					instrumentation.IgnoreErrors = true;
-					break;
-				}
-			}
-
-			protected override Task ReadHandler (TestContext ctx, byte[] buffer, int offset, int size, int ret, CancellationToken cancellationToken)
-			{
-				throw new NotImplementedException ();
 			}
 		}
 
