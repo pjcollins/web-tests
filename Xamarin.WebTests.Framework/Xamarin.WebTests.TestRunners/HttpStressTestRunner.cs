@@ -40,6 +40,7 @@ using Xamarin.AsyncTests.Portable;
 namespace Xamarin.WebTests.TestRunners
 {
 	using ConnectionFramework;
+	using TestAttributes;
 	using HttpFramework;
 	using HttpHandlers;
 	using HttpOperations;

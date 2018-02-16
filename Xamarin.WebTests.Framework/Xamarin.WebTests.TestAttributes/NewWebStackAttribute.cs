@@ -1,5 +1,5 @@
 ﻿//
-// LongRunningAttribute.cs
+// NewWebStackAttribute.cs
 //
 // Author:
 //       Martin Baulig <mabaul@microsoft.com>
@@ -28,15 +28,22 @@ using Xamarin.AsyncTests;
 using Xamarin.AsyncTests.Portable;
 using Xamarin.WebTests.ConnectionFramework;
 
-namespace Xamarin.WebTests.TestFramework
+namespace Xamarin.WebTests.TestAttributes
 {
 	[AttributeUsage (AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false)]
-	public class LongRunningAttribute : TestCategoryAttribute
+	public class NewWebStackAttribute : TestFeatureAttribute
 	{
-		public static readonly TestCategory Instance = new TestCategory ("LongRunning") { IsExplicit = true };
-
-		public override TestCategory Category {
+		public override TestFeature Feature {
 			get { return Instance; }
 		}
+
+		static bool HasNewWebStack ()
+		{
+			var setup = DependencyInjector.Get<IConnectionFrameworkSetup> ();
+			return setup.HasNewWebStack;
+		}
+
+		public static readonly TestFeature Instance = new TestFeature (
+			"NewWebStack", "Whether we have the new web stack", () => HasNewWebStack ());
 	}
 }

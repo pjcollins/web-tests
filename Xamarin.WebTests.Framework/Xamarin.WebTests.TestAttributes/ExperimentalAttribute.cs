@@ -1,5 +1,5 @@
 ﻿//
-// ManualServerAttribute.cs
+// ExperimentalAttribute.cs
 //
 // Author:
 //       Martin Baulig <martin.baulig@xamarin.com>
@@ -26,15 +26,15 @@
 using System;
 using Xamarin.AsyncTests;
 
-namespace Xamarin.WebTests.TestFramework
+namespace Xamarin.WebTests.TestAttributes
 {
-	[AttributeUsage (AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false)]
-	public class ManualServerAttribute : TestCategoryAttribute
+	public class ExperimentalAttribute : TestFeatureAttribute
 	{
-		public static readonly TestCategory Instance = new TestCategory ("ManualServer") { IsExplicit = true };
+		public static readonly TestFeature Instance = new TestFeature ("Experimental", "Experimental Tests", false);
 
-		public override TestCategory Category {
+		public override TestFeature Feature {
 			get { return Instance; }
 		}
 	}
 }
+

@@ -1,10 +1,10 @@
 ﻿//
-// StreamInstrumentationTestRunnerAttribute.cs
+// DotNetAttribute.cs
 //
 // Author:
-//       Martin Baulig <mabaul@microsoft.com>
+//       Martin Baulig <martin.baulig@xamarin.com>
 //
-// Copyright (c) 2017 Xamarin Inc. (http://www.xamarin.com)
+// Copyright (c) 2017 Xamarin, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -25,29 +25,25 @@
 // THE SOFTWARE.
 using System;
 using Xamarin.AsyncTests;
-using Xamarin.AsyncTests.Framework;
 using Xamarin.AsyncTests.Portable;
-using Xamarin.AsyncTests.Constraints;
 
-namespace Xamarin.WebTests.TestFramework
+namespace Xamarin.WebTests.TestAttributes
 {
-	using TestRunners;
-	using ConnectionFramework;
-	using HttpFramework;
-	using Resources;
-
-	[AttributeUsage (AttributeTargets.Class, AllowMultiple = false)]
-	public class StreamInstrumentationTestRunnerAttribute : TestHostAttribute, ITestHost<StreamInstrumentationTestRunner>
+	[AttributeUsage (AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false)]
+	public class DotNetAttribute : TestFeatureAttribute
 	{
-		public StreamInstrumentationTestRunnerAttribute ()
-			: base (typeof (StreamInstrumentationTestRunnerAttribute), TestFlags.Hidden)
-		{
+		public override TestFeature Feature {
+			get { return Instance; }
 		}
 
-		public StreamInstrumentationTestRunner CreateInstance (TestContext ctx)
+		static bool UsingDotNetRuntime ()
 		{
-			return ConnectionTestHelper.CreateTestRunner<ConnectionTestProvider, StreamInstrumentationParameters, StreamInstrumentationTestRunner> (
-				ctx, (s, c, t, p) => new StreamInstrumentationTestRunner (s, c, t, p));
+			var provider = DependencyInjector.Get<IPortableSupport> ();
+			return provider.IsMicrosoftRuntime;
 		}
+
+		public static readonly TestFeature Instance = new TestFeature (
+			"DotNet", "Using the .NET runtime", () => UsingDotNetRuntime ());
 	}
 }
+

@@ -29,6 +29,7 @@ using Xamarin.AsyncTests;
 namespace Xamarin.WebTests.TestFramework
 {
 	using ConnectionFramework;
+	using TestAttributes;
 	using HttpFramework;
 
 	[HttpServerProvider (Identifier = "HttpServerProvider")]

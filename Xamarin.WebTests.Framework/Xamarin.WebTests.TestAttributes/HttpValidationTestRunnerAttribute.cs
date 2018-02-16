@@ -1,10 +1,10 @@
 ﻿//
-// HttpStressTestRunnerAttribute.cs
+// HttpValidationTestRunnerAttribute.cs
 //
 // Author:
-//       Martin Baulig <mabaul@microsoft.com>
+//       Martin Baulig <martin.baulig@xamarin.com>
 //
-// Copyright (c) 2017 Xamarin Inc. (http://www.xamarin.com)
+// Copyright (c) 2015 Xamarin, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -29,32 +29,42 @@ using Xamarin.AsyncTests.Framework;
 using Xamarin.AsyncTests.Portable;
 using Xamarin.AsyncTests.Constraints;
 
-namespace Xamarin.WebTests.TestFramework
+namespace Xamarin.WebTests.TestAttributes
 {
 	using TestRunners;
 	using ConnectionFramework;
 	using HttpFramework;
+	using TestFramework;
 	using Server;
 	using Resources;
 
 	[AttributeUsage (AttributeTargets.Class, AllowMultiple = false)]
-	public sealed class HttpStressTestRunnerAttribute : TestHostAttribute, ITestHost<HttpStressTestRunner>
+	public sealed class HttpValidationTestRunnerAttribute : TestHostAttribute, ITestHost<HttpValidationTestRunner>
 	{
-		public HttpServerFlags ServerFlags {
-			get;
-		}
+		HttpServerFlags serverFlags;
 
-		public HttpStressTestRunnerAttribute (HttpServerFlags serverFlags = HttpServerFlags.None)
-			: base (typeof (HttpStressTestRunnerAttribute))
+		public HttpValidationTestRunnerAttribute (HttpServerFlags serverFlags = HttpServerFlags.None)
+			: base (typeof (HttpValidationTestRunnerAttribute))
 		{
-			ServerFlags = serverFlags;
+			this.serverFlags = serverFlags;
 		}
 
-		public HttpStressTestRunner CreateInstance (TestContext ctx)
+		HttpServerFlags GetServerFlags (TestContext ctx)
+		{
+			HttpServerFlags flags = serverFlags | HttpServerFlags.SSL;
+
+			bool reuseConnection;
+			if (ctx.TryGetParameter<bool> (out reuseConnection, "ReuseConnection") && reuseConnection)
+				flags |= HttpServerFlags.ReuseConnection;
+
+			return flags;
+		}
+
+		public HttpValidationTestRunner CreateInstance (TestContext ctx)
 		{
 			var provider = ctx.GetParameter<ConnectionTestProvider> ();
 
-			var parameters = ctx.GetParameter<HttpStressTestParameters> ();
+			var parameters = ctx.GetParameter<HttpValidationTestParameters> ();
 
 			ProtocolVersions protocolVersion;
 			if (ctx.TryGetParameter<ProtocolVersions> (out protocolVersion))
@@ -74,21 +84,25 @@ namespace Xamarin.WebTests.TestFramework
 			if (parameters.ListenAddress == null)
 				parameters.ListenAddress = serverEndPoint;
 
-			var flags = ServerFlags | HttpServerFlags.SSL;
+			var flags = serverFlags | HttpServerFlags.SSL;
 
 			bool reuseConnection;
 			if (ctx.TryGetParameter<bool> (out reuseConnection, "ReuseConnection") && reuseConnection)
 				flags |= HttpServerFlags.ReuseConnection;
 
 			Uri uri;
-			if (parameters.TargetHost == null) {
+			if (parameters.ExternalServer != null) {
+				uri = parameters.ExternalServer;
+				flags |= HttpServerFlags.ExternalServer;
+			} else if (parameters.TargetHost == null) {
 				parameters.TargetHost = parameters.EndPoint.HostName;
 				uri = new Uri (string.Format ("https://{0}:{1}/", parameters.EndPoint.Address, parameters.EndPoint.Port));
 			} else {
 				uri = new Uri (string.Format ("https://{0}/", parameters.TargetHost));
 			}
 
-			return new HttpStressTestRunner (parameters.EndPoint, parameters, provider, uri, flags);
+			return new HttpValidationTestRunner (parameters.EndPoint, parameters, provider, uri, flags);
 		}
 	}
 }
+

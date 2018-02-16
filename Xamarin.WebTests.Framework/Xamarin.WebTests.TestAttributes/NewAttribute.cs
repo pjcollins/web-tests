@@ -1,10 +1,10 @@
 ﻿//
-// DotNetAttribute.cs
+// NewAttribute.cs
 //
 // Author:
 //       Martin Baulig <martin.baulig@xamarin.com>
 //
-// Copyright (c) 2017 Xamarin, Inc.
+// Copyright (c) 2016 Xamarin, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -25,25 +25,16 @@
 // THE SOFTWARE.
 using System;
 using Xamarin.AsyncTests;
-using Xamarin.AsyncTests.Portable;
 
-namespace Xamarin.WebTests.TestFramework
+namespace Xamarin.WebTests.TestAttributes
 {
 	[AttributeUsage (AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false)]
-	public class DotNetAttribute : TestFeatureAttribute
+	public class NewAttribute : TestCategoryAttribute
 	{
-		public override TestFeature Feature {
+		public static readonly TestCategory Instance = new TestCategory ("New");
+
+		public override TestCategory Category {
 			get { return Instance; }
 		}
-
-		static bool UsingDotNetRuntime ()
-		{
-			var provider = DependencyInjector.Get<IPortableSupport> ();
-			return provider.IsMicrosoftRuntime;
-		}
-
-		public static readonly TestFeature Instance = new TestFeature (
-			"DotNet", "Using the .NET runtime", () => UsingDotNetRuntime ());
 	}
 }
-

@@ -1,5 +1,5 @@
 ﻿//
-// ProtocolVersionAttribute.cs
+// NotWorkingAttribute.cs
 //
 // Author:
 //       Martin Baulig <martin.baulig@xamarin.com>
@@ -26,35 +26,15 @@
 using System;
 using Xamarin.AsyncTests;
 
-namespace Xamarin.WebTests.TestFramework
+namespace Xamarin.WebTests.TestAttributes
 {
-	using ConnectionFramework;
-
-	public class ProtocolVersionAttribute : FixedTestParameterAttribute
+	[AttributeUsage (AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false)]
+	public class NotWorkingAttribute : TestCategoryAttribute
 	{
-		public override Type Type {
-			get { return typeof(ProtocolVersions); }
-		}
+		public static readonly TestCategory Instance = new TestCategory ("NotWorking") { IsExplicit = true };
 
-		public override object Value {
-			get { return Protocol; }
-		}
-
-		public override string Identifier {
-			get { return identifier; }
-		}
-
-		public ProtocolVersions Protocol {
-			get { return protocol; }
-		}
-
-		readonly string identifier;
-		readonly ProtocolVersions protocol;
-
-		public ProtocolVersionAttribute (ProtocolVersions protocol)
-		{
-			this.protocol = protocol;
-			this.identifier = Type.Name;
+		public override TestCategory Category {
+			get { return Instance; }
 		}
 	}
 }

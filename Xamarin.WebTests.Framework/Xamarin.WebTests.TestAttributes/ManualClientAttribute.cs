@@ -1,5 +1,5 @@
 ﻿//
-// NotWorkingAttribute.cs
+// ManualClientAttribute.cs
 //
 // Author:
 //       Martin Baulig <martin.baulig@xamarin.com>
@@ -26,12 +26,12 @@
 using System;
 using Xamarin.AsyncTests;
 
-namespace Xamarin.WebTests.TestFramework
+namespace Xamarin.WebTests.TestAttributes
 {
 	[AttributeUsage (AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false)]
-	public class NotWorkingAttribute : TestCategoryAttribute
+	public class ManualClientAttribute : TestCategoryAttribute
 	{
-		public static readonly TestCategory Instance = new TestCategory ("NotWorking") { IsExplicit = true };
+		public static readonly TestCategory Instance = new TestCategory ("ManualClient") { IsExplicit = true };
 
 		public override TestCategory Category {
 			get { return Instance; }

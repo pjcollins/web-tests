@@ -1,5 +1,5 @@
 ﻿//
-// ManualClientAttribute.cs
+// ProtocolVersionAttribute.cs
 //
 // Author:
 //       Martin Baulig <martin.baulig@xamarin.com>
@@ -26,15 +26,35 @@
 using System;
 using Xamarin.AsyncTests;
 
-namespace Xamarin.WebTests.TestFramework
+namespace Xamarin.WebTests.TestAttributes
 {
-	[AttributeUsage (AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false)]
-	public class ManualClientAttribute : TestCategoryAttribute
-	{
-		public static readonly TestCategory Instance = new TestCategory ("ManualClient") { IsExplicit = true };
+	using ConnectionFramework;
 
-		public override TestCategory Category {
-			get { return Instance; }
+	public class ProtocolVersionAttribute : FixedTestParameterAttribute
+	{
+		public override Type Type {
+			get { return typeof(ProtocolVersions); }
+		}
+
+		public override object Value {
+			get { return Protocol; }
+		}
+
+		public override string Identifier {
+			get { return identifier; }
+		}
+
+		public ProtocolVersions Protocol {
+			get { return protocol; }
+		}
+
+		readonly string identifier;
+		readonly ProtocolVersions protocol;
+
+		public ProtocolVersionAttribute (ProtocolVersions protocol)
+		{
+			this.protocol = protocol;
+			this.identifier = Type.Name;
 		}
 	}
 }

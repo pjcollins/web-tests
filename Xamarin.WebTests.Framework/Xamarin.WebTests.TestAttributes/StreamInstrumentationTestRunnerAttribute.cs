@@ -1,5 +1,5 @@
 ﻿//
-// RecentlyFixedAttribute.cs
+// StreamInstrumentationTestRunnerAttribute.cs
 //
 // Author:
 //       Martin Baulig <mabaul@microsoft.com>
@@ -25,16 +25,30 @@
 // THE SOFTWARE.
 using System;
 using Xamarin.AsyncTests;
+using Xamarin.AsyncTests.Framework;
+using Xamarin.AsyncTests.Portable;
+using Xamarin.AsyncTests.Constraints;
 
-namespace Xamarin.WebTests.TestFramework
+namespace Xamarin.WebTests.TestAttributes
 {
-	[AttributeUsage (AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false)]
-	public class RecentlyFixedAttribute : TestCategoryAttribute
-	{
-		public static readonly TestCategory Instance = new TestCategory ("RecentlyFixed") { IsExplicit = true };
+	using TestRunners;
+	using TestFramework;
+	using ConnectionFramework;
+	using HttpFramework;
+	using Resources;
 
-		public override TestCategory Category {
-			get { return Instance; }
+	[AttributeUsage (AttributeTargets.Class, AllowMultiple = false)]
+	public class StreamInstrumentationTestRunnerAttribute : TestHostAttribute, ITestHost<StreamInstrumentationTestRunner>
+	{
+		public StreamInstrumentationTestRunnerAttribute ()
+			: base (typeof (StreamInstrumentationTestRunnerAttribute), TestFlags.Hidden)
+		{
+		}
+
+		public StreamInstrumentationTestRunner CreateInstance (TestContext ctx)
+		{
+			return ConnectionTestHelper.CreateTestRunner<ConnectionTestProvider, StreamInstrumentationParameters, StreamInstrumentationTestRunner> (
+				ctx, (s, c, t, p) => new StreamInstrumentationTestRunner (s, c, t, p));
 		}
 	}
 }

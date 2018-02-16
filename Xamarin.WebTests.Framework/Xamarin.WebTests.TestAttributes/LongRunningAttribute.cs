@@ -1,10 +1,10 @@
 ﻿//
-// ExperimentalAttribute.cs
+// LongRunningAttribute.cs
 //
 // Author:
-//       Martin Baulig <martin.baulig@xamarin.com>
+//       Martin Baulig <mabaul@microsoft.com>
 //
-// Copyright (c) 2015 Xamarin, Inc.
+// Copyright (c) 2017 Xamarin Inc. (http://www.xamarin.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -25,16 +25,18 @@
 // THE SOFTWARE.
 using System;
 using Xamarin.AsyncTests;
+using Xamarin.AsyncTests.Portable;
+using Xamarin.WebTests.ConnectionFramework;
 
-namespace Xamarin.WebTests.TestFramework
+namespace Xamarin.WebTests.TestAttributes
 {
-	public class ExperimentalAttribute : TestFeatureAttribute
+	[AttributeUsage (AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false)]
+	public class LongRunningAttribute : TestCategoryAttribute
 	{
-		public static readonly TestFeature Instance = new TestFeature ("Experimental", "Experimental Tests", false);
+		public static readonly TestCategory Instance = new TestCategory ("LongRunning") { IsExplicit = true };
 
-		public override TestFeature Feature {
+		public override TestCategory Category {
 			get { return Instance; }
 		}
 	}
 }
-

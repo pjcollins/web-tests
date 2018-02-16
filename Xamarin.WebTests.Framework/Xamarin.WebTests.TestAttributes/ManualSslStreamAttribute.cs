@@ -1,5 +1,5 @@
 ﻿//
-// SslStreamTestRunnerAttribute.cs
+// ManualSslStreamAttribute.cs
 //
 // Author:
 //       Martin Baulig <martin.baulig@xamarin.com>
@@ -25,30 +25,16 @@
 // THE SOFTWARE.
 using System;
 using Xamarin.AsyncTests;
-using Xamarin.AsyncTests.Framework;
-using Xamarin.AsyncTests.Portable;
-using Xamarin.AsyncTests.Constraints;
 
-namespace Xamarin.WebTests.TestFramework
+namespace Xamarin.WebTests.TestAttributes
 {
-	using TestRunners;
-	using ConnectionFramework;
-	using HttpFramework;
-	using Resources;
-
-	[AttributeUsage (AttributeTargets.Class, AllowMultiple = false)]
-	public class SslStreamTestRunnerAttribute : TestHostAttribute, ITestHost<SslStreamTestRunner>
+	[AttributeUsage (AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false)]
+	public class ManualSslStreamAttribute : TestFeatureAttribute
 	{
-		public SslStreamTestRunnerAttribute ()
-			: base (typeof (SslStreamTestRunnerAttribute), TestFlags.Hidden)
-		{
-		}
+		public static readonly TestFeature Instance = new TestFeature ("ManualSslStream", "These tests need manual interaction.");
 
-		public SslStreamTestRunner CreateInstance (TestContext ctx)
-		{
-			return ConnectionTestHelper.CreateTestRunner<ConnectionTestProvider,SslStreamTestParameters,SslStreamTestRunner> (
-				ctx, (s, c, t, p) => new SslStreamTestRunner (s, c, t, p));
+		public override TestFeature Feature {
+			get { return Instance; }
 		}
 	}
 }
-

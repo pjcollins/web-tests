@@ -1,10 +1,10 @@
 ﻿//
-// NewWebStackAttribute.cs
+// NetworkAttribute.cs
 //
 // Author:
-//       Martin Baulig <mabaul@microsoft.com>
+//       Martin Baulig <martin.baulig@xamarin.com>
 //
-// Copyright (c) 2017 Xamarin Inc. (http://www.xamarin.com)
+// Copyright (c) 2016 Xamarin, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -25,25 +25,18 @@
 // THE SOFTWARE.
 using System;
 using Xamarin.AsyncTests;
-using Xamarin.AsyncTests.Portable;
-using Xamarin.WebTests.ConnectionFramework;
 
-namespace Xamarin.WebTests.TestFramework
+namespace Xamarin.WebTests.TestAttributes
 {
 	[AttributeUsage (AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false)]
-	public class NewWebStackAttribute : TestFeatureAttribute
+	public class NetworkAttribute : TestFeatureAttribute
 	{
 		public override TestFeature Feature {
 			get { return Instance; }
 		}
 
-		static bool HasNewWebStack ()
-		{
-			var setup = DependencyInjector.Get<IConnectionFrameworkSetup> ();
-			return setup.HasNewWebStack;
-		}
-
 		public static readonly TestFeature Instance = new TestFeature (
-			"NewWebStack", "Whether we have the new web stack", () => HasNewWebStack ());
+			"Network", "Has internet access", true);
 	}
 }
+

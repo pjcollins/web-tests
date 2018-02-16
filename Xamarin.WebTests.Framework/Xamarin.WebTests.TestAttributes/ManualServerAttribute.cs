@@ -1,10 +1,10 @@
 ﻿//
-// NetworkAttribute.cs
+// ManualServerAttribute.cs
 //
 // Author:
 //       Martin Baulig <martin.baulig@xamarin.com>
 //
-// Copyright (c) 2016 Xamarin, Inc.
+// Copyright (c) 2015 Xamarin, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -26,17 +26,15 @@
 using System;
 using Xamarin.AsyncTests;
 
-namespace Xamarin.WebTests.TestFramework
+namespace Xamarin.WebTests.TestAttributes
 {
 	[AttributeUsage (AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false)]
-	public class NetworkAttribute : TestFeatureAttribute
+	public class ManualServerAttribute : TestCategoryAttribute
 	{
-		public override TestFeature Feature {
+		public static readonly TestCategory Instance = new TestCategory ("ManualServer") { IsExplicit = true };
+
+		public override TestCategory Category {
 			get { return Instance; }
 		}
-
-		public static readonly TestFeature Instance = new TestFeature (
-			"Network", "Has internet access", true);
 	}
 }
-

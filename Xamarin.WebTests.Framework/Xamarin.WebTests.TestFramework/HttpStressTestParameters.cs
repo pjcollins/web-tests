@@ -30,6 +30,7 @@ using System.Security.Cryptography.X509Certificates;
 namespace Xamarin.WebTests.TestFramework
 {
 	using ConnectionFramework;
+	using TestAttributes;
 	using HttpFramework;
 
 	[HttpStressTestParameters]

@@ -30,8 +30,9 @@ using Xamarin.AsyncTests.Constraints;
 using Xamarin.AsyncTests.Framework;
 using Xamarin.AsyncTests.Portable;
 
-namespace Xamarin.WebTests.TestFramework {
+namespace Xamarin.WebTests.TestAttributes {
 	using ConnectionFramework;
+	using TestFramework;
 	using HttpFramework;
 	using Resources;
 	using Server;

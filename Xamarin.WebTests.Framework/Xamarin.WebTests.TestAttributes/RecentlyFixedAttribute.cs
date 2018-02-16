@@ -1,10 +1,10 @@
 ﻿//
-// ManualSslStreamAttribute.cs
+// RecentlyFixedAttribute.cs
 //
 // Author:
-//       Martin Baulig <martin.baulig@xamarin.com>
+//       Martin Baulig <mabaul@microsoft.com>
 //
-// Copyright (c) 2015 Xamarin, Inc.
+// Copyright (c) 2017 Xamarin Inc. (http://www.xamarin.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -26,14 +26,14 @@
 using System;
 using Xamarin.AsyncTests;
 
-namespace Xamarin.WebTests.TestFramework
+namespace Xamarin.WebTests.TestAttributes
 {
 	[AttributeUsage (AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false)]
-	public class ManualSslStreamAttribute : TestFeatureAttribute
+	public class RecentlyFixedAttribute : TestCategoryAttribute
 	{
-		public static readonly TestFeature Instance = new TestFeature ("ManualSslStream", "These tests need manual interaction.");
+		public static readonly TestCategory Instance = new TestCategory ("RecentlyFixed") { IsExplicit = true };
 
-		public override TestFeature Feature {
+		public override TestCategory Category {
 			get { return Instance; }
 		}
 	}
