@@ -171,29 +171,6 @@ namespace Xamarin.WebTests.TestRunners
 				parameters.ExpectedError = WebExceptionStatus.Success;
 				parameters.ExpectedStatus = HttpStatusCode.InternalServerError;
 				break;
-			case HttpClientTestType.ParallelRequests:
-				parameters.ExpectedError = WebExceptionStatus.Success;
-				parameters.ExpectedStatus = HttpStatusCode.OK;
-				break;
-			case HttpClientTestType.SimpleQueuedRequest:
-				parameters.ExpectedError = WebExceptionStatus.Success;
-				parameters.ExpectedStatus = HttpStatusCode.OK;
-				break;
-			case HttpClientTestType.ParallelGZip:
-			case HttpClientTestType.ParallelGZipNoClose:
-				parameters.ExpectedError = WebExceptionStatus.Success;
-				parameters.ExpectedStatus = HttpStatusCode.OK;
-				break;
-			case HttpClientTestType.SequentialRequests:
-			case HttpClientTestType.SequentialChunked:
-			case HttpClientTestType.SequentialGZip:
-			case HttpClientTestType.ReuseHandler:
-			case HttpClientTestType.ReuseHandlerNoClose:
-			case HttpClientTestType.ReuseHandlerChunked:
-			case HttpClientTestType.ReuseHandlerGZip:
-				parameters.ExpectedError = WebExceptionStatus.Success;
-				parameters.ExpectedStatus = HttpStatusCode.OK;
-				break;
 			default:
 				parameters.ExpectedError = WebExceptionStatus.Success;
 				parameters.ExpectedStatus = HttpStatusCode.OK;
@@ -244,7 +221,7 @@ namespace Xamarin.WebTests.TestRunners
 				var (handler, flags) = CreateHandler (ctx, false);
 				var operation = new Operation (
 					this, handler, InstrumentationOperationType.Parallel, flags,
-					Parameters.ExpectedStatus, Parameters.ExpectedError);
+					HttpStatusCode.OK, WebExceptionStatus.Success);
 				operation.Start (ctx, cancellationToken);
 				return operation;
 			}
