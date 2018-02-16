@@ -98,13 +98,13 @@ namespace Xamarin.WebTests.TestFramework
 				serverFlags |= HttpServerFlags.HttpListener;
 
 			if (IsMartinTest (category)) {
-				yield return CreateDefaultSsl ();
+				yield return new HttpServerProvider ("https", serverFlags, null);
 				yield break;
 			}
 
 			if (!UsingSsl (category)) {
 				serverFlags |= HttpServerFlags.NoSSL;
-				yield return CreateDefault ();
+				yield return new HttpServerProvider ("http", serverFlags, null);
 				yield break;
 			}
 
@@ -113,34 +113,11 @@ namespace Xamarin.WebTests.TestFramework
 			if (supportedProviders.Count () == 0)
 				ctx.AssertFail ("Could not find any supported HttpServerProvider.");
 
+			serverFlags |= HttpServerFlags.SSL;
 			foreach (var provider in supportedProviders) {
-				serverFlags |= HttpServerFlags.SSL;
-				yield return CreateSsl (provider);
-			}
-
-			HttpServerProvider CreateSsl (ConnectionProvider provider)
-			{
-				var endPoint = ConnectionTestHelper.GetEndPoint ();
-				var uri = new Uri ($"https://{endPoint.Address}:{endPoint.Port}/");
-				return new HttpServerProvider (
-					$"https:{provider.Name}", uri, endPoint,
-					serverFlags, provider.SslStreamProvider);
-			}
-
-			HttpServerProvider CreateDefault ()
-			{
-				var endPoint = ConnectionTestHelper.GetEndPoint ();
-				var uri = new Uri ($"http://{endPoint.Address}:{endPoint.Port}/");
-				return new HttpServerProvider (
-					$"http", uri, endPoint, serverFlags, null);
-			}
-
-			HttpServerProvider CreateDefaultSsl ()
-			{
-				var endPoint = ConnectionTestHelper.GetEndPoint ();
-				var uri = new Uri ($"https://{endPoint.Address}:{endPoint.Port}/");
-				return new HttpServerProvider (
-					$"https", uri, endPoint, serverFlags, null);
+				yield return new HttpServerProvider (
+					$"https:{provider.Name}", serverFlags,
+					provider.SslStreamProvider);
 			}
 		}
 	}

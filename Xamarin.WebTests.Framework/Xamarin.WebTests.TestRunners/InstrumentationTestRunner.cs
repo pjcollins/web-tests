@@ -52,7 +52,9 @@ namespace Xamarin.WebTests.TestRunners
 			get;
 		}
 
-		internal Uri Uri => Provider.Uri;
+		internal Uri Uri {
+			get;
+		}
 
 		internal HttpServerFlags ServerFlags {
 			get;
@@ -72,9 +74,16 @@ namespace Xamarin.WebTests.TestRunners
 			ServerFlags = provider.ServerFlags | HttpServerFlags.InstrumentationListener;
 			ME = $"{GetType ().Name}({identifier})";
 
+			var endPoint = ConnectionTestHelper.GetEndPoint ();
+
+			var proto = (ServerFlags & HttpServerFlags.NoSSL) != 0 ? "http" : "https";
+			Uri = new Uri ($"{proto}://{endPoint.Address}:{endPoint.Port}/");
+
 			var parameters = GetParameters (identifier);
 
-			Server = new BuiltinHttpServer (provider.Uri, provider.EndPoint, ServerFlags, parameters, null);
+			Server = new BuiltinHttpServer (
+				Uri, endPoint, ServerFlags, parameters,
+				provider.SslStreamProvider);
 		}
 
 		static ConnectionParameters GetParameters (string identifier)
