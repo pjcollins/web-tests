@@ -1,10 +1,10 @@
 ﻿//
-// HttpClientTestParameters.cs
+// HttpClientTestTypeAttribute.cs
 //
 // Author:
 //       Martin Baulig <mabaul@microsoft.com>
 //
-// Copyright (c) 2017 Xamarin Inc. (http://www.xamarin.com)
+// Copyright (c) 2018 Xamarin Inc. (http://www.xamarin.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -24,37 +24,47 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 using System;
-using System.Net;
-using System.Security.Cryptography.X509Certificates;
+using System.Linq;
+using System.Collections.Generic;
+using Xamarin.AsyncTests;
 
 namespace Xamarin.WebTests.TestFramework
 {
 	using ConnectionFramework;
-	using HttpFramework;
+	using TestRunners;
 
-	[HttpClientTestParameters]
-	public class HttpClientTestParameters : InstrumentationTestParameters
+	[AttributeUsage (AttributeTargets.Enum | AttributeTargets.Parameter, AllowMultiple = false)]
+	public class HttpClientTestTypeAttribute : TestParameterAttribute, ITestParameterSource<HttpClientTestType>
 	{
-		public HttpClientTestType Type {
-			get;
+		public HttpClientTestType? Type {
+			get; set;
 		}
 
-		public HttpClientTestParameters (ConnectionTestCategory category, HttpClientTestType type,
-		                                 string identifier, X509Certificate certificate)
-			: base (category, identifier, certificate, type.ToString ())
+		public HttpClientTestTypeAttribute (string filter = null)
+			: base (filter, TestFlags.Browsable | TestFlags.ContinueOnError)
+		{
+		}
+
+		public HttpClientTestTypeAttribute (HttpClientTestType type)
+			: base (null, TestFlags.Browsable | TestFlags.ContinueOnError)
 		{
 			Type = type;
 		}
 
-		protected HttpClientTestParameters (HttpClientTestParameters other)
-			: base (other)
+		public IEnumerable<HttpClientTestType> GetParameters (TestContext ctx, string filter)
 		{
-			Type = other.Type;
-		}
+			if (filter != null)
+				throw new NotImplementedException ();
 
-		public override ConnectionParameters DeepClone ()
-		{
-			return new HttpClientTestParameters (this);
+			var category = ctx.GetParameter<HttpServerTestCategory> ();
+
+			if (Type != null) {
+				yield return Type.Value;
+				yield break;
+			}
+
+			foreach (var type in HttpClientTestRunner.GetTestTypes (ctx, category))
+				yield return type;
 		}
 	}
 }

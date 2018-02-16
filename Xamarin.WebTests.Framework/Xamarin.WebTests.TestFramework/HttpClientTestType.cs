@@ -26,6 +26,7 @@
 using System;
 namespace Xamarin.WebTests.TestFramework
 {
+	[HttpClientTestType]
 	public enum HttpClientTestType
 	{
 		Simple,

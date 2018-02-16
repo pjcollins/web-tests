@@ -63,9 +63,9 @@ namespace Xamarin.WebTests.TestRunners
 		}
 
 		public HttpClientTestRunner (
-			IPortableEndPoint endpoint, Uri uri, HttpServerFlags flags,
-			HttpClientTestType type)
-			: base (endpoint, uri, flags, type.ToString ())
+			HttpServerProvider provider, HttpClientTestType type)
+			: base (provider.EndPoint, provider.Uri, provider.ServerFlags,
+				type.ToString ())
 		{
 			Type = type;
 		}
@@ -108,9 +108,9 @@ namespace Xamarin.WebTests.TestRunners
 			(HttpClientTestType.ReuseHandlerGZip, HttpClientTestFlags.Ignore),
 		};
 
-		public static IList<HttpClientTestType> GetTestTypes (TestContext ctx, ConnectionTestCategory category)
+		public static IList<HttpClientTestType> GetTestTypes (TestContext ctx, HttpServerTestCategory category)
 		{
-			if (category == ConnectionTestCategory.MartinTest)
+			if (category == HttpServerTestCategory.MartinTest)
 				return new[] { MartinTest };
 
 			var setup = DependencyInjector.Get<IConnectionFrameworkSetup> ();
@@ -125,45 +125,20 @@ namespace Xamarin.WebTests.TestRunners
 				}
 
 				switch (category) {
-				case ConnectionTestCategory.MartinTest:
+				case HttpServerTestCategory.MartinTest:
 					return false;
-				case ConnectionTestCategory.HttpClient:
+				case HttpServerTestCategory.Default:
 					if (flags == HttpClientTestFlags.Working)
 						return true;
 					if (setup.UsingDotNet || setup.InternalVersion >= 1)
 						return flags == HttpClientTestFlags.WorkingMaster;
 					return false;
-				case ConnectionTestCategory.HttpClientNewWebStack:
+				case HttpServerTestCategory.NewWebStack:
 					return flags == HttpClientTestFlags.NewWebStack;
 				default:
 					throw ctx.AssertFail (category);
 				}
 			}
-		}
-
-		static string GetTestName (ConnectionTestCategory category, HttpClientTestType type, params object[] args)
-		{
-			var sb = new StringBuilder ();
-			sb.Append (type);
-			foreach (var arg in args) {
-				sb.AppendFormat (":{0}", arg);
-			}
-			return sb.ToString ();
-		}
-
-		public static HttpClientTestParameters GetParameters (TestContext ctx, ConnectionTestCategory category,
-								      HttpClientTestType type)
-		{
-			var certificateProvider = DependencyInjector.Get<ICertificateProvider> ();
-			var acceptAll = certificateProvider.AcceptAll ();
-
-			var name = GetTestName (category, type);
-
-			var parameters = new HttpClientTestParameters (category, type, name, ResourceManager.SelfSignedServerCertificate) {
-				ClientCertificateValidator = acceptAll
-			};
-
-			return parameters;
 		}
 
 		protected override async Task RunSecondary (TestContext ctx, CancellationToken cancellationToken)

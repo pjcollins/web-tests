@@ -43,11 +43,10 @@ namespace Xamarin.WebTests
 	{
 		[Work]
 		[AsyncTest]
-		[ConnectionTestFlags (ConnectionTestFlags.RequireDotNet)]
-		[ConnectionTestCategory (ConnectionTestCategory.HttpClient)]
+		[HttpServerTestCategory (HttpServerTestCategory.Default)]
 		public Task Run (TestContext ctx, CancellationToken cancellationToken,
-				 ConnectionTestProvider provider,
-		                 HttpClientTestParameters parameters,
+		                 HttpServerProvider provider,
+		                 HttpClientTestType type,
 		                 HttpClientTestRunner runner)
 		{
 			return runner.Run (ctx, cancellationToken);
@@ -55,23 +54,21 @@ namespace Xamarin.WebTests
 
 		[AsyncTest]
 		[NewWebStack]
-		[ConnectionTestFlags (ConnectionTestFlags.RequireDotNet)]
-		[ConnectionTestCategory (ConnectionTestCategory.HttpClientNewWebStack)]
+		[HttpServerTestCategory (HttpServerTestCategory.NewWebStack)]
 		public Task RunNewWebStack (TestContext ctx, CancellationToken cancellationToken,
-					    ConnectionTestProvider provider,
-		                            HttpClientTestParameters parameters,
+		                            HttpServerProvider provider,
+		                            HttpClientTestType type,
 		                            HttpClientTestRunner runner)
 		{
 			return runner.Run (ctx, cancellationToken);
 		}
 
 		[Martin ("HttpClientInstrumentation")]
-		[ConnectionTestFlags (ConnectionTestFlags.RequireDotNet)]
-		[ConnectionTestCategory (ConnectionTestCategory.MartinTest)]
+		[HttpServerTestCategory (HttpServerTestCategory.MartinTest)]
 		[AsyncTest (Unstable = true)]
 		public Task MartinTest (TestContext ctx, CancellationToken cancellationToken,
-					ConnectionTestProvider provider,
-		                        HttpClientTestParameters parameters,
+		                        HttpServerProvider provider,
+		                        HttpClientTestType type,
 		                        HttpClientTestRunner runner)
 		{
 			return runner.Run (ctx, cancellationToken);
