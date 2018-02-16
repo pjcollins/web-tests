@@ -33,14 +33,20 @@ using Xamarin.AsyncTests.Portable;
 namespace Xamarin.WebTests.TestFramework
 {
 	using ConnectionFramework;
+	using HttpFramework;
 	using TestRunners;
 
 	[AttributeUsage (AttributeTargets.Class | AttributeTargets.Parameter, AllowMultiple = false)]
 	public class HttpServerProviderAttribute : TestParameterAttribute, ITestParameterSource<HttpServerProvider>
 	{
-		public HttpServerProviderAttribute (string filter = null, TestFlags flags = TestFlags.Browsable)
-			: base (filter, flags)
+		public HttpServerFlags ServerFlags {
+			get;
+		}
+
+		public HttpServerProviderAttribute (HttpServerFlags serverFlags = HttpServerFlags.None)
+			: base (null, TestFlags.Browsable)
 		{
+			ServerFlags = serverFlags;
 			Optional = true;
 		}
 
