@@ -134,8 +134,6 @@ namespace Xamarin.WebTests.TestRunners
 				break;
 			case HttpRequestTestType.ParallelNtlm:
 			case HttpRequestTestType.NtlmInstrumentation:
-			case HttpRequestTestType.NtlmWhileQueued:
-			case HttpRequestTestType.NtlmWhileQueued2:
 				AuthManager = parent.GetAuthenticationManager ();
 				CloseConnection = false;
 				break;
@@ -277,11 +275,6 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpRequestTestType.ReadTimeout:
 			case HttpRequestTestType.AbortResponse:
 				return new HttpRequestRequest (this, uri);
-			case HttpRequestTestType.NtlmWhileQueued:
-			case HttpRequestTestType.NtlmWhileQueued2:
-				if (primary)
-					return new HttpRequestRequest (this, uri);
-				return new TraditionalRequest (uri);
 
 			case HttpRequestTestType.PutChunked:
 			case HttpRequestTestType.PutChunkDontCloseRequest:
@@ -407,16 +400,6 @@ namespace Xamarin.WebTests.TestRunners
 
 			cancellationToken.ThrowIfCancellationRequested ();
 
-			HttpRequestContent content;
-			switch (TestRunner.EffectiveType) {
-			case HttpRequestTestType.NtlmWhileQueued:
-				content = new HttpRequestContent (TestRunner, currentRequest);
-				return new HttpResponse (HttpStatusCode.OK, content);
-			case HttpRequestTestType.NtlmWhileQueued2:
-				content = new HttpRequestContent (TestRunner, currentRequest);
-				return new HttpResponse (HttpStatusCode.OK, content) { CloseConnection = true };
-			}
-
 			var ret = await Target.HandleRequest (ctx, operation, connection, request, effectiveFlags, cancellationToken);
 			ctx.LogDebug (3, $"{me} target done: {Target} {ret}");
 			ret.KeepAlive = false;
@@ -490,8 +473,6 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpRequestTestType.NtlmClosesConnection:
 			case HttpRequestTestType.NtlmReusesConnection:
 			case HttpRequestTestType.ParallelNtlm:
-			case HttpRequestTestType.NtlmWhileQueued:
-			case HttpRequestTestType.NtlmWhileQueued2:
 				return await HandleNtlmRequest (
 					ctx, operation, connection, request, effectiveFlags, cancellationToken).ConfigureAwait (false);
 
@@ -836,7 +817,6 @@ namespace Xamarin.WebTests.TestRunners
 					return await ReadWithTimeout (5000, WebExceptionStatus.Timeout).ConfigureAwait (false);
 
 				case HttpRequestTestType.AbortResponse:
-				case HttpRequestTestType.NtlmWhileQueued:
 					return await ReadWithTimeout (0, WebExceptionStatus.RequestCanceled).ConfigureAwait (false);
 				}
 
@@ -1009,10 +989,6 @@ namespace Xamarin.WebTests.TestRunners
 					HasLength = true;
 					Length = ConnectionHandler.TheQuickBrownFoxBuffer.Length;
 					break;
-				case HttpRequestTestType.NtlmWhileQueued2:
-					HasLength = true;
-					Length = ((HelloWorldHandler)request.Handler.Target).Message.Length;
-					break;
 				case HttpRequestTestType.LargeChunkRead:
 					break;
 				case HttpRequestTestType.GetNoLength:
@@ -1064,14 +1040,6 @@ namespace Xamarin.WebTests.TestRunners
 				ctx.LogDebug (4, $"{ME} WRITE BODY");
 
 				switch (TestRunner.EffectiveType) {
-				case HttpRequestTestType.NtlmWhileQueued:
-					await HandleNtlmWhileQueued ().ConfigureAwait (false);
-					break;
-
-				case HttpRequestTestType.NtlmWhileQueued2:
-					await HandleNtlmWhileQueued2 ().ConfigureAwait (false);
-					break;
-
 				case HttpRequestTestType.ReadTimeout:
 					await stream.WriteAsync (ConnectionHandler.TheQuickBrownFoxBuffer, cancellationToken).ConfigureAwait (false);
 					await stream.FlushAsync (cancellationToken);
@@ -1113,53 +1081,6 @@ namespace Xamarin.WebTests.TestRunners
 
 				default:
 					throw ctx.AssertFail (TestRunner.EffectiveType);
-				}
-
-				async Task HandleNtlmWhileQueued ()
-				{
-					/*
-					 * HandleNtlmWhileQueued and HandleNtlmWhileQueued2 don't work on .NET because they
-					 * don't do the "priority request" mechanic to send the NTLM challenge before processing
-					 * any queued requests.
-					 */
-
-					/*
-					 * This test is tricky.  We set ServicePoint.ConnectionLimit to 1, then start an NTLM
-					 * request.  Using the instrumentation's read handler, we then start another simple
-					 * "Hello World" GET request, which will then be queued by the ServicePoint.
-					 * 
-					 * Once we got to this point, the client did the full NTLM authentication and we are about
-					 * to return the final response body.
-					 * 
-					 * Now we start listening for a new connection by calling StartDelayedListener().
-					 * 
-					 */
-					await Task.Delay (500).ConfigureAwait (false);
-					ctx.LogDebug (4, $"{ME} WRITE BODY - ABORT!");
-
-					await TestRunner.StartDelayedSecondaryOperation (ctx);
-
-					/*
-					 * Then we abort the client-side NTLM request and wait for it to complete.
-					 * This will eventually close the connection, so the ServicePoint scheduler will
-					 * start the "Hello World" request.
-					 */
-
-					TestRunner.AbortPrimaryRequest ();
-					await Task.WhenAny (Request.WaitForCompletion (), Task.Delay (10000));
-				}
-
-				async Task HandleNtlmWhileQueued2 ()
-				{
-					/*
-					 * Similar to NtlmWhileQueued, but we now complete both requests.
-					 */
-					await Task.Delay (500).ConfigureAwait (false);
-					await TestRunner.StartDelayedSecondaryOperation (ctx);
-
-					var message = ((HelloWorldHandler)Request.Handler.Target).Message;
-					await stream.WriteAsync (message, cancellationToken).ConfigureAwait (false);
-					await stream.FlushAsync (cancellationToken);
 				}
 
 				async Task HandlePostChunked ()

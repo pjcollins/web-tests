@@ -68,23 +68,11 @@ namespace Xamarin.WebTests.TestRunners
 			Type = type;
 		}
 
-		const HttpRequestTestType MartinTest = HttpRequestTestType.NtlmWhileQueued;
+		const HttpRequestTestType MartinTest = HttpRequestTestType.Simple;
 
 		static readonly (HttpRequestTestType type, HttpRequestTestFlags flags)[] TestRegistration = {
 			(HttpRequestTestType.Simple, HttpRequestTestFlags.Working),
-			(HttpRequestTestType.InvalidDataDuringHandshake, HttpRequestTestFlags.WorkingRequireSSL),
-			(HttpRequestTestType.AbortDuringHandshake, HttpRequestTestFlags.WorkingRequireSSL),
-			(HttpRequestTestType.ParallelRequests, HttpRequestTestFlags.Working),
-			(HttpRequestTestType.ThreeParallelRequests, HttpRequestTestFlags.Stress),
-			(HttpRequestTestType.ParallelRequestsSomeQueued, HttpRequestTestFlags.Stress),
-			(HttpRequestTestType.ManyParallelRequests, HttpRequestTestFlags.Stress),
-			(HttpRequestTestType.ManyParallelRequestsStress, HttpRequestTestFlags.Stress),
-			(HttpRequestTestType.SimpleQueuedRequest, HttpRequestTestFlags.Working),
-			(HttpRequestTestType.CancelQueuedRequest, HttpRequestTestFlags.Working),
-			(HttpRequestTestType.CancelMainWhileQueued, HttpRequestTestFlags.WorkingRequireSSL),
 			(HttpRequestTestType.SimpleNtlm, HttpRequestTestFlags.Working),
-			(HttpRequestTestType.NtlmWhileQueued, HttpRequestTestFlags.NewWebStackRequireSSL),
-			(HttpRequestTestType.NtlmWhileQueued2, HttpRequestTestFlags.NewWebStackRequireSSL),
 			(HttpRequestTestType.ReuseConnection, HttpRequestTestFlags.Working),
 			(HttpRequestTestType.SimplePost, HttpRequestTestFlags.Working),
 			(HttpRequestTestType.SimpleRedirect, HttpRequestTestFlags.Working),
@@ -187,22 +175,6 @@ namespace Xamarin.WebTests.TestRunners
 			Operation secondOperation = null;
 
 			switch (EffectiveType) {
-			case HttpRequestTestType.ParallelRequests:
-				ctx.Assert (ReadHandlerCalled, Is.EqualTo (2), "ReadHandler called twice");
-				break;
-			case HttpRequestTestType.ThreeParallelRequests:
-				ctx.Assert (ReadHandlerCalled, Is.EqualTo (3), "ReadHandler called three times");
-				break;
-			case HttpRequestTestType.SimpleQueuedRequest:
-				ctx.Assert (QueuedOperation, Is.Not.Null, "have queued task");
-				await QueuedOperation.WaitForCompletion ().ConfigureAwait (false);
-				ctx.Assert (ReadHandlerCalled, Is.EqualTo (2), "ReadHandler called twice");
-				break;
-			case HttpRequestTestType.ParallelRequestsSomeQueued:
-			case HttpRequestTestType.ManyParallelRequests:
-			case HttpRequestTestType.ManyParallelRequestsStress:
-				// ctx.Assert (ReadHandlerCalled, Is.EqualTo (Parameters.CountParallelRequests + 1), "ReadHandler count");
-				break;
 			case HttpRequestTestType.ReuseConnection:
 			case HttpRequestTestType.ReuseConnection2:
 			case HttpRequestTestType.ReuseAfterPartialRead:
@@ -245,10 +217,6 @@ namespace Xamarin.WebTests.TestRunners
 			var chunkedPost = new PostHandler (EffectiveType.ToString (), HttpContent.HelloChunked, TransferMode.Chunked);
 
 			switch (EffectiveType) {
-			case HttpRequestTestType.InvalidDataDuringHandshake:
-			case HttpRequestTestType.AbortDuringHandshake:
-			case HttpRequestTestType.CancelMainWhileQueued:
-				return (hello, HttpOperationFlags.ServerAbortsHandshake | HttpOperationFlags.AbortAfterClientExits);
 			case HttpRequestTestType.SimpleNtlm:
 				return (new AuthenticationHandler (AuthenticationType.NTLM, hello), HttpOperationFlags.None);
 			case HttpRequestTestType.SimplePost:
@@ -268,9 +236,6 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpRequestTestType.GetChunked:
 				return (new GetHandler (EffectiveType.ToString (), HttpContent.HelloChunked), HttpOperationFlags.None);
 			case HttpRequestTestType.Simple:
-			case HttpRequestTestType.ParallelRequests:
-			case HttpRequestTestType.SimpleQueuedRequest:
-			case HttpRequestTestType.CancelQueuedRequest:
 				return (hello, HttpOperationFlags.None);
 			default:
 				var handler = new HttpRequestHandler (this, primary);
@@ -302,25 +267,10 @@ namespace Xamarin.WebTests.TestRunners
 			WebExceptionStatus expectedError;
 
 			switch (EffectiveType) {
-			case HttpRequestTestType.InvalidDataDuringHandshake:
-				expectedStatus = HttpStatusCode.InternalServerError;
-				expectedError = WebExceptionStatus.SecureChannelFailure;
-				break;
-			case HttpRequestTestType.AbortDuringHandshake:
 			case HttpRequestTestType.AbortResponse:
 			case HttpRequestTestType.CloseRequestStream:
 				expectedStatus = HttpStatusCode.InternalServerError;
 				expectedError = WebExceptionStatus.RequestCanceled;
-				break;
-			case HttpRequestTestType.CancelMainWhileQueued:
-			case HttpRequestTestType.NtlmWhileQueued:
-				if (type == InstrumentationOperationType.Primary) {
-					expectedStatus = HttpStatusCode.InternalServerError;
-					expectedError = WebExceptionStatus.RequestCanceled;
-				} else {
-					expectedStatus = HttpStatusCode.OK;
-					expectedError = WebExceptionStatus.Success;
-				}
 				break;
 			case HttpRequestTestType.ReadTimeout:
 				expectedStatus = HttpStatusCode.InternalServerError;
@@ -338,15 +288,6 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpRequestTestType.ClientAbortsPost:
 				expectedStatus = HttpStatusCode.InternalServerError;
 				expectedError = WebExceptionStatus.AnyErrorStatus;
-				break;
-			case HttpRequestTestType.CancelQueuedRequest:
-				if (type == InstrumentationOperationType.Queued) {
-					expectedStatus = HttpStatusCode.InternalServerError;
-					expectedError = WebExceptionStatus.RequestCanceled;
-				} else {
-					expectedStatus = HttpStatusCode.OK;
-					expectedError = WebExceptionStatus.Success;
-				}
 				break;
 			default:
 				expectedStatus = HttpStatusCode.OK;
@@ -430,146 +371,14 @@ namespace Xamarin.WebTests.TestRunners
 			return operation;
 		}
 
-		protected override async Task PrimaryReadHandler (TestContext ctx, CancellationToken cancellationToken)
+		protected override Task PrimaryReadHandler (TestContext ctx, CancellationToken cancellationToken)
 		{
-			Request request;
-			InstrumentationOperation operation;
-			switch (EffectiveType) {
-			case HttpRequestTestType.ParallelRequests:
-				ctx.Assert (PrimaryOperation.HasRequest, "current request");
-				await RunSimpleHello ().ConfigureAwait (false);
-				break;
-
-			case HttpRequestTestType.SimpleQueuedRequest:
-				ctx.Assert (PrimaryOperation.HasRequest, "current request");
-				StartOperation (
-					ctx, cancellationToken, HelloWorldHandler.GetSimple (),
-					InstrumentationOperationType.Queued, HttpOperationFlags.None);
-				break;
-
-			case HttpRequestTestType.ThreeParallelRequests:
-				ctx.Assert (PrimaryOperation.HasRequest, "current request");
-				var secondTask = RunSimpleHello ();
-				var thirdTask = RunSimpleHello ();
-				await Task.WhenAll (secondTask, thirdTask).ConfigureAwait (false);
-				break;
-
-			case HttpRequestTestType.ParallelRequestsSomeQueued:
-			case HttpRequestTestType.ManyParallelRequests:
-			case HttpRequestTestType.ManyParallelRequestsStress:
-				ctx.Assert (PrimaryOperation.HasRequest, "current request");
-				var countParallel = CountParallelRequests ();
-				var parallelTasks = new Task[countParallel];
-				var parallelOperations = new InstrumentationOperation[countParallel];
-				for (int i = 0; i < parallelOperations.Length; i++)
-					parallelOperations[i] = StartOperation (
-						ctx, cancellationToken, HelloWorldHandler.GetSimple (),
-						InstrumentationOperationType.Parallel, HttpOperationFlags.None);
-				for (int i = 0; i < parallelTasks.Length; i++)
-					parallelTasks[i] = parallelOperations[i].WaitForCompletion ();
-				await Task.WhenAll (parallelTasks).ConfigureAwait (false);
-				break;
-
-			case HttpRequestTestType.AbortDuringHandshake:
-				ctx.Assert (PrimaryOperation.HasRequest, "current request");
-				PrimaryOperation.Request.Abort ();
-				// Wait until the client request finished, to make sure we are actually aboring.
-				await PrimaryOperation.WaitForCompletion ().ConfigureAwait (false);
-				break;
-
-			case HttpRequestTestType.CancelQueuedRequest:
-				ctx.Assert (PrimaryOperation.HasRequest, "current request");
-				operation = StartOperation (
-					ctx, cancellationToken, HelloWorldHandler.GetSimple (),
-					InstrumentationOperationType.Queued, HttpOperationFlags.AbortAfterClientExits);
-				request = await operation.WaitForRequest ().ConfigureAwait (false);
-				// Wait a bit to make sure the request has been queued.
-				await Task.Delay (500).ConfigureAwait (false);
-				request.Abort ();
-				break;
-
-			case HttpRequestTestType.CancelMainWhileQueued:
-				ctx.Assert (PrimaryOperation.HasRequest, "current request");
-				operation = StartOperation (
-					ctx, cancellationToken, HelloWorldHandler.GetSimple (),
-					InstrumentationOperationType.Queued, HttpOperationFlags.None);
-				request = await operation.WaitForRequest ().ConfigureAwait (false);
-				// Wait a bit to make sure the request has been queued.
-				await Task.Delay (2500).ConfigureAwait (false);
-				PrimaryOperation.Request.Abort ();
-				break;
-
-			case HttpRequestTestType.NtlmWhileQueued:
-				ctx.Assert (PrimaryOperation.HasRequest, "current request");
-				if (QueuedOperation == null) {
-					StartOperation (
-						ctx, cancellationToken, HelloWorldHandler.GetSimple (),
-						InstrumentationOperationType.Queued,
-						HttpOperationFlags.DelayedListenerContext | HttpOperationFlags.ClientAbortsRequest);
-				}
-				break;
-
-			case HttpRequestTestType.NtlmWhileQueued2:
-				ctx.Assert (PrimaryOperation.HasRequest, "current request");
-				if (QueuedOperation == null) {
-					StartOperation (
-						ctx, cancellationToken, HelloWorldHandler.GetSimple (),
-						InstrumentationOperationType.Queued,
-						HttpOperationFlags.DelayedListenerContext);
-				}
-				break;
-
-			default:
-				throw ctx.AssertFail (EffectiveType);
-			}
-
-			int CountParallelRequests ()
-			{
-				switch (EffectiveType) {
-				case HttpRequestTestType.ParallelRequestsSomeQueued:
-					return 5;
-				case HttpRequestTestType.ManyParallelRequests:
-					return 10;
-				case HttpRequestTestType.ManyParallelRequestsStress:
-					return 100;
-				default:
-					throw ctx.AssertFail (EffectiveType);
-				}
-			}
-
-			Task RunSimpleHello ()
-			{
-				return StartOperation (
-					ctx, cancellationToken, HelloWorldHandler.GetSimple (),
-					InstrumentationOperationType.Parallel, HttpOperationFlags.None).WaitForCompletion ();
-			}
+			throw new NotImplementedException();
 		}
 
-		protected override async Task SecondaryReadHandler (TestContext ctx, CancellationToken cancellationToken)
+		protected override Task SecondaryReadHandler (TestContext ctx, CancellationToken cancellationToken)
 		{
-			await FinishedTask.ConfigureAwait (false);
-
-			switch (EffectiveType) {
-			case HttpRequestTestType.ParallelRequests:
-				ctx.Assert (PrimaryOperation.HasRequest, "current request");
-				ctx.Assert (PrimaryOperation.ServicePoint.CurrentConnections, Is.EqualTo (2), "ServicePoint.CurrentConnections");
-				break;
-
-			case HttpRequestTestType.SimpleQueuedRequest:
-			case HttpRequestTestType.ThreeParallelRequests:
-			case HttpRequestTestType.ParallelRequestsSomeQueued:
-			case HttpRequestTestType.ManyParallelRequests:
-			case HttpRequestTestType.ManyParallelRequestsStress:
-			case HttpRequestTestType.CancelQueuedRequest:
-			case HttpRequestTestType.CancelMainWhileQueued:
-			case HttpRequestTestType.NtlmWhileQueued:
-			case HttpRequestTestType.NtlmWhileQueued2:
-				ctx.Assert (PrimaryOperation.HasRequest, "current request");
-				break;
-
-			default:
-				throw ctx.AssertFail (EffectiveType);
-			}
+			throw new NotImplementedException();
 		}
 
 		class Operation : InstrumentationOperation
@@ -614,19 +423,6 @@ namespace Xamarin.WebTests.TestRunners
 			void ConfigureParallelRequest (TestContext ctx, TraditionalRequest request)
 			{
 				switch (EffectiveType) {
-				case HttpRequestTestType.ParallelRequests:
-				case HttpRequestTestType.SimpleQueuedRequest:
-				case HttpRequestTestType.CancelQueuedRequest:
-				case HttpRequestTestType.CancelMainWhileQueued:
-				case HttpRequestTestType.NtlmWhileQueued:
-				case HttpRequestTestType.NtlmWhileQueued2:
-					ctx.Assert (ServicePoint, Is.Not.Null, "ServicePoint");
-					ctx.Assert (ServicePoint.CurrentConnections, Is.EqualTo (1), "ServicePoint.CurrentConnections");
-					break;
-				case HttpRequestTestType.ThreeParallelRequests:
-				case HttpRequestTestType.ParallelRequestsSomeQueued:
-				case HttpRequestTestType.ManyParallelRequests:
-				case HttpRequestTestType.ManyParallelRequestsStress:
 				case HttpRequestTestType.ReuseConnection:
 				case HttpRequestTestType.ReuseConnection2:
 				case HttpRequestTestType.ReuseAfterPartialRead:
@@ -657,29 +453,6 @@ namespace Xamarin.WebTests.TestRunners
 				case HttpRequestTestType.CloseIdleConnection:
 					ServicePoint.MaxIdleTime = IdleTime;
 					break;
-				case HttpRequestTestType.SimpleQueuedRequest:
-				case HttpRequestTestType.CancelQueuedRequest:
-					ServicePoint.ConnectionLimit = 1;
-					break;
-				case HttpRequestTestType.CancelMainWhileQueued:
-				case HttpRequestTestType.NtlmWhileQueued:
-					ServicePoint.ConnectionLimit = 1;
-					break;
-				case HttpRequestTestType.NtlmWhileQueued2:
-					ServicePoint.ConnectionLimit = 1;
-					break;
-				case HttpRequestTestType.ThreeParallelRequests:
-					ServicePoint.ConnectionLimit = 5;
-					break;
-				case HttpRequestTestType.ParallelRequestsSomeQueued:
-					ServicePoint.ConnectionLimit = 3;
-					break;
-				case HttpRequestTestType.ManyParallelRequests:
-					ServicePoint.ConnectionLimit = 5;
-					break;
-				case HttpRequestTestType.ManyParallelRequestsStress:
-					ServicePoint.ConnectionLimit = 25;
-					break;
 				}
 			}
 
@@ -700,36 +473,12 @@ namespace Xamarin.WebTests.TestRunners
 				case HttpRequestTestType.CloseCustomConnectionGroup:
 					instrumentation.IgnoreErrors = true;
 					break;
-				case HttpRequestTestType.InvalidDataDuringHandshake:
-				case HttpRequestTestType.AbortDuringHandshake:
-				case HttpRequestTestType.SimpleQueuedRequest:
-				case HttpRequestTestType.CancelQueuedRequest:
-				case HttpRequestTestType.CancelMainWhileQueued:
-				case HttpRequestTestType.NtlmWhileQueued:
-				case HttpRequestTestType.NtlmWhileQueued2:
-				case HttpRequestTestType.ThreeParallelRequests:
-				case HttpRequestTestType.ParallelRequestsSomeQueued:
-				case HttpRequestTestType.ManyParallelRequests:
-				case HttpRequestTestType.ManyParallelRequestsStress:
-				case HttpRequestTestType.ParallelRequests:
-					InstallReadHandler (ctx);
-					break;
 				}
 			}
 
-			protected override async Task ReadHandler (TestContext ctx, byte[] buffer, int offset, int size, int ret, CancellationToken cancellationToken)
+			protected override Task ReadHandler (TestContext ctx, byte[] buffer, int offset, int size, int ret, CancellationToken cancellationToken)
 			{
-				if (EffectiveType == HttpRequestTestType.InvalidDataDuringHandshake) {
-					ctx.Assert (Type, Is.EqualTo (InstrumentationOperationType.Primary), "Primary request");
-					InstallReadHandler (ctx);
-					if (ret > 50) {
-						for (int i = 10; i < 40; i++)
-							buffer[i] = 0xAA;
-					}
-					return;
-				}
-
-				await base.ReadHandler (ctx, buffer, offset, size, ret, cancellationToken).ConfigureAwait (false);
+				throw new NotImplementedException ();
 			}
 		}
 
