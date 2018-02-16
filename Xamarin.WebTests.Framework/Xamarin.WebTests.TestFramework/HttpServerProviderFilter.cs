@@ -35,83 +35,58 @@ namespace Xamarin.WebTests.TestFramework
 
 	public class HttpServerProviderFilter
 	{
-		public HttpServerTestCategory Flags {
+		public HttpServerTestCategory Category {
 			get;
 		}
 
-		public HttpServerProviderFilter (HttpServerTestCategory flags)
+		public HttpServerProviderFilter (HttpServerTestCategory category)
 		{
-			Flags = flags;
+			Category = category;
 		}
 
-		static (bool match, bool success, bool wildcard) MatchesFilter (ConnectionProvider provider, string filter)
+		bool SupportsSsl (ConnectionProvider provider)
 		{
-			if (filter == null)
-				return (false, false, false);
-
-			var parts = filter.Split (',');
-			foreach (var part in parts) {
-				if (part.Equals ("*"))
-					return (true, true, true);
-				if (string.Equals (provider.Name, part, StringComparison.OrdinalIgnoreCase))
-					return (true, true, false);
-			}
-
-			return (true, false, false);
+			if (!provider.SupportsSslStreams)
+				return false;
+			if (!provider.HasFlag (ConnectionProviderFlags.SupportsTls12))
+				return false;
+			return true;
 		}
 
-		bool HasFlag (HttpServerTestCategory flag)
+		bool HasNewWebStack ()
 		{
-			return (Flags & flag) == flag;
+			var setup = DependencyInjector.Get<IConnectionFrameworkSetup> ();
+			return setup.UsingDotNet || setup.HasNewWebStack;
 		}
 
-		bool IsSupported (ConnectionProvider provider)
+		bool IsSupported (TestContext ctx, ConnectionProvider provider)
 		{
-			if (HasFlag (HttpServerTestCategory.AssumeSupportedByTest))
-				return true;
 			if (!provider.HasFlag (ConnectionProviderFlags.SupportsHttp))
 				return false;
-			if (HasFlag (HttpServerTestCategory.RequireSsl)) {
-				if (!provider.HasFlag (ConnectionProviderFlags.SupportsSslStream) ||
-				    !provider.HasFlag (ConnectionProviderFlags.SupportsTls12))
-					return false;
-			}
-			return true;
-		}
-
-		bool IsSupported (ConnectionProvider provider, string filter)
-		{
-			if (!IsSupported (provider))
-				return false;
-
-			var (match, success, wildcard) = MatchesFilter (provider, filter);
-			if (match) {
-				if (!success)
-					return false;
-				if (wildcard && !HasFlag (HttpServerTestCategory.AllowWildcardMatches) && provider.HasFlag (ConnectionProviderFlags.IsExplicit))
-					return false;
+			switch (Category) {
+			case HttpServerTestCategory.HttpInstrumentation:
+			case HttpServerTestCategory.HttpInstrumentationStress:
+				return SupportsSsl (provider);
+			case HttpServerTestCategory.HttpInstrumentationNoSSL:
 				return true;
+			case HttpServerTestCategory.HttpInstrumentationNewWebStack:
+				return HasNewWebStack () && SupportsSsl (provider);
+			case HttpServerTestCategory.HttpInstrumentationNewWebStackNoSSL:
+				return HasNewWebStack ();
+			case HttpServerTestCategory.MartinTest:
+				return SupportsSsl (provider);
+			default:
+				throw ctx.AssertFail (Category);
 			}
-
-			if (provider.HasFlag (ConnectionProviderFlags.IsExplicit))
-				return false;
-
-			return true;
 		}
 
-		public IEnumerable<ConnectionProvider> GetSupportedProviders (TestContext ctx, string filter)
+		public IEnumerable<ConnectionProvider> GetSupportedProviders (TestContext ctx)
 		{
 			var factory = DependencyInjector.Get<ConnectionProviderFactory> ();
-			var providers = factory.GetProviders (p => IsSupported (p)).ToList ();
+			var providers = factory.GetProviders (p => IsSupported (ctx, p)).ToList ();
 			if (providers.Count == 0)
-				return new ConnectionProvider[0];
-
-			var filteredProviders = providers.Where (p => IsSupported (p, filter));
-
-			if (filter != null && filteredProviders.Count ()  == 0)
-				ctx.LogMessage ($"WARNING: No TLS Provider matches server filter '{filter}'");
-
-			return filteredProviders;
+				throw ctx.AssertFail ($"No supported ConnectionProvider for `{Category}'.");
+			return providers;
 		}
 	}
 }

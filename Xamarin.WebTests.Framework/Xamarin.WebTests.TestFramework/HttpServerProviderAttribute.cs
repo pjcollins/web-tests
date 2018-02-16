@@ -39,42 +39,51 @@ namespace Xamarin.WebTests.TestFramework
 	[AttributeUsage (AttributeTargets.Class | AttributeTargets.Parameter, AllowMultiple = false)]
 	public class HttpServerProviderAttribute : TestParameterAttribute, ITestParameterSource<HttpServerProvider>
 	{
-		public HttpServerTestCategory ProviderFlags {
+		public HttpServerTestCategory? Category {
 			get;
 		}
 
-		public HttpServerProviderAttribute (HttpServerTestCategory flags = HttpServerTestCategory.None)
+		public HttpServerProviderAttribute ()
 			: base (null, TestFlags.Browsable)
 		{
-			ProviderFlags = flags;
-			Optional = true;
 		}
 
-		public bool Optional {
-			get; set;
+		public HttpServerProviderAttribute (HttpServerTestCategory category)
+			: base (null, TestFlags.Browsable)
+		{
+			Category = category;
+		}
+
+		bool UsingSsl (HttpServerTestCategory category)
+		{
+			switch (category) {
+			case HttpServerTestCategory.HttpInstrumentationNoSSL:
+			case HttpServerTestCategory.HttpInstrumentationNewWebStackNoSSL:
+				return false;
+			default:
+				return true;
+			}
 		}
 
 		public IEnumerable<HttpServerProvider> GetParameters (TestContext ctx, string argument)
 		{
-			var category = ctx.GetParameter<ConnectionTestCategory> ();
+			var category = Category ?? ctx.GetParameter<HttpServerTestCategory> ();
 
-			var flags = ProviderFlags;
-			if (ctx.TryGetParameter (out HttpServerTestCategory explicitFlags))
-				flags |= explicitFlags;
+			if (!string.IsNullOrEmpty (argument))
+				throw new NotSupportedException ();
 
-			var filter = new HttpServerProviderFilter (flags);
-			var supportedProviders = filter.GetSupportedProviders (ctx, argument);
-			if (!Optional && supportedProviders.Count () == 0)
+			var filter = new HttpServerProviderFilter (category);
+			var supportedProviders = filter.GetSupportedProviders (ctx);
+			if (supportedProviders.Count () == 0)
 				ctx.AssertFail ("Could not find any supported HttpServerProvider.");
 
-			yield return CreateDefault ();
-
-			if ((flags & HttpServerTestCategory.NoSsl) != 0)
+			if (!UsingSsl (category)) {
+				yield return CreateDefault ();
 				yield break;
+			}
 
 			foreach (var provider in supportedProviders) {
-				if (provider.SupportsSslStreams)
-					yield return CreateSsl (provider);
+				yield return CreateSsl (provider);
 			}
 
 			HttpServerProvider CreateSsl (ConnectionProvider provider)
