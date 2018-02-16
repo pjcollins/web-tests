@@ -1,5 +1,5 @@
 ﻿//
-// ConnectionTestFlagsAttribute.cs
+// HttpValidationTestParametersAttribute.cs
 //
 // Author:
 //       Martin Baulig <martin.baulig@xamarin.com>
@@ -24,39 +24,45 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 using System;
+using System.Linq;
+using System.Collections.Generic;
 using Xamarin.AsyncTests;
 
-namespace Xamarin.WebTests.TestFramework
+namespace Xamarin.WebTests.TestAttributes
 {
-	using ConnectionFramework;
+	using TestFramework;
+	using TestRunners;
 
-	[AttributeUsage (AttributeTargets.Method, AllowMultiple = false)]
-	public class ConnectionTestFlagsAttribute : FixedTestParameterAttribute
+	[AttributeUsage (AttributeTargets.Class, AllowMultiple = false)]
+	public class HttpValidationTestParametersAttribute : TestParameterAttribute, ITestParameterSource<HttpValidationTestParameters>
 	{
-		public override Type Type {
-			get { return typeof(ConnectionTestFlags); }
+		public HttpValidationTestType? Type {
+			get; set;
 		}
 
-		public override object Value {
-			get { return flags; }
-		}
-
-		public override string Identifier {
-			get { return identifier; }
-		}
-
-		public ConnectionTestFlags Flags {
-			get { return flags; }
-		}
-
-		readonly string identifier;
-		readonly ConnectionTestFlags flags;
-
-		public ConnectionTestFlagsAttribute (ConnectionTestFlags flags)
+		public HttpValidationTestParametersAttribute (string filter = null)
+			: base (filter, TestFlags.Browsable | TestFlags.ContinueOnError)
 		{
-			this.flags = flags;
-			this.identifier = Type.Name;
+		}
+
+		public HttpValidationTestParametersAttribute (HttpValidationTestType type)
+			: base (null, TestFlags.Browsable | TestFlags.ContinueOnError)
+		{
+			Type = type;
+		}
+
+		public IEnumerable<HttpValidationTestParameters> GetParameters (TestContext ctx, string filter)
+		{
+			if (filter != null)
+				throw new NotImplementedException ();
+
+			var category = ctx.GetParameter<ConnectionTestCategory> ();
+
+			if (Type != null)
+				yield return HttpValidationTestRunner.GetParameters (ctx, category, Type.Value);
+
+			foreach (var type in HttpValidationTestRunner.GetTests (ctx, category))
+				yield return HttpValidationTestRunner.GetParameters (ctx, category, type);
 		}
 	}
 }
-

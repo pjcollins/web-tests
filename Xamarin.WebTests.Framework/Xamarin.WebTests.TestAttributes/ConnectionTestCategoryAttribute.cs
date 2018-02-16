@@ -27,9 +27,9 @@
 using System;
 using Xamarin.AsyncTests;
 
-namespace Xamarin.WebTests.TestFramework
+namespace Xamarin.WebTests.TestAttributes
 {
-	using ConnectionFramework;
+	using TestFramework;
 
 	[AttributeUsage (AttributeTargets.Method, AllowMultiple = false)]
 	public class ConnectionTestCategoryAttribute : FixedTestParameterAttribute

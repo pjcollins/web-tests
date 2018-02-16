@@ -1,10 +1,10 @@
 ﻿//
-// HttpServerFlagsAttribute.cs
+// ConnectionTestFlagsAttribute.cs
 //
 // Author:
-//       Martin Baulig <mabaul@microsoft.com>
+//       Martin Baulig <martin.baulig@xamarin.com>
 //
-// Copyright (c) 2017 Xamarin Inc. (http://www.xamarin.com)
+// Copyright (c) 2015 Xamarin, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -25,25 +25,38 @@
 // THE SOFTWARE.
 using System;
 using Xamarin.AsyncTests;
-using Xamarin.WebTests.HttpFramework;
 
-namespace Xamarin.WebTests.TestFramework {
+namespace Xamarin.WebTests.TestAttributes
+{
+	using TestFramework;
+
 	[AttributeUsage (AttributeTargets.Method, AllowMultiple = false)]
-	public class HttpServerFlagsAttribute : FixedTestParameterAttribute
+	public class ConnectionTestFlagsAttribute : FixedTestParameterAttribute
 	{
-		public override Type Type => typeof(HttpServerFlags);
-
-		public override object Value => Flags;
-
-		public override string Identifier => Type.Name;
-
-		public HttpServerFlags Flags {
-			get;
+		public override Type Type {
+			get { return typeof(ConnectionTestFlags); }
 		}
 
-		public HttpServerFlagsAttribute (HttpServerFlags flags)
+		public override object Value {
+			get { return flags; }
+		}
+
+		public override string Identifier {
+			get { return identifier; }
+		}
+
+		public ConnectionTestFlags Flags {
+			get { return flags; }
+		}
+
+		readonly string identifier;
+		readonly ConnectionTestFlags flags;
+
+		public ConnectionTestFlagsAttribute (ConnectionTestFlags flags)
 		{
-			Flags = flags;
+			this.flags = flags;
+			this.identifier = Type.Name;
 		}
 	}
 }
+

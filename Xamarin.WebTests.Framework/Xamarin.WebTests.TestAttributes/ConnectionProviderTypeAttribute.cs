@@ -28,7 +28,7 @@ using System;
 using Xamarin.AsyncTests;
 using Xamarin.WebTests.ConnectionFramework;
 
-namespace Xamarin.WebTests.TestFramework
+namespace Xamarin.WebTests.TestAttributes
 {
 	[AttributeUsage (AttributeTargets.Method, AllowMultiple = false)]
 	public class ConnectionProviderTypeAttribute : FixedTestParameterAttribute

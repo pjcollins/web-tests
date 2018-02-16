@@ -1,5 +1,5 @@
 ﻿//
-// TestHttpListener.cs
+// HttpServerFlagsAttribute.cs
 //
 // Author:
 //       Martin Baulig <mabaul@microsoft.com>
@@ -24,40 +24,27 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 using System;
-using System.Net;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Collections.Generic;
 using Xamarin.AsyncTests;
+using Xamarin.WebTests.HttpFramework;
 
-namespace Xamarin.WebTests.Tests {
-	using TestAttributes;
-	using TestFramework;
-	using HttpFramework;
-	using HttpHandlers;
-	using HttpOperations;
+namespace Xamarin.WebTests.TestAttributes
+{
+	[AttributeUsage (AttributeTargets.Method, AllowMultiple = false)]
+	public class HttpServerFlagsAttribute : FixedTestParameterAttribute
+	{
+		public override Type Type => typeof(HttpServerFlags);
 
-	[AsyncTestFixture]
-	public class TestHttpListener : ITestParameterSource<HttpListenerHandler> {
-		public IEnumerable<HttpListenerHandler> GetParameters (TestContext ctx, string filter)
-		{
-			switch (filter) {
-			case "martin":
-				yield return new HttpListenerHandler (HttpListenerTestType.MartinTest);
-				break;
-			}
+		public override object Value => Flags;
+
+		public override string Identifier => Type.Name;
+
+		public HttpServerFlags Flags {
+			get;
 		}
 
-		[Martin ("HttpListener")]
-		[ConnectionTestFlags (ConnectionTestFlags.RequireMonoServer)]
-		[HttpServerFlags (HttpServerFlags.HttpListener)]
-		[AsyncTest (ParameterFilter = "martin", Unstable = true)]
-		public async Task MartinTest (TestContext ctx, HttpServer server, HttpListenerHandler handler,
-		                              CancellationToken cancellationToken)
+		public HttpServerFlagsAttribute (HttpServerFlags flags)
 		{
-			using (var operation = new HttpListenerOperation (server, handler)) {
-				await operation.Run (ctx, cancellationToken).ConfigureAwait (false);
-			}
+			Flags = flags;
 		}
 	}
 }

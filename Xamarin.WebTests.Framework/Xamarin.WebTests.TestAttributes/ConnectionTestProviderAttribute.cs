@@ -1,5 +1,5 @@
 ﻿//
-// HttpValidationTestParametersAttribute.cs
+// ConnectionTestProviderAttribute.cs
 //
 // Author:
 //       Martin Baulig <martin.baulig@xamarin.com>
@@ -27,42 +27,48 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using Xamarin.AsyncTests;
+using Xamarin.AsyncTests.Framework;
+using Xamarin.AsyncTests.Portable;
 
-namespace Xamarin.WebTests.TestFramework
+namespace Xamarin.WebTests.TestAttributes
 {
 	using ConnectionFramework;
+	using TestFramework;
 	using TestRunners;
 
-	[AttributeUsage (AttributeTargets.Class, AllowMultiple = false)]
-	public class HttpValidationTestParametersAttribute : TestParameterAttribute, ITestParameterSource<HttpValidationTestParameters>
+	[AttributeUsage (AttributeTargets.Class | AttributeTargets.Parameter, AllowMultiple = false)]
+	public class ConnectionTestProviderAttribute : TestParameterAttribute, ITestParameterSource<ConnectionTestProvider>
 	{
-		public HttpValidationTestType? Type {
+		public ConnectionTestProviderAttribute (string filter = null, TestFlags flags = TestFlags.Browsable)
+			: base (filter, flags)
+		{
+			Optional = true;
+		}
+
+		public bool Optional {
 			get; set;
 		}
 
-		public HttpValidationTestParametersAttribute (string filter = null)
-			: base (filter, TestFlags.Browsable | TestFlags.ContinueOnError)
+		public IEnumerable<ConnectionTestProvider> GetParameters (TestContext ctx, string argument)
 		{
-		}
-
-		public HttpValidationTestParametersAttribute (HttpValidationTestType type)
-			: base (null, TestFlags.Browsable | TestFlags.ContinueOnError)
-		{
-			Type = type;
-		}
-
-		public IEnumerable<HttpValidationTestParameters> GetParameters (TestContext ctx, string filter)
-		{
-			if (filter != null)
-				throw new NotImplementedException ();
-
 			var category = ctx.GetParameter<ConnectionTestCategory> ();
 
-			if (Type != null)
-				yield return HttpValidationTestRunner.GetParameters (ctx, category, Type.Value);
+			ConnectionProviderFilter filter;
+			if (!ctx.TryGetParameter<ConnectionProviderFilter> (out filter)) {
+				var flags = ConnectionTestRunner.GetConnectionFlags (ctx, category);
 
-			foreach (var type in HttpValidationTestRunner.GetTests (ctx, category))
-				yield return HttpValidationTestRunner.GetParameters (ctx, category, type);
+				ConnectionTestFlags explicitFlags;
+				if (ctx.TryGetParameter<ConnectionTestFlags> (out explicitFlags))
+					flags |= explicitFlags;
+
+				filter = new ConnectionTestProviderFilter (category, flags);
+			}
+
+			var supportedProviders = filter.GetSupportedProviders (ctx, argument).Cast<ConnectionTestProvider> ().ToList ();
+			if (!Optional && supportedProviders.Count == 0)
+				ctx.AssertFail ("Could not find any supported ConnectionTestProvider.");
+
+			return supportedProviders;
 		}
 	}
 }

@@ -31,6 +31,7 @@ namespace Xamarin.WebTests.TestFramework
 {
 	using ConnectionFramework;
 	using HttpFramework;
+	using TestAttributes;
 	using Resources;
 
 	[HttpValidationTestParameters]

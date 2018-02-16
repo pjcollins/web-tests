@@ -36,6 +36,7 @@ using Xamarin.WebTests.MonoTestFramework;
 using Mono.Btls.Interface;
 using Mono.Btls.TestFramework;
 using Mono.Security.Interface;
+using Xamarin.WebTests.TestAttributes;
 using Xamarin.WebTests.HttpFramework;
 using Xamarin.WebTests.TestRunners;
 using Xamarin.WebTests.ConnectionFramework;
