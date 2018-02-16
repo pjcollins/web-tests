@@ -36,7 +36,7 @@ namespace Xamarin.WebTests.TestFramework
 	[AttributeUsage (AttributeTargets.Class | AttributeTargets.Parameter, AllowMultiple = false)]
 	public class SslStreamTestParametersAttribute : TestParameterAttribute, ITestParameterSource<SslStreamTestParameters>
 	{
-		public ConnectionTestType? Type {
+		public SslStreamTestType? Type {
 			get; set;
 		}
 
@@ -45,7 +45,7 @@ namespace Xamarin.WebTests.TestFramework
 		{
 		}
 
-		public SslStreamTestParametersAttribute (ConnectionTestType type)
+		public SslStreamTestParametersAttribute (SslStreamTestType type)
 			: base (null, TestFlags.Browsable | TestFlags.ContinueOnError)
 		{
 			Type = type;
@@ -63,7 +63,7 @@ namespace Xamarin.WebTests.TestFramework
 				yield break;
 			}
 
-			foreach (var type in ConnectionTestRunner.GetConnectionTestTypes (ctx, category))
+			foreach (var type in SslStreamTestRunner.GetTests (ctx, category))
 				yield return SslStreamTestRunner.GetParameters (ctx, category, type);
 		}
 	}
