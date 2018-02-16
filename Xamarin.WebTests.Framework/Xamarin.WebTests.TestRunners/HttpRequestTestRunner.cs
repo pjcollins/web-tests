@@ -43,8 +43,6 @@ namespace Xamarin.WebTests.TestRunners
 	using HttpFramework;
 	using HttpHandlers;
 	using TestFramework;
-	using Resources;
-	using Xamarin.WebTests.Server;
 
 	[HttpRequestTestRunner]
 	public class HttpRequestTestRunner : InstrumentationTestRunner
@@ -95,7 +93,6 @@ namespace Xamarin.WebTests.TestRunners
 			(HttpRequestTestType.CloseCustomConnectionGroup, HttpRequestTestFlags.Working),
 			(HttpRequestTestType.CloseRequestStream, HttpRequestTestFlags.Working),
 			(HttpRequestTestType.ReadTimeout, HttpRequestTestFlags.NewWebStack),
-			(HttpRequestTestType.AbortResponse, HttpRequestTestFlags.Working),
 			(HttpRequestTestType.RedirectOnSameConnection, HttpRequestTestFlags.Working),
 			(HttpRequestTestType.RedirectNoReuse, HttpRequestTestFlags.Working),
 			(HttpRequestTestType.RedirectNoLength, HttpRequestTestFlags.NewWebStack),
@@ -250,16 +247,6 @@ namespace Xamarin.WebTests.TestRunners
 			return old ?? manager;
 		}
 
-		internal void AbortPrimaryRequest ()
-		{
-			PrimaryOperation.Request.Abort ();
-		}
-
-		internal Task StartDelayedSecondaryOperation (TestContext ctx)
-		{
-			return QueuedOperation.StartDelayedListener (ctx);
-		}
-
 		protected override InstrumentationOperation CreateOperation (
 			TestContext ctx, Handler handler, InstrumentationOperationType type, HttpOperationFlags flags)
 		{
@@ -267,7 +254,6 @@ namespace Xamarin.WebTests.TestRunners
 			WebExceptionStatus expectedError;
 
 			switch (EffectiveType) {
-			case HttpRequestTestType.AbortResponse:
 			case HttpRequestTestType.CloseRequestStream:
 				expectedStatus = HttpStatusCode.InternalServerError;
 				expectedError = WebExceptionStatus.RequestCanceled;

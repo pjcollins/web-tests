@@ -149,7 +149,6 @@ namespace Xamarin.WebTests.TestRunners
 				break;
 			case HttpRequestTestType.ReuseCustomConnectionGroup:
 			case HttpRequestTestType.ReadTimeout:
-			case HttpRequestTestType.AbortResponse:
 				CloseConnection = !primary;
 				break;
 			case HttpRequestTestType.CloseRequestStream:
@@ -273,7 +272,6 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpRequestTestType.ReuseAfterPartialRead:
 			case HttpRequestTestType.CloseRequestStream:
 			case HttpRequestTestType.ReadTimeout:
-			case HttpRequestTestType.AbortResponse:
 				return new HttpRequestRequest (this, uri);
 
 			case HttpRequestTestType.PutChunked:
@@ -451,7 +449,6 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpRequestTestType.ReuseCustomConnectionGroup:
 			case HttpRequestTestType.CloseRequestStream:
 			case HttpRequestTestType.ReadTimeout:
-			case HttpRequestTestType.AbortResponse:
 			case HttpRequestTestType.RedirectOnSameConnection:
 			case HttpRequestTestType.SimpleGZip:
 			case HttpRequestTestType.TestResponseStream:
@@ -552,7 +549,6 @@ namespace Xamarin.WebTests.TestRunners
 				};
 
 			case HttpRequestTestType.ReadTimeout:
-			case HttpRequestTestType.AbortResponse:
 				content = new HttpRequestContent (TestRunner, currentRequest);
 				return new HttpResponse (HttpStatusCode.OK, content);
 
@@ -649,7 +645,6 @@ namespace Xamarin.WebTests.TestRunners
 
 			switch (TestRunner.EffectiveType) {
 			case HttpRequestTestType.ReadTimeout:
-			case HttpRequestTestType.AbortResponse:
 				return ctx.Expect (response.Status, Is.EqualTo (HttpStatusCode.OK), "response.StatusCode");
 
 			case HttpRequestTestType.ReuseAfterPartialRead:
@@ -815,9 +810,6 @@ namespace Xamarin.WebTests.TestRunners
 				switch (TestRunner.EffectiveType) {
 				case HttpRequestTestType.ReadTimeout:
 					return await ReadWithTimeout (5000, WebExceptionStatus.Timeout).ConfigureAwait (false);
-
-				case HttpRequestTestType.AbortResponse:
-					return await ReadWithTimeout (0, WebExceptionStatus.RequestCanceled).ConfigureAwait (false);
 				}
 
 				using (var stream = response.GetResponseStream ()) {
@@ -1043,14 +1035,6 @@ namespace Xamarin.WebTests.TestRunners
 				case HttpRequestTestType.ReadTimeout:
 					await stream.WriteAsync (ConnectionHandler.TheQuickBrownFoxBuffer, cancellationToken).ConfigureAwait (false);
 					await stream.FlushAsync (cancellationToken);
-					await Task.WhenAny (Request.WaitForCompletion (), Task.Delay (10000));
-					break;
-
-				case HttpRequestTestType.AbortResponse:
-					await stream.WriteAsync (ConnectionHandler.TheQuickBrownFoxBuffer, cancellationToken).ConfigureAwait (false);
-					await stream.FlushAsync (cancellationToken);
-					await Task.Delay (500).ConfigureAwait (false);
-					TestRunner.AbortPrimaryRequest ();
 					await Task.WhenAny (Request.WaitForCompletion (), Task.Delay (10000));
 					break;
 
