@@ -57,7 +57,7 @@ namespace Xamarin.WebTests.Tests
 		public Task RunNoSSL (TestContext ctx, CancellationToken cancellationToken,
 		                      HttpServerProvider provider,
 		                      HttpInstrumentationTestType type,
-		                      [HttpInstrumentationTestRunner (HttpServerFlags.NoSSL)] HttpInstrumentationTestRunner runner)
+		                      HttpInstrumentationTestRunner runner)
 		{
 			return runner.Run (ctx, cancellationToken);
 		}
@@ -92,7 +92,7 @@ namespace Xamarin.WebTests.Tests
 		public Task RunNewWebStackNoSSL (TestContext ctx, CancellationToken cancellationToken,
 		                                 HttpServerProvider provider,
 		                                 HttpInstrumentationTestType type,
-		                                 [HttpInstrumentationTestRunner (HttpServerFlags.NoSSL)] HttpInstrumentationTestRunner runner)
+		                                 HttpInstrumentationTestRunner runner)
 		{
 			return runner.Run (ctx, cancellationToken);
 		}
@@ -116,17 +116,6 @@ namespace Xamarin.WebTests.Tests
 		                        HttpServerProvider provider,
 		                        HttpInstrumentationTestType type,
 		                        HttpInstrumentationTestRunner runner)
-		{
-			return runner.Run (ctx, cancellationToken);
-		}
-
-		[Martin ("HttpInstrumentationNoSSL")]
-		[HttpServerTestCategory (HttpServerTestCategory.MartinTest)]
-		[AsyncTest (ParameterFilter = "martin", Unstable = true)]
-		public Task MartinTestNoSSL (TestContext ctx, CancellationToken cancellationToken,
-		                             HttpServerProvider provider,
-		                             HttpInstrumentationTestType type,
-		                             [HttpInstrumentationTestRunner (HttpServerFlags.NoSSL)] HttpInstrumentationTestRunner runner)
 		{
 			return runner.Run (ctx, cancellationToken);
 		}

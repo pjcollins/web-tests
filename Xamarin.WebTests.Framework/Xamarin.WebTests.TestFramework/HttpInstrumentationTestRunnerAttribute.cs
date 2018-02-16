@@ -25,29 +25,17 @@
 // THE SOFTWARE.
 using System;
 using Xamarin.AsyncTests;
-using Xamarin.AsyncTests.Framework;
-using Xamarin.AsyncTests.Portable;
-using Xamarin.AsyncTests.Constraints;
 
 namespace Xamarin.WebTests.TestFramework
 {
 	using TestRunners;
-	using ConnectionFramework;
-	using HttpFramework;
-	using Server;
-	using Resources;
 
 	[AttributeUsage (AttributeTargets.Class | AttributeTargets.Parameter, AllowMultiple = false)]
 	public sealed class HttpInstrumentationTestRunnerAttribute : TestHostAttribute, ITestHost<HttpInstrumentationTestRunner>
 	{
-		public HttpServerFlags ServerFlags {
-			get;
-		}
-
-		public HttpInstrumentationTestRunnerAttribute (HttpServerFlags serverFlags = HttpServerFlags.None)
+		public HttpInstrumentationTestRunnerAttribute ()
 			: base (typeof (HttpInstrumentationTestRunnerAttribute))
 		{
-			ServerFlags = serverFlags;
 		}
 
 		public HttpInstrumentationTestRunner CreateInstance (TestContext ctx)
@@ -56,17 +44,7 @@ namespace Xamarin.WebTests.TestFramework
 
 			var type = ctx.GetParameter<HttpInstrumentationTestType> ();
 
-			var endPoint = ConnectionTestHelper.GetEndPoint (ctx);
-
-			var flags = ServerFlags;
-			if ((flags & HttpServerFlags.NoSSL) == 0)
-				flags |= HttpServerFlags.SSL;
-
-			var ssl = (flags & HttpServerFlags.SSL) != 0;
-
-			var uri = new Uri (string.Format ("http{0}://{1}:{2}/", ssl ? "s" : "", endPoint.Address, endPoint.Port));
-
-			return new HttpInstrumentationTestRunner (endPoint, uri, flags, type);
+			return new HttpInstrumentationTestRunner (provider, type);
 		}
 	}
 }

@@ -63,9 +63,9 @@ namespace Xamarin.WebTests.TestRunners
 		}
 
 		public HttpInstrumentationTestRunner (
-			IPortableEndPoint endpoint, Uri uri, HttpServerFlags flags,
-			HttpInstrumentationTestType type)
-			: base (endpoint, uri, flags, type.ToString ())
+			HttpServerProvider provider, HttpInstrumentationTestType type)
+			: base (provider.EndPoint, provider.Uri, provider.ServerFlags,
+			        type.ToString ())
 		{
 			Type = type;
 		}
@@ -178,16 +178,6 @@ namespace Xamarin.WebTests.TestRunners
 					throw ctx.AssertFail (category);
 				}
 			}
-		}
-
-		static string GetTestName (HttpServerTestCategory category, HttpInstrumentationTestType type, params object[] args)
-		{
-			var sb = new StringBuilder ();
-			sb.Append (type);
-			foreach (var arg in args) {
-				sb.AppendFormat (":{0}", arg);
-			}
-			return sb.ToString ();
 		}
 
 		const int IdleTime = 750;
