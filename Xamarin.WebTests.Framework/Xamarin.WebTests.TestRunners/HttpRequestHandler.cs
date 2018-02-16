@@ -73,10 +73,6 @@ namespace Xamarin.WebTests.TestRunners
 			get;
 		}
 
-		public AuthenticationManager AuthManager {
-			get;
-		}
-
 		public HttpOperationFlags OperationFlags {
 			get;
 		}
@@ -196,9 +192,6 @@ namespace Xamarin.WebTests.TestRunners
 			if (CloseConnection)
 				Flags |= RequestFlags.CloseConnection;
 
-			if (AuthManager != null)
-				Target = new HelloWorldHandler (ME);
-
 			if (ExpectedContent == null)
 				ExpectedContent = Content ?? new StringContent (ME);
 		}
@@ -212,7 +205,6 @@ namespace Xamarin.WebTests.TestRunners
 			ME = other.ME;
 			Flags = other.Flags;
 			Target = other.Target;
-			AuthManager = other.AuthManager;
 			readyTcs = new TaskCompletionSource<bool> ();
 		}
 
@@ -256,9 +248,6 @@ namespace Xamarin.WebTests.TestRunners
 
 		public override void ConfigureRequest (Request request, Uri uri)
 		{
-			if (AuthManager != null)
-				AuthManager.ConfigureRequest (request);
-
 			if (request is HttpRequestRequest instrumentationRequest) {
 				if (Interlocked.CompareExchange (ref currentRequest, instrumentationRequest, null) != null)
 					throw new InvalidOperationException ();
