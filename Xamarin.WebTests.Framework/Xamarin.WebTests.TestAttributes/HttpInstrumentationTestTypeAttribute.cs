@@ -1,10 +1,10 @@
 ﻿//
-// HttpRequestTestRunnerAttribute.cs
+// HttpInstrumentationTestTypeAttribute.cs
 //
 // Author:
 //       Martin Baulig <mabaul@microsoft.com>
 //
-// Copyright (c) 2018 Xamarin Inc. (http://www.xamarin.com)
+// Copyright (c) 2017 Xamarin Inc. (http://www.xamarin.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -24,27 +24,46 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 using System;
+using System.Collections.Generic;
 using Xamarin.AsyncTests;
 
-namespace Xamarin.WebTests.TestFramework
+namespace Xamarin.WebTests.TestAttributes
 {
+	using TestFramework;
 	using TestRunners;
 
-	[AttributeUsage (AttributeTargets.Class | AttributeTargets.Parameter, AllowMultiple = false)]
-	public sealed class HttpRequestTestRunnerAttribute : TestHostAttribute, ITestHost<HttpRequestTestRunner>
+	[AttributeUsage (AttributeTargets.Enum | AttributeTargets.Parameter, AllowMultiple = false)]
+	public class HttpInstrumentationTestTypeAttribute : TestParameterAttribute, ITestParameterSource<HttpInstrumentationTestType>
 	{
-		public HttpRequestTestRunnerAttribute ()
-			: base (typeof (HttpRequestTestRunnerAttribute))
+		public HttpInstrumentationTestType? Type {
+			get; set;
+		}
+
+		public HttpInstrumentationTestTypeAttribute (string filter = null)
+			: base (filter, TestFlags.Browsable | TestFlags.ContinueOnError)
 		{
 		}
 
-		public HttpRequestTestRunner CreateInstance (TestContext ctx)
+		public HttpInstrumentationTestTypeAttribute (HttpInstrumentationTestType type)
+			: base (null, TestFlags.Browsable | TestFlags.ContinueOnError)
 		{
-			var provider = ctx.GetParameter<HttpServerProvider> ();
+			Type = type;
+		}
 
-			var type = ctx.GetParameter<HttpRequestTestType> ();
+		public IEnumerable<HttpInstrumentationTestType> GetParameters (TestContext ctx, string filter)
+		{
+			if (filter != null)
+				throw new NotImplementedException ();
 
-			return new HttpRequestTestRunner (provider, type);
+			var category = ctx.GetParameter<HttpServerTestCategory> ();
+
+			if (Type != null) {
+				yield return Type.Value;
+				yield break;
+			}
+
+			foreach (var type in HttpInstrumentationTestRunner.GetInstrumentationTypes (ctx, category))
+				yield return type;
 		}
 	}
 }

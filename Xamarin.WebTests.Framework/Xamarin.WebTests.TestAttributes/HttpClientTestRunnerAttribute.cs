@@ -1,5 +1,5 @@
 ﻿//
-// HttpInstrumentationTestRunnerAttribute.cs
+// HttpClientTestRunnerAttribute.cs
 //
 // Author:
 //       Martin Baulig <mabaul@microsoft.com>
@@ -26,25 +26,26 @@
 using System;
 using Xamarin.AsyncTests;
 
-namespace Xamarin.WebTests.TestFramework
+namespace Xamarin.WebTests.TestAttributes
 {
+	using TestFramework;
 	using TestRunners;
 
 	[AttributeUsage (AttributeTargets.Class | AttributeTargets.Parameter, AllowMultiple = false)]
-	public sealed class HttpInstrumentationTestRunnerAttribute : TestHostAttribute, ITestHost<HttpInstrumentationTestRunner>
+	public sealed class HttpClientTestRunnerAttribute : TestHostAttribute, ITestHost<HttpClientTestRunner>
 	{
-		public HttpInstrumentationTestRunnerAttribute ()
-			: base (typeof (HttpInstrumentationTestRunnerAttribute))
+		public HttpClientTestRunnerAttribute ()
+			: base (typeof (HttpClientTestRunnerAttribute))
 		{
 		}
 
-		public HttpInstrumentationTestRunner CreateInstance (TestContext ctx)
+		public HttpClientTestRunner CreateInstance (TestContext ctx)
 		{
 			var provider = ctx.GetParameter<HttpServerProvider> ();
 
-			var type = ctx.GetParameter<HttpInstrumentationTestType> ();
+			var type = ctx.GetParameter<HttpClientTestType> ();
 
-			return new HttpInstrumentationTestRunner (provider, type);
+			return new HttpClientTestRunner (provider, type);
 		}
 	}
 }

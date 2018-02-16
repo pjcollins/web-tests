@@ -24,18 +24,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 using System;
-using System.IO;
-using System.Text;
 using System.Linq;
 using System.Net;
-using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Collections;
 using System.Collections.Generic;
 using Xamarin.AsyncTests;
 using Xamarin.AsyncTests.Constraints;
-using Xamarin.AsyncTests.Portable;
 
 namespace Xamarin.WebTests.TestRunners
 {
@@ -43,6 +38,7 @@ namespace Xamarin.WebTests.TestRunners
 	using HttpFramework;
 	using HttpHandlers;
 	using TestFramework;
+	using TestAttributes;
 
 	[HttpRequestTestRunner]
 	public class HttpRequestTestRunner : InstrumentationTestRunner

@@ -1,10 +1,10 @@
 ﻿//
-// HttpInstrumentationTestTypeAttribute.cs
+// HttpServerTestCategoryAttribute.cs
 //
 // Author:
 //       Martin Baulig <mabaul@microsoft.com>
 //
-// Copyright (c) 2017 Xamarin Inc. (http://www.xamarin.com)
+// Copyright (c) 2018 Xamarin Inc. (http://www.xamarin.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -24,45 +24,31 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 using System;
-using System.Collections.Generic;
 using Xamarin.AsyncTests;
 
-namespace Xamarin.WebTests.TestFramework
+namespace Xamarin.WebTests.TestAttributes
 {
-	using TestRunners;
+	using TestFramework;
 
-	[AttributeUsage (AttributeTargets.Enum | AttributeTargets.Parameter, AllowMultiple = false)]
-	public class HttpInstrumentationTestTypeAttribute : TestParameterAttribute, ITestParameterSource<HttpInstrumentationTestType>
+	[AttributeUsage (AttributeTargets.Method, AllowMultiple = false)]
+	public sealed class HttpServerTestCategoryAttribute: FixedTestParameterAttribute
 	{
-		public HttpInstrumentationTestType? Type {
-			get; set;
+		public override Type Type => typeof (HttpServerTestCategory);
+
+		public override object Value => Category;
+
+		public override string Identifier {
+			get;
 		}
 
-		public HttpInstrumentationTestTypeAttribute (string filter = null)
-			: base (filter, TestFlags.Browsable | TestFlags.ContinueOnError)
-		{
+		public HttpServerTestCategory Category {
+			get;
 		}
 
-		public HttpInstrumentationTestTypeAttribute (HttpInstrumentationTestType type)
-			: base (null, TestFlags.Browsable | TestFlags.ContinueOnError)
+		public HttpServerTestCategoryAttribute (HttpServerTestCategory category)
 		{
-			Type = type;
-		}
-
-		public IEnumerable<HttpInstrumentationTestType> GetParameters (TestContext ctx, string filter)
-		{
-			if (filter != null)
-				throw new NotImplementedException ();
-
-			var category = ctx.GetParameter<HttpServerTestCategory> ();
-
-			if (Type != null) {
-				yield return Type.Value;
-				yield break;
-			}
-
-			foreach (var type in HttpInstrumentationTestRunner.GetInstrumentationTypes (ctx, category))
-				yield return type;
+			Category = category;
+			Identifier = Type.Name;
 		}
 	}
 }

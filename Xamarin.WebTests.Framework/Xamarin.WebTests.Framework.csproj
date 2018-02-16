@@ -182,7 +182,6 @@
     <Compile Include="Xamarin.WebTests.HttpHandlers\AbortHandler.cs" />
     <Compile Include="Xamarin.WebTests.TestRunners\HttpInstrumentationTestRunner.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\HttpInstrumentationTestType.cs" />
-    <Compile Include="Xamarin.WebTests.TestFramework\HttpInstrumentationTestRunnerAttribute.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\LongRunningAttribute.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\StressAttribute.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\NewWebStackAttribute.cs" />
@@ -218,7 +217,6 @@
     <Compile Include="Xamarin.WebTests.TestFramework\RecentlyFixedAttribute.cs" />
     <Compile Include="Xamarin.WebTests.HttpFramework\FormContent.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\HttpClientTestType.cs" />
-    <Compile Include="Xamarin.WebTests.TestFramework\HttpClientTestRunnerAttribute.cs" />
     <Compile Include="Xamarin.WebTests.TestRunners\HttpClientTestRunner.cs" />
     <Compile Include="Xamarin.WebTests.HttpClient\ICustomHttpContent.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\StreamExtensions.cs" />
@@ -231,25 +229,27 @@
     <Compile Include="Xamarin.WebTests.HttpFramework\GZipContent.cs" />
     <Compile Include="Xamarin.WebTests.ConnectionFramework\IGZipProvider.cs" />
     <Compile Include="Xamarin.WebTests.TestRunners\HttpListenerTestRunner.cs" />
-    <Compile Include="Xamarin.WebTests.TestFramework\HttpListenerTestRunnerAttribute.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\HttpListenerTestFlags.cs" />
     <Compile Include="Xamarin.WebTests.TestRunners\HttpInstrumentationHandler.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\HttpValidationTestType.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\SslStreamTestType.cs" />
-    <Compile Include="Xamarin.WebTests.TestFramework\HttpInstrumentationTestTypeAttribute.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\HttpServerProvider.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\HttpServerProviderAttribute.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\HttpServerTestCategory.cs" />
-    <Compile Include="Xamarin.WebTests.TestFramework\HttpServerTestCategoryAttribute.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\HttpServerProviderFilter.cs" />
-    <Compile Include="Xamarin.WebTests.TestFramework\HttpClientTestTypeAttribute.cs" />
-    <Compile Include="Xamarin.WebTests.TestFramework\HttpListenerTestTypeAttribute.cs" />
     <Compile Include="Xamarin.WebTests.TestRunners\HttpRequestTestRunner.cs" />
-    <Compile Include="Xamarin.WebTests.TestFramework\HttpRequestTestRunnerAttribute.cs" />
     <Compile Include="Xamarin.WebTests.TestRunners\HttpRequestHandler.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\HttpRequestTestType.cs" />
-    <Compile Include="Xamarin.WebTests.TestFramework\HttpRequestTestTypeAttribute.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\HttpRequestTestFlags.cs" />
+    <Compile Include="Xamarin.WebTests.TestAttributes\HttpClientTestRunnerAttribute.cs" />
+    <Compile Include="Xamarin.WebTests.TestAttributes\HttpClientTestTypeAttribute.cs" />
+    <Compile Include="Xamarin.WebTests.TestAttributes\HttpInstrumentationTestRunnerAttribute.cs" />
+    <Compile Include="Xamarin.WebTests.TestAttributes\HttpInstrumentationTestTypeAttribute.cs" />
+    <Compile Include="Xamarin.WebTests.TestAttributes\HttpListenerTestRunnerAttribute.cs" />
+    <Compile Include="Xamarin.WebTests.TestAttributes\HttpListenerTestTypeAttribute.cs" />
+    <Compile Include="Xamarin.WebTests.TestAttributes\HttpRequestTestRunnerAttribute.cs" />
+    <Compile Include="Xamarin.WebTests.TestAttributes\HttpRequestTestTypeAttribute.cs" />
+    <Compile Include="Xamarin.WebTests.TestAttributes\HttpServerTestCategoryAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="..\CA\invalid-server-cert.pfx">
@@ -367,6 +367,7 @@
     <Folder Include="ReferenceSource\" />
     <Folder Include="Xamarin.WebTests.Server\" />
     <Folder Include="Xamarin.WebTests.HttpOperations\" />
+    <Folder Include="Xamarin.WebTests.TestAttributes\" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Xamarin.AsyncTests\Xamarin.AsyncTests.csproj">

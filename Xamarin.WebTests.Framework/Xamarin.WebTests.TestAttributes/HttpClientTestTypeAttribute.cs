@@ -1,5 +1,5 @@
 ﻿//
-// HttpServerTestCategoryAttribute.cs
+// HttpClientTestTypeAttribute.cs
 //
 // Author:
 //       Martin Baulig <mabaul@microsoft.com>
@@ -24,29 +24,46 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 using System;
+using System.Collections.Generic;
 using Xamarin.AsyncTests;
 
-namespace Xamarin.WebTests.TestFramework
+namespace Xamarin.WebTests.TestAttributes
 {
-	[AttributeUsage (AttributeTargets.Method, AllowMultiple = false)]
-	public sealed class HttpServerTestCategoryAttribute: FixedTestParameterAttribute
+	using TestFramework;
+	using TestRunners;
+
+	[AttributeUsage (AttributeTargets.Enum | AttributeTargets.Parameter, AllowMultiple = false)]
+	public class HttpClientTestTypeAttribute : TestParameterAttribute, ITestParameterSource<HttpClientTestType>
 	{
-		public override Type Type => typeof (HttpServerTestCategory);
-
-		public override object Value => Category;
-
-		public override string Identifier {
-			get;
+		public HttpClientTestType? Type {
+			get; set;
 		}
 
-		public HttpServerTestCategory Category {
-			get;
-		}
-
-		public HttpServerTestCategoryAttribute (HttpServerTestCategory category)
+		public HttpClientTestTypeAttribute (string filter = null)
+			: base (filter, TestFlags.Browsable | TestFlags.ContinueOnError)
 		{
-			Category = category;
-			Identifier = Type.Name;
+		}
+
+		public HttpClientTestTypeAttribute (HttpClientTestType type)
+			: base (null, TestFlags.Browsable | TestFlags.ContinueOnError)
+		{
+			Type = type;
+		}
+
+		public IEnumerable<HttpClientTestType> GetParameters (TestContext ctx, string filter)
+		{
+			if (filter != null)
+				throw new NotImplementedException ();
+
+			var category = ctx.GetParameter<HttpServerTestCategory> ();
+
+			if (Type != null) {
+				yield return Type.Value;
+				yield break;
+			}
+
+			foreach (var type in HttpClientTestRunner.GetTestTypes (ctx, category))
+				yield return type;
 		}
 	}
 }

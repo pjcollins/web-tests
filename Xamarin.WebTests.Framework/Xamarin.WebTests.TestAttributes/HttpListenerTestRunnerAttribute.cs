@@ -1,5 +1,5 @@
 ﻿//
-// HttpClientTestTypeAttribute.cs
+// HttpListenerTestRunnerAttribute.cs
 //
 // Author:
 //       Martin Baulig <mabaul@microsoft.com>
@@ -24,45 +24,28 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 using System;
-using System.Collections.Generic;
 using Xamarin.AsyncTests;
 
-namespace Xamarin.WebTests.TestFramework
+namespace Xamarin.WebTests.TestAttributes
 {
+	using TestFramework;
 	using TestRunners;
 
-	[AttributeUsage (AttributeTargets.Enum | AttributeTargets.Parameter, AllowMultiple = false)]
-	public class HttpClientTestTypeAttribute : TestParameterAttribute, ITestParameterSource<HttpClientTestType>
+	[AttributeUsage (AttributeTargets.Class | AttributeTargets.Parameter, AllowMultiple = false)]
+	public sealed class HttpListenerTestRunnerAttribute : TestHostAttribute, ITestHost<HttpListenerTestRunner>
 	{
-		public HttpClientTestType? Type {
-			get; set;
-		}
-
-		public HttpClientTestTypeAttribute (string filter = null)
-			: base (filter, TestFlags.Browsable | TestFlags.ContinueOnError)
+		public HttpListenerTestRunnerAttribute ()
+			: base (typeof (HttpListenerTestRunnerAttribute))
 		{
 		}
 
-		public HttpClientTestTypeAttribute (HttpClientTestType type)
-			: base (null, TestFlags.Browsable | TestFlags.ContinueOnError)
+		public HttpListenerTestRunner CreateInstance (TestContext ctx)
 		{
-			Type = type;
-		}
+			var provider = ctx.GetParameter<HttpServerProvider> ();
 
-		public IEnumerable<HttpClientTestType> GetParameters (TestContext ctx, string filter)
-		{
-			if (filter != null)
-				throw new NotImplementedException ();
+			var type = ctx.GetParameter<HttpListenerTestType> ();
 
-			var category = ctx.GetParameter<HttpServerTestCategory> ();
-
-			if (Type != null) {
-				yield return Type.Value;
-				yield break;
-			}
-
-			foreach (var type in HttpClientTestRunner.GetTestTypes (ctx, category))
-				yield return type;
+			return new HttpListenerTestRunner (provider, type);
 		}
 	}
 }

@@ -43,8 +43,8 @@ namespace Xamarin.WebTests.TestRunners
 	using HttpFramework;
 	using HttpHandlers;
 	using TestFramework;
+	using TestAttributes;
 	using HttpClient;
-	using Resources;
 
 	[HttpClientTestRunner]
 	public class HttpClientTestRunner : InstrumentationTestRunner

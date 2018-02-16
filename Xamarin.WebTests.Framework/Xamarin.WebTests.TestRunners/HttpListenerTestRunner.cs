@@ -43,7 +43,7 @@ namespace Xamarin.WebTests.TestRunners
 	using HttpFramework;
 	using HttpHandlers;
 	using TestFramework;
-	using Resources;
+	using TestAttributes;
 	using Server;
 
 	[HttpListenerTestRunner]

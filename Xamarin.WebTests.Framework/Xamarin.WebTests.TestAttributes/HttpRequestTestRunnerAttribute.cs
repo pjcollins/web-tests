@@ -1,5 +1,5 @@
 ﻿//
-// HttpListenerTestRunnerAttribute.cs
+// HttpRequestTestRunnerAttribute.cs
 //
 // Author:
 //       Martin Baulig <mabaul@microsoft.com>
@@ -25,33 +25,27 @@
 // THE SOFTWARE.
 using System;
 using Xamarin.AsyncTests;
-using Xamarin.AsyncTests.Framework;
-using Xamarin.AsyncTests.Portable;
-using Xamarin.AsyncTests.Constraints;
 
-namespace Xamarin.WebTests.TestFramework
+namespace Xamarin.WebTests.TestAttributes
 {
+	using TestFramework;
 	using TestRunners;
-	using ConnectionFramework;
-	using HttpFramework;
-	using Server;
-	using Resources;
 
 	[AttributeUsage (AttributeTargets.Class | AttributeTargets.Parameter, AllowMultiple = false)]
-	public sealed class HttpListenerTestRunnerAttribute : TestHostAttribute, ITestHost<HttpListenerTestRunner>
+	public sealed class HttpRequestTestRunnerAttribute : TestHostAttribute, ITestHost<HttpRequestTestRunner>
 	{
-		public HttpListenerTestRunnerAttribute ()
-			: base (typeof (HttpListenerTestRunnerAttribute))
+		public HttpRequestTestRunnerAttribute ()
+			: base (typeof (HttpRequestTestRunnerAttribute))
 		{
 		}
 
-		public HttpListenerTestRunner CreateInstance (TestContext ctx)
+		public HttpRequestTestRunner CreateInstance (TestContext ctx)
 		{
 			var provider = ctx.GetParameter<HttpServerProvider> ();
 
-			var type = ctx.GetParameter<HttpListenerTestType> ();
+			var type = ctx.GetParameter<HttpRequestTestType> ();
 
-			return new HttpListenerTestRunner (provider, type);
+			return new HttpRequestTestRunner (provider, type);
 		}
 	}
 }

@@ -28,6 +28,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xamarin.AsyncTests;
 using Xamarin.WebTests.TestFramework;
+using Xamarin.WebTests.TestAttributes;
 using Xamarin.WebTests.TestRunners;
 
 namespace Xamarin.WebTests.Tests
