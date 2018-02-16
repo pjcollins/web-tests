@@ -39,14 +39,14 @@ namespace Xamarin.WebTests.TestFramework
 	[AttributeUsage (AttributeTargets.Class | AttributeTargets.Parameter, AllowMultiple = false)]
 	public class HttpServerProviderAttribute : TestParameterAttribute, ITestParameterSource<HttpServerProvider>
 	{
-		public HttpServerFlags ServerFlags {
+		public HttpServerProviderFlags ProviderFlags {
 			get;
 		}
 
-		public HttpServerProviderAttribute (HttpServerFlags serverFlags = HttpServerFlags.None)
+		public HttpServerProviderAttribute (HttpServerProviderFlags flags = HttpServerProviderFlags.None)
 			: base (null, TestFlags.Browsable)
 		{
-			ServerFlags = serverFlags;
+			ProviderFlags = flags;
 			Optional = true;
 		}
 
@@ -58,26 +58,40 @@ namespace Xamarin.WebTests.TestFramework
 		{
 			var category = ctx.GetParameter<ConnectionTestCategory> ();
 
-			ConnectionProviderFilter filter;
-			if (!ctx.TryGetParameter (out filter)) {
-				var flags = ConnectionTestRunner.GetConnectionFlags (ctx, category);
+			var flags = ProviderFlags;
+			if (ctx.TryGetParameter (out HttpServerProviderFlags explicitFlags))
+				flags |= explicitFlags;
 
-				ConnectionTestFlags explicitFlags;
-				if (ctx.TryGetParameter (out explicitFlags))
-					flags |= explicitFlags;
+			var filter = new HttpServerProviderFilter (flags);
+			var supportedProviders = filter.GetSupportedProviders (ctx, argument);
+			if (!Optional && supportedProviders.Count () == 0)
+				ctx.AssertFail ("Could not find any supported HttpServerProvider.");
 
-				filter = new ConnectionTestProviderFilter (category, flags);
+			yield return CreateDefault ();
+
+			if ((flags & HttpServerProviderFlags.NoSsl) != 0)
+				yield break;
+
+			foreach (var provider in supportedProviders) {
+				if (provider.SupportsSslStreams)
+					yield return CreateSsl (provider);
 			}
 
-			var supportedProviders = filter.GetSupportedServers (ctx, argument).ToList ();
-			if (!Optional && supportedProviders.Count == 0)
-				ctx.AssertFail ("Could not find any supported ConnectionProvider.");
-
-			return supportedProviders.Select (p => CreateProvider (p));
-
-			HttpServerProvider CreateProvider (ConnectionProvider provider)
+			HttpServerProvider CreateSsl (ConnectionProvider provider)
 			{
-				return new HttpServerProvider (provider, null);
+				var endPoint = ConnectionTestHelper.GetEndPoint (ctx);
+				var uri = new Uri ($"https://{endPoint.Address}:{endPoint.Port}/");
+				return new HttpServerProvider (
+					$"https:{provider.Name}", uri, endPoint,
+					HttpServerFlags.SSL, provider.SslStreamProvider);
+			}
+
+			HttpServerProvider CreateDefault ()
+			{
+				var endPoint = ConnectionTestHelper.GetEndPoint (ctx);
+				var uri = new Uri ($"http://{endPoint.Address}:{endPoint.Port}/");
+				return new HttpServerProvider (
+					$"http", uri, endPoint, HttpServerFlags.NoSSL, null);
 			}
 		}
 	}

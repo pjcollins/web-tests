@@ -25,15 +25,29 @@
 // THE SOFTWARE.
 using System;
 using Xamarin.AsyncTests;
+using Xamarin.AsyncTests.Portable;
 
 namespace Xamarin.WebTests.TestFramework
 {
 	using ConnectionFramework;
+	using HttpFramework;
 
 	[HttpServerProvider (Identifier = "HttpServerProvider")]
 	public class HttpServerProvider : ITestParameter
 	{
-		public ConnectionProvider ConnectionProvider {
+		public Uri Uri {
+			get;
+		}
+
+		public IPortableEndPoint EndPoint {
+			get;
+		}
+
+		public HttpServerFlags ServerFlags {
+			get;
+		}
+
+		public ISslStreamProvider SslStreamProvider {
 			get;
 		}
 
@@ -43,15 +57,20 @@ namespace Xamarin.WebTests.TestFramework
 
 		string ITestParameter.FriendlyValue => Value;
 
-		public HttpServerProvider (ConnectionProvider provider, string value = null)
+		public HttpServerProvider (
+			string identifier, Uri uri, IPortableEndPoint endPoint,
+			HttpServerFlags serverFlags, ISslStreamProvider provider)
 		{
-			ConnectionProvider = provider;
-			Value = value ?? ConnectionProvider.Name;
+			Value = identifier;
+			Uri = uri;
+			EndPoint = endPoint;
+			ServerFlags = serverFlags;
+			SslStreamProvider = provider;
 		}
 
 		public override string ToString ()
 		{
-			return $"[HttpServerProvider {Value}]";
+			return $"[HttpServerProvider {Value}:{Uri}]";
 		}
 	}
 }
