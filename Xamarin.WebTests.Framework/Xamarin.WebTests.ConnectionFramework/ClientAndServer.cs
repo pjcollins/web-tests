@@ -70,7 +70,7 @@ namespace Xamarin.WebTests.ConnectionFramework
 		public ClientAndServer (Connection server, Connection client, ConnectionParameters parameters)
 		{
 			Server = server;
-			Client = Client;
+			Client = client;
 			Parameters = parameters;
 
 			var requested = GetRequestedProtocol ();
