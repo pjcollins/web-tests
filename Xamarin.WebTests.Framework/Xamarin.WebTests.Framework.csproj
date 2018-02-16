@@ -149,7 +149,6 @@
     <Compile Include="Xamarin.WebTests.TestFramework\HttpValidationTestRunnerAttribute.cs" />
     <Compile Include="Xamarin.WebTests.HttpFramework\BinaryContent.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\NewAttribute.cs" />
-    <Compile Include="Xamarin.WebTests.TestFramework\CertificateStoreAttribute.cs" />
     <Compile Include="Xamarin.WebTests.ConnectionFramework\IConnectionFrameworkSetup.cs" />
     <Compile Include="Xamarin.WebTests.HttpFramework\HttpServer.cs" />
     <Compile Include="Xamarin.WebTests.HttpFramework\HttpServerFlags.cs" />
@@ -160,7 +159,6 @@
     <Compile Include="Xamarin.WebTests.Server\HttpListenerConnection.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\HttpServerFlagsAttribute.cs" />
     <Compile Include="Xamarin.WebTests.Resources\TlsTestXamDevNewData.cs" />
-    <Compile Include="Xamarin.WebTests.TestFramework\CertificateResourceTypeAttribute.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\NetworkAttribute.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\Tls12Attribute.cs" />
     <Compile Include="Xamarin.WebTests.Server\SocketHelper.cs" />
@@ -175,7 +173,6 @@
     <Compile Include="Xamarin.WebTests.TestFramework\StreamInstrumentationParametersAttribute.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\StreamInstrumentationType.cs" />
     <Compile Include="ReferenceSource\TaskToApm.cs" />
-    <Compile Include="Xamarin.WebTests.TestFramework\CleanShutdownAttribute.cs" />
     <Compile Include="Xamarin.WebTests.HttpHandlers\HttpListenerHandler.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\HttpListenerTestType.cs" />
     <Compile Include="Xamarin.WebTests.HttpHandlers\DelayHandler.cs" />
@@ -250,6 +247,9 @@
     <Compile Include="Xamarin.WebTests.TestAttributes\HttpRequestTestRunnerAttribute.cs" />
     <Compile Include="Xamarin.WebTests.TestAttributes\HttpRequestTestTypeAttribute.cs" />
     <Compile Include="Xamarin.WebTests.TestAttributes\HttpServerTestCategoryAttribute.cs" />
+    <Compile Include="Xamarin.WebTests.TestAttributes\CertificateResourceTypeAttribute.cs" />
+    <Compile Include="Xamarin.WebTests.TestAttributes\CertificateStoreAttribute.cs" />
+    <Compile Include="Xamarin.WebTests.TestAttributes\CleanShutdownAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="..\CA\invalid-server-cert.pfx">

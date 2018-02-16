@@ -28,7 +28,7 @@ using System.Collections.Generic;
 using Xamarin.WebTests.Resources;
 using Xamarin.AsyncTests;
 
-namespace Xamarin.WebTests.TestFramework {
+namespace Xamarin.WebTests.TestAttributes {
 	[AttributeUsage (AttributeTargets.Parameter | AttributeTargets.Property, AllowMultiple = false)]
 	public class CertificateResourceTypeAttribute : TestParameterAttribute, ITestParameterSource<CertificateResourceType> {
 		public CertificateResourceType? ResourceType {

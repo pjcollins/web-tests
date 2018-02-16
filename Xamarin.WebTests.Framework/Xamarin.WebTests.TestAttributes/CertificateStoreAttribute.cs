@@ -1,10 +1,10 @@
 ﻿//
-// CleanShutdownAttribute.cs
+// CertificateStoreAttribute.cs
 //
 // Author:
-//       Martin Baulig <mabaul@microsoft.com>
+//       Martin Baulig <martin.baulig@xamarin.com>
 //
-// Copyright (c) 2017 Xamarin Inc. (http://www.xamarin.com)
+// Copyright (c) 2016 Xamarin, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -25,25 +25,16 @@
 // THE SOFTWARE.
 using System;
 using Xamarin.AsyncTests;
-using Xamarin.AsyncTests.Portable;
-using Xamarin.WebTests.ConnectionFramework;
 
-namespace Xamarin.WebTests.TestFramework
+namespace Xamarin.WebTests.TestAttributes
 {
-	[AttributeUsage (AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false)]
-	public class CleanShutdownAttribute : TestFeatureAttribute
+	public class CertificateStoreAttribute : TestFeatureAttribute
 	{
+		public static readonly TestFeature Instance = new TestFeature ("CertificateStore", "Use local certificate store", false);
+
 		public override TestFeature Feature {
 			get { return Instance; }
 		}
-
-		static bool SupportsCleanShutdown ()
-		{
-			var setup = DependencyInjector.Get<IConnectionFrameworkSetup> ();
-			return setup.SupportsCleanShutdown;
-		}
-
-		public static readonly TestFeature Instance = new TestFeature (
-			"CleanShutdown", "Whether or not we have SslStream.ShutdownAsync", () => SupportsCleanShutdown ());
 	}
 }
+
