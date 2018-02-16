@@ -72,7 +72,7 @@ namespace Xamarin.WebTests.TestRunners
 
 		static readonly (HttpListenerTestType type, HttpListenerTestFlags flags)[] TestRegistration = {
 			(HttpListenerTestType.Simple, HttpListenerTestFlags.Working),
-			(HttpListenerTestType.SimpleInstrumentation, HttpListenerTestFlags.Working),
+			(HttpListenerTestType.SimpleInstrumentation, HttpListenerTestFlags.Ignore),
 		};
 
 		public static IList<HttpListenerTestType> GetTestTypes (TestContext ctx, HttpServerTestCategory category)
