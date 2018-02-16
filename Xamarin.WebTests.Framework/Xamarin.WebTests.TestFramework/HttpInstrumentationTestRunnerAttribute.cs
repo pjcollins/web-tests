@@ -52,8 +52,6 @@ namespace Xamarin.WebTests.TestFramework
 
 		public HttpInstrumentationTestRunner CreateInstance (TestContext ctx)
 		{
-			var provider = ctx.GetParameter<ConnectionTestProvider> ();
-
 			var type = ctx.GetParameter<HttpInstrumentationTestType> ();
 
 			var endPoint = ConnectionTestHelper.GetEndPoint (ctx);
