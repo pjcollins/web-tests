@@ -245,6 +245,7 @@
     <Compile Include="Xamarin.WebTests.TestFramework\HttpServerProviderAttribute.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\HttpServerProviderFlags.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\HttpServerProviderFlagsAttribute.cs" />
+    <Compile Include="Xamarin.WebTests.TestFramework\HttpServerProviderFilter.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="..\CA\invalid-server-cert.pfx">

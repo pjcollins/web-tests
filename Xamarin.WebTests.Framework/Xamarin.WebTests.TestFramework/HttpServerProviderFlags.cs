@@ -30,6 +30,11 @@ namespace Xamarin.WebTests.TestFramework
 	[Flags]
 	public enum HttpServerProviderFlags
 	{
-		None
+		None,
+		NoSsl,
+		RequireSsl,
+
+		AssumeSupportedByTest = 16,
+		AllowWildcardMatches = 16384
 	}
 }
