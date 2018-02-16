@@ -268,7 +268,6 @@ namespace Xamarin.WebTests.TestRunners
 				parameters.HasReadHandler = true;
 				break;
 			case HttpInstrumentationTestType.CloseCustomConnectionGroup:
-				parameters.IgnoreStreamErrors = true;
 				break;
 			case HttpInstrumentationTestType.Simple:
 			case HttpInstrumentationTestType.SimplePost:
@@ -787,6 +786,15 @@ namespace Xamarin.WebTests.TestRunners
 					return ((TraditionalRequest)request).Send (ctx, cancellationToken);
 				default:
 					return ((TraditionalRequest)request).SendAsync (ctx, cancellationToken);
+				}
+			}
+
+			protected override void ConfigureNetworkStream (TestContext ctx, StreamInstrumentation instrumentation)
+			{
+				switch (EffectiveType) {
+				case HttpInstrumentationTestType.CloseCustomConnectionGroup:
+					instrumentation.IgnoreErrors = true;
+					break;
 				}
 			}
 

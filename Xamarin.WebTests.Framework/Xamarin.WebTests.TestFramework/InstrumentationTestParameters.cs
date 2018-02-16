@@ -51,7 +51,6 @@ namespace Xamarin.WebTests.TestFramework {
 			ExpectedStatus = other.ExpectedStatus;
 			ExpectedError = other.ExpectedError;
 			HasReadHandler = other.HasReadHandler;
-			IgnoreStreamErrors = other.IgnoreStreamErrors;
 		}
 
 		public HttpStatusCode ExpectedStatus {
@@ -63,10 +62,6 @@ namespace Xamarin.WebTests.TestFramework {
 		}
 
 		public bool HasReadHandler {
-			get; set;
-		}
-
-		public bool IgnoreStreamErrors {
 			get; set;
 		}
 	}

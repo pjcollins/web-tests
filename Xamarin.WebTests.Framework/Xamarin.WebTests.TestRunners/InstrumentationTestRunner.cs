@@ -225,13 +225,17 @@ namespace Xamarin.WebTests.TestRunners
 			{
 				instrumentation = new StreamInstrumentation (ctx, ME, socket, ownsSocket);
 
-				if (Parent.Parameters.IgnoreStreamErrors)
-					instrumentation.IgnoreErrors = true;
+				ConfigureNetworkStream (ctx, instrumentation);
 
 				if (Parent.Parameters.HasReadHandler)
 					InstallReadHandler (ctx);
 
 				return instrumentation;
+			}
+
+			protected virtual void ConfigureNetworkStream (TestContext ctx, StreamInstrumentation instrumentation)
+			{
+
 			}
 
 			protected void InstallReadHandler (TestContext ctx)
