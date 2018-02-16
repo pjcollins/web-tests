@@ -67,11 +67,6 @@ namespace Xamarin.WebTests.TestFramework
 		HttpStress,
 		HttpStressExperimental,
 
-		HttpClient,
-		HttpClientNewWebStack,
-
-		HttpListener,
-
 		MartinTest,
 	}
 }

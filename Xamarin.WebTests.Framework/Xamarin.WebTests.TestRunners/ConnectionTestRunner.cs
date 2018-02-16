@@ -108,11 +108,7 @@ namespace Xamarin.WebTests.TestRunners
 				return ConnectionTestFlags.RequireSslStream | ConnectionTestFlags.RequireTls12;
 			case ConnectionTestCategory.HttpStress:
 			case ConnectionTestCategory.HttpStressExperimental:
-			case ConnectionTestCategory.HttpClient:
-			case ConnectionTestCategory.HttpClientNewWebStack:
 				return ConnectionTestFlags.RequireHttp | ConnectionTestFlags.RequireSslStream | ConnectionTestFlags.RequireTls12;
-			case ConnectionTestCategory.HttpListener:
-				return ConnectionTestFlags.RequireHttpListener | ConnectionTestFlags.RequireSslStream | ConnectionTestFlags.RequireTls12;
 			case ConnectionTestCategory.MartinTest:
 				return ConnectionTestFlags.AssumeSupportedByTest;
 			default:
