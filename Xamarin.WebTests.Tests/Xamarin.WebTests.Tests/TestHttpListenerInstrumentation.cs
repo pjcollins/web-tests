@@ -38,6 +38,7 @@ using Xamarin.WebTests.TestRunners;
 
 namespace Xamarin.WebTests
 {
+	[New]
 	[AsyncTestFixture]
 	public class TestHttpListenerInstrumentation
 	{

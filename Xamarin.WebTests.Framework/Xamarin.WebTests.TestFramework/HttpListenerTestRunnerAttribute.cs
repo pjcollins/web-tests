@@ -40,20 +40,13 @@ namespace Xamarin.WebTests.TestFramework
 	[AttributeUsage (AttributeTargets.Class | AttributeTargets.Parameter, AllowMultiple = false)]
 	public sealed class HttpListenerTestRunnerAttribute : TestHostAttribute, ITestHost<HttpListenerTestRunner>
 	{
-		public HttpServerFlags ServerFlags {
-			get;
-		}
-
-		public HttpListenerTestRunnerAttribute (HttpServerFlags serverFlags = HttpServerFlags.None)
+		public HttpListenerTestRunnerAttribute ()
 			: base (typeof (HttpListenerTestRunnerAttribute))
 		{
-			ServerFlags = serverFlags;
 		}
 
 		public HttpListenerTestRunner CreateInstance (TestContext ctx)
 		{
-			var flags = ServerFlags | HttpServerFlags.HttpListener | HttpServerFlags.NoSSL;
-
 			var provider = ctx.GetParameter<HttpServerProvider> ();
 
 			var type = ctx.GetParameter<HttpListenerTestType> ();
