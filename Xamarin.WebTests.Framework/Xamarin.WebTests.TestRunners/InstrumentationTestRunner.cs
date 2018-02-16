@@ -69,7 +69,6 @@ namespace Xamarin.WebTests.TestRunners
 
 		public InstrumentationTestRunner (IPortableEndPoint endpoint, InstrumentationTestParameters parameters,
 						  ConnectionTestProvider provider, Uri uri, HttpServerFlags flags)
-			: base (endpoint, parameters)
 		{
 			Provider = provider;
 			Uri = uri;

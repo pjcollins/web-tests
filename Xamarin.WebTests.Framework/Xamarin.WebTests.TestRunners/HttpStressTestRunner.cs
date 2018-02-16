@@ -62,8 +62,8 @@ namespace Xamarin.WebTests.TestRunners
 			get;
 		}
 
-		new public HttpStressTestParameters Parameters {
-			get { return (HttpStressTestParameters)base.Parameters; }
+		public HttpStressTestParameters Parameters {
+			get;
 		}
 
 		public HttpStressTestType EffectiveType => GetEffectiveType (Parameters.Type);
@@ -85,8 +85,8 @@ namespace Xamarin.WebTests.TestRunners
 
 		public HttpStressTestRunner (IPortableEndPoint endpoint, HttpStressTestParameters parameters,
 					     ConnectionTestProvider provider, Uri uri, HttpServerFlags flags)
-			: base (endpoint, parameters)
 		{
+			Parameters = parameters;
 			Provider = provider;
 			ServerFlags = flags | HttpServerFlags.ParallelListener;
 			Uri = uri;
