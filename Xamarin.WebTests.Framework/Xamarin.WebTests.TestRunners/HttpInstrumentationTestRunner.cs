@@ -136,9 +136,9 @@ namespace Xamarin.WebTests.TestRunners
 			(HttpInstrumentationTestType.CustomHostDefaultPort, HttpInstrumentationTestFlags.Working),
 		};
 
-		public static IList<HttpInstrumentationTestType> GetInstrumentationTypes (TestContext ctx, ConnectionTestCategory category)
+		public static IList<HttpInstrumentationTestType> GetInstrumentationTypes (TestContext ctx, HttpServerTestCategory category)
 		{
-			if (category == ConnectionTestCategory.MartinTest)
+			if (category == HttpServerTestCategory.MartinTest)
 				return new[] { MartinTest };
 
 			var setup = DependencyInjector.Get<IConnectionFrameworkSetup> ();
@@ -153,26 +153,26 @@ namespace Xamarin.WebTests.TestRunners
 				}
 
 				switch (category) {
-				case ConnectionTestCategory.MartinTest:
+				case HttpServerTestCategory.MartinTest:
 					return false;
-				case ConnectionTestCategory.HttpInstrumentation:
+				case HttpServerTestCategory.HttpInstrumentation:
 					return flags == HttpInstrumentationTestFlags.Working ||
 						flags == HttpInstrumentationTestFlags.WorkingRequireSSL;
-				case ConnectionTestCategory.HttpInstrumentationNoSSL:
+				case HttpServerTestCategory.HttpInstrumentationNoSSL:
 					return flags == HttpInstrumentationTestFlags.Working;
-				case ConnectionTestCategory.HttpInstrumentationStress:
+				case HttpServerTestCategory.HttpInstrumentationStress:
 					return flags == HttpInstrumentationTestFlags.Stress;
-				case ConnectionTestCategory.HttpInstrumentationNewWebStack:
+				case HttpServerTestCategory.HttpInstrumentationNewWebStack:
 					if (!setup.UsingDotNet &&
 					    (flags == HttpInstrumentationTestFlags.NewWebStackMono ||
 					     flags == HttpInstrumentationTestFlags.NewWebStackRequireSSL))
 						return true;
 					return flags == HttpInstrumentationTestFlags.NewWebStack;
-				case ConnectionTestCategory.HttpInstrumentationNewWebStackNoSSL:
+				case HttpServerTestCategory.HttpInstrumentationNewWebStackNoSSL:
 					if (flags == HttpInstrumentationTestFlags.NewWebStackMono && !setup.UsingDotNet)
 						return true;
 					return flags == HttpInstrumentationTestFlags.NewWebStack;
-				case ConnectionTestCategory.HttpInstrumentationExperimental:
+				case HttpServerTestCategory.HttpInstrumentationExperimental:
 					return flags == HttpInstrumentationTestFlags.Unstable;
 				default:
 					throw ctx.AssertFail (category);
@@ -180,7 +180,7 @@ namespace Xamarin.WebTests.TestRunners
 			}
 		}
 
-		static string GetTestName (ConnectionTestCategory category, HttpInstrumentationTestType type, params object[] args)
+		static string GetTestName (HttpServerTestCategory category, HttpInstrumentationTestType type, params object[] args)
 		{
 			var sb = new StringBuilder ();
 			sb.Append (type);

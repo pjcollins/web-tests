@@ -56,7 +56,7 @@ namespace Xamarin.WebTests.TestFramework
 			if (filter != null)
 				throw new NotImplementedException ();
 
-			var category = ctx.GetParameter<ConnectionTestCategory> ();
+			var category = ctx.GetParameter<HttpServerTestCategory> ();
 
 			if (Type != null) {
 				yield return Type.Value;

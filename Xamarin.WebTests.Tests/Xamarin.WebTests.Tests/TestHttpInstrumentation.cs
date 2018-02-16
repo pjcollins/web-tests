@@ -42,7 +42,7 @@ namespace Xamarin.WebTests.Tests
 	{
 		[Work]
 		[AsyncTest]
-		[ConnectionTestCategory (ConnectionTestCategory.HttpInstrumentation)]
+		[HttpServerTestCategory (HttpServerTestCategory.HttpInstrumentation)]
 		public Task Run (TestContext ctx, CancellationToken cancellationToken,
 		                 HttpServerProvider provider,
 		                 HttpInstrumentationTestType type,
@@ -53,7 +53,7 @@ namespace Xamarin.WebTests.Tests
 
 		[Work]
 		[AsyncTest]
-		[ConnectionTestCategory (ConnectionTestCategory.HttpInstrumentationNoSSL)]
+		[HttpServerTestCategory (HttpServerTestCategory.HttpInstrumentationNoSSL)]
 		public Task RunNoSSL (TestContext ctx, CancellationToken cancellationToken,
 		                      HttpServerProvider provider,
 		                      HttpInstrumentationTestType type,
@@ -64,7 +64,7 @@ namespace Xamarin.WebTests.Tests
 
 		[Stress]
 		[AsyncTest]
-		[ConnectionTestCategory (ConnectionTestCategory.HttpInstrumentationStress)]
+		[HttpServerTestCategory (HttpServerTestCategory.HttpInstrumentationStress)]
 		public Task RunStress (TestContext ctx, CancellationToken cancellationToken,
 		                       HttpServerProvider provider,
 				       [Repeat (50)] int repeat,
@@ -77,7 +77,7 @@ namespace Xamarin.WebTests.Tests
 
 		[AsyncTest]
 		[NewWebStack]
-		[ConnectionTestCategory (ConnectionTestCategory.HttpInstrumentationNewWebStack)]
+		[HttpServerTestCategory (HttpServerTestCategory.HttpInstrumentationNewWebStack)]
 		public Task RunNewWebStack (TestContext ctx, CancellationToken cancellationToken,
 		                            HttpServerProvider provider,
 		                            HttpInstrumentationTestType type,
@@ -88,7 +88,7 @@ namespace Xamarin.WebTests.Tests
 
 		[AsyncTest]
 		[NewWebStack]
-		[ConnectionTestCategory (ConnectionTestCategory.HttpInstrumentationNewWebStack)]
+		[HttpServerTestCategory (HttpServerTestCategory.HttpInstrumentationNewWebStack)]
 		public Task RunNewWebStackNoSSL (TestContext ctx, CancellationToken cancellationToken,
 		                                 HttpServerProvider provider,
 		                                 HttpInstrumentationTestType type,
@@ -100,7 +100,7 @@ namespace Xamarin.WebTests.Tests
 		[Work]
 		[AsyncTest]
 		[Experimental]
-		[ConnectionTestCategory (ConnectionTestCategory.HttpInstrumentationExperimental)]
+		[HttpServerTestCategory (HttpServerTestCategory.HttpInstrumentationExperimental)]
 		public Task RunExperimental (TestContext ctx, CancellationToken cancellationToken,
 		                             HttpServerProvider provider,
 		                             HttpInstrumentationTestType type,
@@ -110,7 +110,7 @@ namespace Xamarin.WebTests.Tests
 		}
 
 		[Martin ("HttpInstrumentation")]
-		[ConnectionTestCategory (ConnectionTestCategory.MartinTest)]
+		[HttpServerTestCategory (HttpServerTestCategory.MartinTest)]
 		[AsyncTest (ParameterFilter = "martin", Unstable = true)]
 		public Task MartinTest (TestContext ctx, CancellationToken cancellationToken,
 		                        HttpServerProvider provider,
@@ -121,7 +121,7 @@ namespace Xamarin.WebTests.Tests
 		}
 
 		[Martin ("HttpInstrumentationNoSSL")]
-		[ConnectionTestCategory (ConnectionTestCategory.MartinTest)]
+		[HttpServerTestCategory (HttpServerTestCategory.MartinTest)]
 		[AsyncTest (ParameterFilter = "martin", Unstable = true)]
 		public Task MartinTestNoSSL (TestContext ctx, CancellationToken cancellationToken,
 		                             HttpServerProvider provider,
