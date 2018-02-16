@@ -101,8 +101,7 @@ namespace Xamarin.WebTests.TestRunners
 			ctx.LogDebug (2, $"{me}");
 
 			currentOperation = CreateOperation (
-				ctx, handler, InstrumentationOperationType.Primary, flags,
-				Parameters.ExpectedStatus, Parameters.ExpectedError);
+				ctx, handler, InstrumentationOperationType.Primary, flags);
 
 			currentOperation.Start (ctx, cancellationToken);
 
@@ -138,15 +137,12 @@ namespace Xamarin.WebTests.TestRunners
 		protected abstract (Handler handler, HttpOperationFlags flags) CreateHandler (TestContext ctx, bool primary);
 
 		protected abstract InstrumentationOperation CreateOperation (TestContext ctx, Handler handler, InstrumentationOperationType type,
-									     HttpOperationFlags flags, HttpStatusCode expectedStatus,
-									     WebExceptionStatus expectedError);
+									     HttpOperationFlags flags);
 
 		protected InstrumentationOperation StartOperation (TestContext ctx, CancellationToken cancellationToken, Handler handler,
-								   InstrumentationOperationType type, HttpOperationFlags flags,
-		                                                   HttpStatusCode expectedStatus = HttpStatusCode.OK,
-								   WebExceptionStatus expectedError = WebExceptionStatus.Success)
+		                                                   InstrumentationOperationType type, HttpOperationFlags flags)
 		{
-			var operation = CreateOperation (ctx, handler, type, flags, expectedStatus, expectedError);
+			var operation = CreateOperation (ctx, handler, type, flags);
 			if (type == InstrumentationOperationType.Queued) {
 				if (Interlocked.CompareExchange (ref queuedOperation, operation, null) != null)
 					throw new InvalidOperationException ("Invalid nested call.");

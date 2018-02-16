@@ -73,7 +73,7 @@ namespace Xamarin.WebTests.TestRunners
 			ME = $"{GetType ().Name}({EffectiveType})";
 		}
 
-		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.CustomHostDefaultPort;
+		const HttpInstrumentationTestType MartinTest = HttpInstrumentationTestType.NtlmWhileQueued;
 
 		static readonly (HttpInstrumentationTestType type, HttpInstrumentationTestFlags flags) [] TestRegistration = {
 			(HttpInstrumentationTestType.Simple, HttpInstrumentationTestFlags.Working),
@@ -207,115 +207,6 @@ namespace Xamarin.WebTests.TestRunners
 				ClientCertificateValidator = acceptAll
 			};
 
-			parameters.ExpectedStatus = HttpStatusCode.OK;
-			parameters.ExpectedError = WebExceptionStatus.Success;
-
-			switch (GetEffectiveType (type)) {
-			case HttpInstrumentationTestType.InvalidDataDuringHandshake:
-				parameters.ExpectedStatus = HttpStatusCode.InternalServerError;
-				parameters.ExpectedError = WebExceptionStatus.SecureChannelFailure;
-				break;
-			case HttpInstrumentationTestType.AbortDuringHandshake:
-				parameters.ExpectedStatus = HttpStatusCode.InternalServerError;
-				parameters.ExpectedError = WebExceptionStatus.RequestCanceled;
-				break;
-			case HttpInstrumentationTestType.AbortResponse:
-				parameters.ExpectedStatus = HttpStatusCode.InternalServerError;
-				parameters.ExpectedError = WebExceptionStatus.RequestCanceled;
-				break;
-			case HttpInstrumentationTestType.SimpleQueuedRequest:
-			case HttpInstrumentationTestType.CancelQueuedRequest:
-				break;
-			case HttpInstrumentationTestType.CancelMainWhileQueued:
-			case HttpInstrumentationTestType.NtlmWhileQueued:
-				parameters.ExpectedStatus = HttpStatusCode.InternalServerError;
-				parameters.ExpectedError = WebExceptionStatus.RequestCanceled;
-				break;
-			case HttpInstrumentationTestType.NtlmWhileQueued2:
-				break;
-			case HttpInstrumentationTestType.ThreeParallelRequests:
-				break;
-			case HttpInstrumentationTestType.ParallelRequestsSomeQueued:
-				break;
-			case HttpInstrumentationTestType.ManyParallelRequests:
-				break;
-			case HttpInstrumentationTestType.ManyParallelRequestsStress:
-				break;
-			case HttpInstrumentationTestType.CloseIdleConnection:
-				break;
-			case HttpInstrumentationTestType.ReadTimeout:
-				parameters.ExpectedStatus = HttpStatusCode.InternalServerError;
-				parameters.ExpectedError = WebExceptionStatus.Timeout;
-				break;
-			case HttpInstrumentationTestType.Get404:
-				parameters.ExpectedStatus = HttpStatusCode.NotFound;
-				parameters.ExpectedError = WebExceptionStatus.ProtocolError;
-				break;
-			case HttpInstrumentationTestType.CloseRequestStream:
-				parameters.ExpectedStatus = HttpStatusCode.InternalServerError;
-				parameters.ExpectedError = WebExceptionStatus.RequestCanceled;
-				break;
-			case HttpInstrumentationTestType.ParallelRequests:
-				break;
-			case HttpInstrumentationTestType.CloseCustomConnectionGroup:
-				break;
-			case HttpInstrumentationTestType.Simple:
-			case HttpInstrumentationTestType.SimplePost:
-			case HttpInstrumentationTestType.LargeHeader:
-			case HttpInstrumentationTestType.LargeHeader2:
-			case HttpInstrumentationTestType.SendResponseAsBlob:
-			case HttpInstrumentationTestType.SimpleNtlm:
-			case HttpInstrumentationTestType.PostNtlm:
-			case HttpInstrumentationTestType.SimpleRedirect:
-			case HttpInstrumentationTestType.PostRedirect:
-			case HttpInstrumentationTestType.NtlmChunked:
-			case HttpInstrumentationTestType.NtlmInstrumentation:
-			case HttpInstrumentationTestType.NtlmClosesConnection:
-			case HttpInstrumentationTestType.NtlmReusesConnection:
-			case HttpInstrumentationTestType.ReuseConnection:
-			case HttpInstrumentationTestType.ReuseConnection2:
-			case HttpInstrumentationTestType.ReuseAfterPartialRead:
-			case HttpInstrumentationTestType.CustomConnectionGroup:
-			case HttpInstrumentationTestType.ReuseCustomConnectionGroup:
-			case HttpInstrumentationTestType.ParallelNtlm:
-			case HttpInstrumentationTestType.RedirectOnSameConnection:
-			case HttpInstrumentationTestType.RedirectNoReuse:
-			case HttpInstrumentationTestType.RedirectNoLength:
-			case HttpInstrumentationTestType.PutChunked:
-			case HttpInstrumentationTestType.PutChunkDontCloseRequest:
-			case HttpInstrumentationTestType.ServerAbortsRedirect:
-			case HttpInstrumentationTestType.PostChunked:
-			case HttpInstrumentationTestType.PostContentLength:
-				break;
-			case HttpInstrumentationTestType.ServerAbortsPost:
-				parameters.ExpectedStatus = HttpStatusCode.BadRequest;
-				parameters.ExpectedError = WebExceptionStatus.ProtocolError;
-				break;
-			case HttpInstrumentationTestType.EntityTooBig:
-			case HttpInstrumentationTestType.ClientAbortsPost:
-				parameters.ExpectedStatus = HttpStatusCode.InternalServerError;
-				parameters.ExpectedError = WebExceptionStatus.AnyErrorStatus;
-				break;
-			case HttpInstrumentationTestType.GetChunked:
-			case HttpInstrumentationTestType.SimpleGZip:
-			case HttpInstrumentationTestType.TestResponseStream:
-			case HttpInstrumentationTestType.LargeChunkRead:
-			case HttpInstrumentationTestType.LargeGZipRead:
-			case HttpInstrumentationTestType.GZipWithLength:
-			case HttpInstrumentationTestType.ResponseStreamCheckLength2:
-			case HttpInstrumentationTestType.ResponseStreamCheckLength:
-			case HttpInstrumentationTestType.GetNoLength:
-			case HttpInstrumentationTestType.ImplicitHost:
-			case HttpInstrumentationTestType.CustomHost:
-			case HttpInstrumentationTestType.CustomHostWithPort:
-			case HttpInstrumentationTestType.CustomHostDefaultPort:
-				parameters.ExpectedStatus = HttpStatusCode.OK;
-				parameters.ExpectedError = WebExceptionStatus.Success;
-				break;
-			default:
-				throw ctx.AssertFail (GetEffectiveType (type));
-			}
-
 			return parameters;
 		}
 
@@ -435,9 +326,64 @@ namespace Xamarin.WebTests.TestRunners
 		}
 
 		protected override InstrumentationOperation CreateOperation (
-			TestContext ctx, Handler handler, InstrumentationOperationType type, HttpOperationFlags flags,
-			HttpStatusCode expectedStatus, WebExceptionStatus expectedError)
+			TestContext ctx, Handler handler, InstrumentationOperationType type, HttpOperationFlags flags)
 		{
+			HttpStatusCode expectedStatus;
+			WebExceptionStatus expectedError;
+
+			switch (EffectiveType) {
+			case HttpInstrumentationTestType.InvalidDataDuringHandshake:
+				expectedStatus = HttpStatusCode.InternalServerError;
+				expectedError = WebExceptionStatus.SecureChannelFailure;
+				break;
+			case HttpInstrumentationTestType.AbortDuringHandshake:
+			case HttpInstrumentationTestType.AbortResponse:
+			case HttpInstrumentationTestType.CloseRequestStream:
+				expectedStatus = HttpStatusCode.InternalServerError;
+				expectedError = WebExceptionStatus.RequestCanceled;
+				break;
+			case HttpInstrumentationTestType.CancelMainWhileQueued:
+			case HttpInstrumentationTestType.NtlmWhileQueued:
+				if (type == InstrumentationOperationType.Primary) {
+					expectedStatus = HttpStatusCode.InternalServerError;
+					expectedError = WebExceptionStatus.RequestCanceled;
+				} else {
+					expectedStatus = HttpStatusCode.OK;
+					expectedError = WebExceptionStatus.Success;
+				}
+				break;
+			case HttpInstrumentationTestType.ReadTimeout:
+				expectedStatus = HttpStatusCode.InternalServerError;
+				expectedError = WebExceptionStatus.Timeout;
+				break;
+			case HttpInstrumentationTestType.Get404:
+				expectedStatus = HttpStatusCode.NotFound;
+				expectedError = WebExceptionStatus.ProtocolError;
+				break;
+			case HttpInstrumentationTestType.ServerAbortsPost:
+				expectedStatus = HttpStatusCode.BadRequest;
+				expectedError = WebExceptionStatus.ProtocolError;
+				break;
+			case HttpInstrumentationTestType.EntityTooBig:
+			case HttpInstrumentationTestType.ClientAbortsPost:
+				expectedStatus = HttpStatusCode.InternalServerError;
+				expectedError = WebExceptionStatus.AnyErrorStatus;
+				break;
+			case HttpInstrumentationTestType.CancelQueuedRequest:
+				if (type == InstrumentationOperationType.Queued) {
+					expectedStatus = HttpStatusCode.InternalServerError;
+					expectedError = WebExceptionStatus.RequestCanceled;
+				} else {
+					expectedStatus = HttpStatusCode.OK;
+					expectedError = WebExceptionStatus.Success;
+				}
+				break;
+			default:
+				expectedStatus = HttpStatusCode.OK;
+				expectedError = WebExceptionStatus.Success;
+				break;
+			}
+
 			return new Operation (this, handler, type, flags, expectedStatus, expectedError);
 		}
 
@@ -565,8 +511,7 @@ namespace Xamarin.WebTests.TestRunners
 				ctx.Assert (PrimaryOperation.HasRequest, "current request");
 				operation = StartOperation (
 					ctx, cancellationToken, HelloWorldHandler.GetSimple (),
-					InstrumentationOperationType.Queued, HttpOperationFlags.AbortAfterClientExits,
-					HttpStatusCode.InternalServerError, WebExceptionStatus.RequestCanceled);
+					InstrumentationOperationType.Queued, HttpOperationFlags.AbortAfterClientExits);
 				request = await operation.WaitForRequest ().ConfigureAwait (false);
 				// Wait a bit to make sure the request has been queued.
 				await Task.Delay (500).ConfigureAwait (false);

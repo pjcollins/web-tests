@@ -125,13 +125,6 @@ namespace Xamarin.WebTests.TestRunners
 				ClientCertificateValidator = acceptAll
 			};
 
-			switch (GetEffectiveType (type)) {
-			default:
-				parameters.ExpectedError = WebExceptionStatus.Success;
-				parameters.ExpectedStatus = HttpStatusCode.OK;
-				break;
-			}
-
 			return parameters;
 		}
 
@@ -161,10 +154,12 @@ namespace Xamarin.WebTests.TestRunners
 		}
 
 		protected override InstrumentationOperation CreateOperation (
-			TestContext ctx, Handler handler, InstrumentationOperationType type, HttpOperationFlags flags,
-			HttpStatusCode expectedStatus, WebExceptionStatus expectedError)
+			TestContext ctx, Handler handler, InstrumentationOperationType type,
+			HttpOperationFlags flags)
 		{
-			return new Operation (this, handler, type, flags, expectedStatus, expectedError);
+			return new Operation (
+				this, handler, type, flags,
+				HttpStatusCode.OK, WebExceptionStatus.Success);
 		}
 
 		class Operation : InstrumentationOperation
