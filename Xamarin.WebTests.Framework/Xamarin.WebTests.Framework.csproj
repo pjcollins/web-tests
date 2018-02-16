@@ -243,8 +243,8 @@
     <Compile Include="Xamarin.WebTests.TestFramework\HttpInstrumentationTestTypeAttribute.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\HttpServerProvider.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\HttpServerProviderAttribute.cs" />
-    <Compile Include="Xamarin.WebTests.TestFramework\HttpServerProviderFlags.cs" />
-    <Compile Include="Xamarin.WebTests.TestFramework\HttpServerProviderFlagsAttribute.cs" />
+    <Compile Include="Xamarin.WebTests.TestFramework\HttpServerTestCategory.cs" />
+    <Compile Include="Xamarin.WebTests.TestFramework\HttpServerTestCategoryAttribute.cs" />
     <Compile Include="Xamarin.WebTests.TestFramework\HttpServerProviderFilter.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -1,5 +1,5 @@
 ﻿//
-// HttpServerProviderFlags.cs
+// HttpServerTestCategoryAttribute.cs
 //
 // Author:
 //       Martin Baulig <mabaul@microsoft.com>
@@ -24,17 +24,29 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 using System;
+using Xamarin.AsyncTests;
 
 namespace Xamarin.WebTests.TestFramework
 {
-	[Flags]
-	public enum HttpServerProviderFlags
+	[AttributeUsage (AttributeTargets.Method, AllowMultiple = false)]
+	public sealed class HttpServerTestCategoryAttribute: FixedTestParameterAttribute
 	{
-		None,
-		NoSsl,
-		RequireSsl,
+		public override Type Type => typeof (HttpServerTestCategory);
 
-		AssumeSupportedByTest = 16,
-		AllowWildcardMatches = 16384
+		public override object Value => Category;
+
+		public override string Identifier {
+			get;
+		}
+
+		public HttpServerTestCategory Category {
+			get;
+		}
+
+		public HttpServerTestCategoryAttribute (HttpServerTestCategory category)
+		{
+			Category = category;
+			Identifier = Type.Name;
+		}
 	}
 }

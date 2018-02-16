@@ -35,11 +35,11 @@ namespace Xamarin.WebTests.TestFramework
 
 	public class HttpServerProviderFilter
 	{
-		public HttpServerProviderFlags Flags {
+		public HttpServerTestCategory Flags {
 			get;
 		}
 
-		public HttpServerProviderFilter (HttpServerProviderFlags flags)
+		public HttpServerProviderFilter (HttpServerTestCategory flags)
 		{
 			Flags = flags;
 		}
@@ -60,18 +60,18 @@ namespace Xamarin.WebTests.TestFramework
 			return (true, false, false);
 		}
 
-		bool HasFlag (HttpServerProviderFlags flag)
+		bool HasFlag (HttpServerTestCategory flag)
 		{
 			return (Flags & flag) == flag;
 		}
 
 		bool IsSupported (ConnectionProvider provider)
 		{
-			if (HasFlag (HttpServerProviderFlags.AssumeSupportedByTest))
+			if (HasFlag (HttpServerTestCategory.AssumeSupportedByTest))
 				return true;
 			if (!provider.HasFlag (ConnectionProviderFlags.SupportsHttp))
 				return false;
-			if (HasFlag (HttpServerProviderFlags.RequireSsl)) {
+			if (HasFlag (HttpServerTestCategory.RequireSsl)) {
 				if (!provider.HasFlag (ConnectionProviderFlags.SupportsSslStream) ||
 				    !provider.HasFlag (ConnectionProviderFlags.SupportsTls12))
 					return false;
@@ -88,7 +88,7 @@ namespace Xamarin.WebTests.TestFramework
 			if (match) {
 				if (!success)
 					return false;
-				if (wildcard && !HasFlag (HttpServerProviderFlags.AllowWildcardMatches) && provider.HasFlag (ConnectionProviderFlags.IsExplicit))
+				if (wildcard && !HasFlag (HttpServerTestCategory.AllowWildcardMatches) && provider.HasFlag (ConnectionProviderFlags.IsExplicit))
 					return false;
 				return true;
 			}

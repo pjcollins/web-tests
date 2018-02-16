@@ -39,11 +39,11 @@ namespace Xamarin.WebTests.TestFramework
 	[AttributeUsage (AttributeTargets.Class | AttributeTargets.Parameter, AllowMultiple = false)]
 	public class HttpServerProviderAttribute : TestParameterAttribute, ITestParameterSource<HttpServerProvider>
 	{
-		public HttpServerProviderFlags ProviderFlags {
+		public HttpServerTestCategory ProviderFlags {
 			get;
 		}
 
-		public HttpServerProviderAttribute (HttpServerProviderFlags flags = HttpServerProviderFlags.None)
+		public HttpServerProviderAttribute (HttpServerTestCategory flags = HttpServerTestCategory.None)
 			: base (null, TestFlags.Browsable)
 		{
 			ProviderFlags = flags;
@@ -59,7 +59,7 @@ namespace Xamarin.WebTests.TestFramework
 			var category = ctx.GetParameter<ConnectionTestCategory> ();
 
 			var flags = ProviderFlags;
-			if (ctx.TryGetParameter (out HttpServerProviderFlags explicitFlags))
+			if (ctx.TryGetParameter (out HttpServerTestCategory explicitFlags))
 				flags |= explicitFlags;
 
 			var filter = new HttpServerProviderFilter (flags);
@@ -69,7 +69,7 @@ namespace Xamarin.WebTests.TestFramework
 
 			yield return CreateDefault ();
 
-			if ((flags & HttpServerProviderFlags.NoSsl) != 0)
+			if ((flags & HttpServerTestCategory.NoSsl) != 0)
 				yield break;
 
 			foreach (var provider in supportedProviders) {
