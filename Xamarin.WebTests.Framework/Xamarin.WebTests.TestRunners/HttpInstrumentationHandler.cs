@@ -101,12 +101,6 @@ namespace Xamarin.WebTests.TestRunners
 			Flags = RequestFlags.KeepAlive;
 
 			switch (parent.EffectiveType) {
-			case HttpInstrumentationTestType.RedirectOnSameConnection:
-				Target = new HelloWorldHandler (ME);
-				break;
-			}
-
-			switch (parent.EffectiveType) {
 			case HttpInstrumentationTestType.ReuseConnection:
 				CloseConnection = !primary;
 				break;
@@ -367,26 +361,6 @@ namespace Xamarin.WebTests.TestRunners
 			default:
 				return HttpResponse.CreateSuccess (ME);
 			}
-
-			async Task EntityTooBig ()
-			{
-				await request.ReadHeaders (ctx, cancellationToken).ConfigureAwait (false);
-				await ctx.AssertException<IOException> (() => request.Read (ctx, cancellationToken), "client doesn't send any body");
-			}
-
-			async Task ClientAbortsPost ()
-			{
-				await request.ReadHeaders (ctx, cancellationToken).ConfigureAwait (false);
-				await ctx.AssertException<IOException> (() => request.Read (ctx, cancellationToken), "client doesn't send any body");
-			}
-
-			async Task PostContentLength ()
-			{
-				await request.ReadHeaders (ctx, cancellationToken).ConfigureAwait (false);
-				ctx.Assert (request.ContentLength, Is.EqualTo (currentRequest.Content.Length), "request.ContentLength");
-				readyTcs.TrySetResult (true);
-				await request.Read (ctx, cancellationToken);
-			}
 		}
 
 		public override bool CheckResponse (TestContext ctx, Response response)
@@ -439,32 +413,6 @@ namespace Xamarin.WebTests.TestRunners
 				TestRunner = handler.TestRunner;
 				finishedTcs = new TaskCompletionSource<bool> ();
 				ME = $"{GetType ().Name}({TestRunner.EffectiveType})";
-			}
-
-			protected override Task WriteBody (TestContext ctx, CancellationToken cancellationToken)
-			{
-				switch (TestRunner.EffectiveType) {
-				default:
-					return base.WriteBody (ctx, cancellationToken);
-				}
-
-				async Task EntityTooBig ()
-				{
-					var stream = await RequestExt.GetRequestStreamAsync ().ConfigureAwait (false);
-					await Content.WriteToAsync (ctx, stream, cancellationToken).ConfigureAwait (false);
-					// This throws on .NET
-					try { stream.Dispose (); } catch { }
-				}
-
-				async Task PostContentLength ()
-				{
-					using (var stream = await RequestExt.GetRequestStreamAsync ().ConfigureAwait (false)) {
-						await AbstractConnection.WaitWithTimeout (ctx, 1500, Handler.WaitUntilReady ());
-						await Content.WriteToAsync (ctx, stream, cancellationToken);
-						stream.Flush ();
-					}
-				}
-
 			}
 
 			protected override async Task<Response> GetResponseFromHttp (
@@ -538,56 +486,6 @@ namespace Xamarin.WebTests.TestRunners
 							text = await reader.ReadToEndAsync ().ConfigureAwait (false);
 						return StringContent.CreateMaybeNull (text);
 					}
-				}
-
-				async Task<HttpContent> TestResponseStream (Stream stream)
-				{
-					var buffer = new byte[5];
-					var ret = await stream.ReadAsync (buffer, 4, 1).ConfigureAwait (false);
-					ctx.Assert (ret, Is.EqualTo (1), "#A1");
-					ctx.Assert (buffer[4], Is.EqualTo ((byte)65), "#A2");
-					ret = await stream.ReadAsync (buffer, 0, 2);
-					ctx.Assert (ret, Is.EqualTo (2), "#B1");
-					return Handler.Content;
-				}
-
-				async Task<HttpContent> LargeChunkRead (Stream stream)
-				{
-					var buffer = new byte[43];
-					var ret = await stream.ReadAsync (buffer, 0, buffer.Length).ConfigureAwait (false);
-					ctx.Assert (ret, Is.EqualTo (ConnectionHandler.TheQuickBrownFox.Length), "#A1");
-					var text = Encoding.UTF8.GetString (buffer, 0, ret);
-					return new StringContent (text);
-				}
-
-				async Task<HttpContent> GZipWithLength (Stream stream)
-				{
-					using (var ms = new MemoryStream ()) {
-						await stream.CopyToAsync (ms, 16384).ConfigureAwait (false);
-						var bytes = ms.ToArray ();
-						var text = Encoding.UTF8.GetString (bytes, 0, bytes.Length);
-						return new StringContent (text);
-					}
-				}
-
-				async Task<HttpContent> ResponseStreamCheckLength (Stream stream, bool chunked)
-				{
-					await ctx.AssertException<NotSupportedException> (() => Task.FromResult (stream.Length), "Length should throw");
-					if (chunked) {
-						ctx.Assert (response.ContentLength, Is.EqualTo (-1L), "ContentLength");
-						ctx.Assert (response.Headers["Transfer-Encoding"], Is.EqualTo ("chunked"), "chunked encoding");
-					} else {
-						ctx.Assert (response.ContentLength, Is.EqualTo ((long)Handler.Content.Length), "ContentLength");
-						ctx.Assert (response.Headers["Content-Length"], Is.EqualTo (Handler.Content.Length.ToString ()), "Content-Length header");
-					}
-					return await GZipWithLength (stream).ConfigureAwait (false);
-				}
-
-				async Task<HttpContent> GetNoLength (Stream stream)
-				{
-					ctx.Assert (response.ContentLength, Is.EqualTo (-1L), "ContentLength");
-					ctx.Assert (response.Headers["Content-Length"], Is.Null, "No Content-Length: header");
-					return await ReadAsString (stream);
 				}
 			}
 		}
@@ -727,30 +625,6 @@ namespace Xamarin.WebTests.TestRunners
 
 					var message = ((HelloWorldHandler)Request.Handler.Target).Message;
 					await stream.WriteAsync (message, cancellationToken).ConfigureAwait (false);
-					await stream.FlushAsync (cancellationToken);
-				}
-
-				async Task HandlePostChunked ()
-				{
-					await stream.WriteAsync (ConnectionHandler.TheQuickBrownFoxBuffer, cancellationToken).ConfigureAwait (false);
-					await stream.FlushAsync (cancellationToken);
-
-					await AbstractConnection.WaitWithTimeout (ctx, 1500, Request.Handler.WaitUntilReady ());
-
-					await stream.WriteAsync (ConnectionHandler.GetLargeTextBuffer (50), cancellationToken);
-				}
-
-				async Task HandleLargeChunkRead ()
-				{
-					await ChunkedContent.WriteChunkAsBlob (
-						stream, ConnectionHandler.TheQuickBrownFoxBuffer,
-						cancellationToken).ConfigureAwait (false);
-					await stream.FlushAsync (cancellationToken);
-
-					await ChunkedContent.WriteChunkAsBlob (
-						stream, ConnectionHandler.GetLargeTextBuffer (50),
-						cancellationToken);
-					await ChunkedContent.WriteChunkTrailer (stream, cancellationToken);
 					await stream.FlushAsync (cancellationToken);
 				}
 			}
