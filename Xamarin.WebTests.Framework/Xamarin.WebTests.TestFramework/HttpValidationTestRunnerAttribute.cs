@@ -76,7 +76,7 @@ namespace Xamarin.WebTests.TestFramework
 			else if (parameters.EndPoint != null)
 				serverEndPoint = parameters.EndPoint;
 			else
-				serverEndPoint = ConnectionTestHelper.GetEndPoint (ctx);
+				serverEndPoint = ConnectionTestHelper.GetEndPoint ();
 
 			if (parameters.EndPoint == null)
 				parameters.EndPoint = serverEndPoint;

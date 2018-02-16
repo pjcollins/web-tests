@@ -120,7 +120,7 @@ namespace Xamarin.WebTests.TestFramework
 
 			HttpServerProvider CreateSsl (ConnectionProvider provider)
 			{
-				var endPoint = ConnectionTestHelper.GetEndPoint (ctx);
+				var endPoint = ConnectionTestHelper.GetEndPoint ();
 				var uri = new Uri ($"https://{endPoint.Address}:{endPoint.Port}/");
 				return new HttpServerProvider (
 					$"https:{provider.Name}", uri, endPoint,
@@ -129,7 +129,7 @@ namespace Xamarin.WebTests.TestFramework
 
 			HttpServerProvider CreateDefault ()
 			{
-				var endPoint = ConnectionTestHelper.GetEndPoint (ctx);
+				var endPoint = ConnectionTestHelper.GetEndPoint ();
 				var uri = new Uri ($"http://{endPoint.Address}:{endPoint.Port}/");
 				return new HttpServerProvider (
 					$"http", uri, endPoint, serverFlags, null);
@@ -137,7 +137,7 @@ namespace Xamarin.WebTests.TestFramework
 
 			HttpServerProvider CreateDefaultSsl ()
 			{
-				var endPoint = ConnectionTestHelper.GetEndPoint (ctx);
+				var endPoint = ConnectionTestHelper.GetEndPoint ();
 				var uri = new Uri ($"https://{endPoint.Address}:{endPoint.Port}/");
 				return new HttpServerProvider (
 					$"https", uri, endPoint, serverFlags, null);

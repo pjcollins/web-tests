@@ -135,7 +135,7 @@ namespace Xamarin.WebTests.TestFramework {
 
 		public HttpServer CreateInstance (TestContext ctx)
 		{
-			var endpoint = ConnectionTestHelper.GetEndPoint (ctx);
+			var endpoint = ConnectionTestHelper.GetEndPoint ();
 
 			ConnectionParameters parameters;
 			ISslStreamProvider sslStreamProvider = null;
