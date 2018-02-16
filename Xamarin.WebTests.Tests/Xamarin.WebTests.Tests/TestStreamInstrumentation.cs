@@ -41,7 +41,6 @@ namespace Xamarin.WebTests.Tests
 	using TestFramework;
 	using TestRunners;
 
-	[New]
 	[AsyncTestFixture (Timeout = 5000)]
 	public class TestStreamInstrumentation
 	{

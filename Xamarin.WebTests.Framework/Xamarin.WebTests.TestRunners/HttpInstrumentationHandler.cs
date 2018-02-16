@@ -800,7 +800,7 @@ namespace Xamarin.WebTests.TestRunners
 					try {
 						stream.Dispose ();
 					} catch (Exception ex) {
-						ctx.LogMessage ($"{ME} GOT EX: {ex.Message}");
+						ctx.LogDebug (4, $"{ME} GOT EX: {ex.Message}");
 					}
 				}
 			}
