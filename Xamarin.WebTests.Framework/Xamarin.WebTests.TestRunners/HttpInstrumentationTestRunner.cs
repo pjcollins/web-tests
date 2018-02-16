@@ -214,12 +214,10 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpInstrumentationTestType.InvalidDataDuringHandshake:
 				parameters.ExpectedStatus = HttpStatusCode.InternalServerError;
 				parameters.ExpectedError = WebExceptionStatus.SecureChannelFailure;
-				parameters.HasReadHandler = true;
 				break;
 			case HttpInstrumentationTestType.AbortDuringHandshake:
 				parameters.ExpectedStatus = HttpStatusCode.InternalServerError;
 				parameters.ExpectedError = WebExceptionStatus.RequestCanceled;
-				parameters.HasReadHandler = true;
 				break;
 			case HttpInstrumentationTestType.AbortResponse:
 				parameters.ExpectedStatus = HttpStatusCode.InternalServerError;
@@ -227,28 +225,21 @@ namespace Xamarin.WebTests.TestRunners
 				break;
 			case HttpInstrumentationTestType.SimpleQueuedRequest:
 			case HttpInstrumentationTestType.CancelQueuedRequest:
-				parameters.HasReadHandler = true;
 				break;
 			case HttpInstrumentationTestType.CancelMainWhileQueued:
 			case HttpInstrumentationTestType.NtlmWhileQueued:
 				parameters.ExpectedStatus = HttpStatusCode.InternalServerError;
 				parameters.ExpectedError = WebExceptionStatus.RequestCanceled;
-				parameters.HasReadHandler = true;
 				break;
 			case HttpInstrumentationTestType.NtlmWhileQueued2:
-				parameters.HasReadHandler = true;
 				break;
 			case HttpInstrumentationTestType.ThreeParallelRequests:
-				parameters.HasReadHandler = true;
 				break;
 			case HttpInstrumentationTestType.ParallelRequestsSomeQueued:
-				parameters.HasReadHandler = true;
 				break;
 			case HttpInstrumentationTestType.ManyParallelRequests:
-				parameters.HasReadHandler = true;
 				break;
 			case HttpInstrumentationTestType.ManyParallelRequestsStress:
-				parameters.HasReadHandler = true;
 				break;
 			case HttpInstrumentationTestType.CloseIdleConnection:
 				break;
@@ -265,7 +256,6 @@ namespace Xamarin.WebTests.TestRunners
 				parameters.ExpectedError = WebExceptionStatus.RequestCanceled;
 				break;
 			case HttpInstrumentationTestType.ParallelRequests:
-				parameters.HasReadHandler = true;
 				break;
 			case HttpInstrumentationTestType.CloseCustomConnectionGroup:
 				break;
@@ -794,6 +784,20 @@ namespace Xamarin.WebTests.TestRunners
 				switch (EffectiveType) {
 				case HttpInstrumentationTestType.CloseCustomConnectionGroup:
 					instrumentation.IgnoreErrors = true;
+					break;
+				case HttpInstrumentationTestType.InvalidDataDuringHandshake:
+				case HttpInstrumentationTestType.AbortDuringHandshake:
+				case HttpInstrumentationTestType.SimpleQueuedRequest:
+				case HttpInstrumentationTestType.CancelQueuedRequest:
+				case HttpInstrumentationTestType.CancelMainWhileQueued:
+				case HttpInstrumentationTestType.NtlmWhileQueued:
+				case HttpInstrumentationTestType.NtlmWhileQueued2:
+				case HttpInstrumentationTestType.ThreeParallelRequests:
+				case HttpInstrumentationTestType.ParallelRequestsSomeQueued:
+				case HttpInstrumentationTestType.ManyParallelRequests:
+				case HttpInstrumentationTestType.ManyParallelRequestsStress:
+				case HttpInstrumentationTestType.ParallelRequests:
+					InstallReadHandler (ctx);
 					break;
 				}
 			}

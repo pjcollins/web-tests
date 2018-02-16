@@ -172,18 +172,15 @@ namespace Xamarin.WebTests.TestRunners
 				parameters.ExpectedStatus = HttpStatusCode.InternalServerError;
 				break;
 			case HttpClientTestType.ParallelRequests:
-				parameters.HasReadHandler = true;
 				parameters.ExpectedError = WebExceptionStatus.Success;
 				parameters.ExpectedStatus = HttpStatusCode.OK;
 				break;
 			case HttpClientTestType.SimpleQueuedRequest:
-				parameters.HasReadHandler = true;
 				parameters.ExpectedError = WebExceptionStatus.Success;
 				parameters.ExpectedStatus = HttpStatusCode.OK;
 				break;
 			case HttpClientTestType.ParallelGZip:
 			case HttpClientTestType.ParallelGZipNoClose:
-				parameters.HasReadHandler = true;
 				parameters.ExpectedError = WebExceptionStatus.Success;
 				parameters.ExpectedStatus = HttpStatusCode.OK;
 				break;
@@ -647,6 +644,18 @@ namespace Xamarin.WebTests.TestRunners
 					return request.GetString (ctx, cancellationToken);
 				default:
 					throw ctx.AssertFail (Parent.EffectiveType);
+				}
+			}
+
+			protected override void ConfigureNetworkStream (TestContext ctx, StreamInstrumentation instrumentation)
+			{
+				switch (Parent.EffectiveType) {
+				case HttpClientTestType.ParallelRequests:
+				case HttpClientTestType.SimpleQueuedRequest:
+				case HttpClientTestType.ParallelGZip:
+				case HttpClientTestType.ParallelGZipNoClose:
+					InstallReadHandler (ctx);
+					break;
 				}
 			}
 

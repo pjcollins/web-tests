@@ -203,6 +203,10 @@ namespace Xamarin.WebTests.TestRunners
 				return request.SendAsync (ctx, cancellationToken);
 			}
 
+			protected override void ConfigureNetworkStream (TestContext ctx, StreamInstrumentation instrumentation)
+			{
+			}
+
 			protected override void Destroy ()
 			{
 				;

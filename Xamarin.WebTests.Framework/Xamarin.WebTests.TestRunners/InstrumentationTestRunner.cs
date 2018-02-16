@@ -227,16 +227,10 @@ namespace Xamarin.WebTests.TestRunners
 
 				ConfigureNetworkStream (ctx, instrumentation);
 
-				if (Parent.Parameters.HasReadHandler)
-					InstallReadHandler (ctx);
-
 				return instrumentation;
 			}
 
-			protected virtual void ConfigureNetworkStream (TestContext ctx, StreamInstrumentation instrumentation)
-			{
-
-			}
+			protected abstract void ConfigureNetworkStream (TestContext ctx, StreamInstrumentation instrumentation);
 
 			protected void InstallReadHandler (TestContext ctx)
 			{
