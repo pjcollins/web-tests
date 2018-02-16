@@ -101,26 +101,12 @@ namespace Xamarin.WebTests.TestRunners
 			Flags = RequestFlags.KeepAlive;
 
 			switch (parent.EffectiveType) {
-			case HttpRequestTestType.RedirectOnSameConnection:
 			case HttpRequestTestType.RedirectNoLength:
 				Target = new HelloWorldHandler (ME);
 				break;
 			}
 
 			switch (parent.EffectiveType) {
-			case HttpRequestTestType.NtlmClosesConnection:
-				AuthManager = parent.GetAuthenticationManager ();
-				CloseConnection = true;
-				break;
-			case HttpRequestTestType.NtlmReusesConnection:
-				AuthManager = parent.GetAuthenticationManager ();
-				CloseConnection = false;
-				break;
-			case HttpRequestTestType.ParallelNtlm:
-			case HttpRequestTestType.NtlmInstrumentation:
-				AuthManager = parent.GetAuthenticationManager ();
-				CloseConnection = false;
-				break;
 			case HttpRequestTestType.LargeHeader:
 			case HttpRequestTestType.LargeHeader2:
 			case HttpRequestTestType.SendResponseAsBlob:
@@ -130,10 +116,6 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpRequestTestType.CloseRequestStream:
 				OperationFlags = HttpOperationFlags.AbortAfterClientExits;
 				CloseConnection = !primary;
-				break;
-			case HttpRequestTestType.RedirectOnSameConnection:
-				Target = new HelloWorldHandler (ME);
-				CloseConnection = false;
 				break;
 			case HttpRequestTestType.RedirectNoLength:
 				Target = new HelloWorldHandler (ME);
@@ -332,45 +314,6 @@ namespace Xamarin.WebTests.TestRunners
 			base.ConfigureRequest (request, uri);
 		}
 
-		async Task<HttpResponse> HandleNtlmRequest (
-			TestContext ctx, HttpOperation operation, HttpConnection connection, HttpRequest request,
-			RequestFlags effectiveFlags, CancellationToken cancellationToken)
-		{
-			var me = $"{ME}.{nameof (HandleNtlmRequest)}";
-			ctx.LogDebug (3, $"{me}: {connection.RemoteEndPoint}");
-
-			AuthenticationState state;
-			var response = AuthManager.HandleAuthentication (ctx, connection, request, out state);
-			ctx.LogDebug (3, $"{me}: {connection.RemoteEndPoint} - {state} {response}");
-
-			if (state == AuthenticationState.Unauthenticated) {
-				ctx.Assert (RemoteEndPoint, Is.Null, "first request");
-				RemoteEndPoint = connection.RemoteEndPoint;
-			} else if (TestRunner.EffectiveType == HttpRequestTestType.NtlmInstrumentation) {
-				if (state == AuthenticationState.Challenge) {
-					ctx.LogDebug (3, $"{me}: {connection.RemoteEndPoint} {RemoteEndPoint}");
-					RemoteEndPoint = connection.RemoteEndPoint;
-				} else
-					ctx.Assert (connection.RemoteEndPoint, Is.EqualTo (RemoteEndPoint), "must reuse connection");
-			}
-
-			await TestRunner.HandleRequest (
-				ctx, this, connection, request, state, cancellationToken).ConfigureAwait (false);
-
-			var keepAlive = !CloseConnection && (effectiveFlags & (RequestFlags.KeepAlive | RequestFlags.CloseConnection)) == RequestFlags.KeepAlive;
-			if (response != null) {
-				response.Redirect = operation.RegisterRedirect (ctx, this, request.Path);
-				return response;
-			}
-
-			cancellationToken.ThrowIfCancellationRequested ();
-
-			var ret = await Target.HandleRequest (ctx, operation, connection, request, effectiveFlags, cancellationToken);
-			ctx.LogDebug (3, $"{me} target done: {Target} {ret}");
-			ret.KeepAlive = false;
-			return ret;
-		}
-
 		async Task<HttpResponse> HandlePostChunked (
 			TestContext ctx, HttpOperation operation, HttpConnection connection, HttpRequest request,
 			RequestFlags effectiveFlags, CancellationToken cancellationToken)
@@ -388,9 +331,6 @@ namespace Xamarin.WebTests.TestRunners
 			ctx.LogDebug (3, $"{me} reading remaining body");
 
 			await ChunkedContent.Read (ctx, request.Reader, cancellationToken).ConfigureAwait (false);
-
-			await TestRunner.HandleRequest (
-				ctx, this, connection, request, AuthenticationState.None, cancellationToken).ConfigureAwait (false);
 
 			return HttpResponse.CreateSuccess (ME);
 		}
@@ -410,7 +350,6 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpRequestTestType.SendResponseAsBlob:
 			case HttpRequestTestType.CloseRequestStream:
 			case HttpRequestTestType.ReadTimeout:
-			case HttpRequestTestType.RedirectOnSameConnection:
 			case HttpRequestTestType.SimpleGZip:
 			case HttpRequestTestType.TestResponseStream:
 			case HttpRequestTestType.LargeChunkRead:
@@ -425,13 +364,6 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpRequestTestType.ServerAbortsPost:
 				ctx.Assert (request.Method, Is.EqualTo ("POST"), "method");
 				break;
-
-			case HttpRequestTestType.NtlmInstrumentation:
-			case HttpRequestTestType.NtlmClosesConnection:
-			case HttpRequestTestType.NtlmReusesConnection:
-			case HttpRequestTestType.ParallelNtlm:
-				return await HandleNtlmRequest (
-					ctx, operation, connection, request, effectiveFlags, cancellationToken).ConfigureAwait (false);
 
 			case HttpRequestTestType.RedirectNoLength:
 			case HttpRequestTestType.PutChunked:
@@ -479,9 +411,6 @@ namespace Xamarin.WebTests.TestRunners
 
 			RemoteEndPoint = connection.RemoteEndPoint;
 
-			await TestRunner.HandleRequest (
-				ctx, this, connection, request, AuthenticationState.None, cancellationToken).ConfigureAwait (false);
-
 			HttpResponse response;
 			HttpRequestContent content;
 			ListenerOperation redirect;
@@ -506,13 +435,6 @@ namespace Xamarin.WebTests.TestRunners
 			case HttpRequestTestType.ReadTimeout:
 				content = new HttpRequestContent (TestRunner, currentRequest);
 				return new HttpResponse (HttpStatusCode.OK, content);
-
-			case HttpRequestTestType.RedirectOnSameConnection:
-				redirect = operation.RegisterRedirect (ctx, Target);
-				response = HttpResponse.CreateRedirect (HttpStatusCode.Redirect, redirect);
-				response.SetBody (new StringContent ($"{ME} Redirecting"));
-				response.WriteAsBlob = true;
-				return response;
 
 			case HttpRequestTestType.RedirectNoLength:
 				redirect = operation.RegisterRedirect (ctx, Target);
@@ -821,14 +743,6 @@ namespace Xamarin.WebTests.TestRunners
 					} finally {
 						finishedTcs.TrySetResult (true);
 					}
-				}
-
-				async Task<HttpContent> ReadStringAsBuffer (Stream stream, int size)
-				{
-					var buffer = new byte[size];
-					var ret = await stream.ReadAsync (buffer, 0, buffer.Length).ConfigureAwait (false);
-					ctx.Assert (ret, Is.EqualTo (buffer.Length));
-					return StringContent.CreateMaybeNull (new ASCIIEncoding ().GetString (buffer, 0, ret));
 				}
 
 				async Task<HttpContent> ReadAsString (Stream stream)

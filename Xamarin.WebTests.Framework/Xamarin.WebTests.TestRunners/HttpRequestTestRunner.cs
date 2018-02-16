@@ -70,23 +70,15 @@ namespace Xamarin.WebTests.TestRunners
 
 		static readonly (HttpRequestTestType type, HttpRequestTestFlags flags)[] TestRegistration = {
 			(HttpRequestTestType.Simple, HttpRequestTestFlags.Working),
-			(HttpRequestTestType.SimpleNtlm, HttpRequestTestFlags.Working),
 			(HttpRequestTestType.SimplePost, HttpRequestTestFlags.Working),
 			(HttpRequestTestType.SimpleRedirect, HttpRequestTestFlags.Working),
 			(HttpRequestTestType.PostRedirect, HttpRequestTestFlags.Working),
-			(HttpRequestTestType.PostNtlm, HttpRequestTestFlags.Working),
-			(HttpRequestTestType.NtlmChunked, HttpRequestTestFlags.Working),
 			(HttpRequestTestType.Get404, HttpRequestTestFlags.Working),
-			(HttpRequestTestType.NtlmInstrumentation, HttpRequestTestFlags.NewWebStack),
-			(HttpRequestTestType.NtlmClosesConnection, HttpRequestTestFlags.NewWebStack),
-			(HttpRequestTestType.NtlmReusesConnection, HttpRequestTestFlags.NewWebStack),
-			(HttpRequestTestType.ParallelNtlm, HttpRequestTestFlags.NewWebStack),
 			(HttpRequestTestType.LargeHeader, HttpRequestTestFlags.Working),
 			(HttpRequestTestType.LargeHeader2, HttpRequestTestFlags.Working),
 			(HttpRequestTestType.SendResponseAsBlob, HttpRequestTestFlags.Working),
 			(HttpRequestTestType.CloseRequestStream, HttpRequestTestFlags.Working),
 			(HttpRequestTestType.ReadTimeout, HttpRequestTestFlags.NewWebStack),
-			(HttpRequestTestType.RedirectOnSameConnection, HttpRequestTestFlags.Working),
 			(HttpRequestTestType.RedirectNoReuse, HttpRequestTestFlags.Working),
 			(HttpRequestTestType.RedirectNoLength, HttpRequestTestFlags.NewWebStack),
 			(HttpRequestTestType.PutChunked, HttpRequestTestFlags.Working),
@@ -168,18 +160,12 @@ namespace Xamarin.WebTests.TestRunners
 			var chunkedPost = new PostHandler (EffectiveType.ToString (), HttpContent.HelloChunked, TransferMode.Chunked);
 
 			switch (EffectiveType) {
-			case HttpRequestTestType.SimpleNtlm:
-				return (new AuthenticationHandler (AuthenticationType.NTLM, hello), HttpOperationFlags.None);
 			case HttpRequestTestType.SimplePost:
 				return (postHello, HttpOperationFlags.None);
 			case HttpRequestTestType.SimpleRedirect:
 				return (new RedirectHandler (hello, HttpStatusCode.Redirect), HttpOperationFlags.None);
-			case HttpRequestTestType.PostNtlm:
-				return (new AuthenticationHandler (AuthenticationType.NTLM, postHello), HttpOperationFlags.None);
 			case HttpRequestTestType.PostRedirect:
 				return (new RedirectHandler (postHello, HttpStatusCode.TemporaryRedirect), HttpOperationFlags.None);
-			case HttpRequestTestType.NtlmChunked:
-				return (new AuthenticationHandler (AuthenticationType.NTLM, chunkedPost), HttpOperationFlags.None);
 			case HttpRequestTestType.Get404:
 				return (new GetHandler (EffectiveType.ToString (), null, HttpStatusCode.NotFound), HttpOperationFlags.None);
 			case HttpRequestTestType.RedirectNoReuse:
@@ -238,48 +224,6 @@ namespace Xamarin.WebTests.TestRunners
 			return new Operation (this, handler, type, flags, expectedStatus, expectedError);
 		}
 
-		internal async Task HandleRequest (
-			TestContext ctx, HttpRequestHandler handler,
-			HttpConnection connection, HttpRequest request,
-			AuthenticationState state, CancellationToken cancellationToken)
-		{
-			switch (EffectiveType) {
-			case HttpRequestTestType.RedirectOnSameConnection:
-				MustReuseConnection ();
-				break;
-
-			case HttpRequestTestType.ParallelNtlm:
-				await ParallelNtlm ().ConfigureAwait (false);
-				break;
-
-			case HttpRequestTestType.NtlmInstrumentation:
-				break;
-			}
-
-			async Task ParallelNtlm ()
-			{
-				var firstHandler = (HttpRequestHandler)PrimaryOperation.Handler;
-				ctx.LogDebug (2, $"{handler.ME}: {handler == firstHandler} {state}");
-				if (handler != firstHandler || state != AuthenticationState.Challenge)
-					return;
-
-				var newHandler = (HttpRequestHandler)firstHandler.Clone ();
-				var flags = PrimaryOperation.Flags;
-
-				var operation = StartOperation (ctx, cancellationToken, newHandler, InstrumentationOperationType.Queued, flags);
-				await operation.WaitForRequest ();
-			}
-
-			void MustReuseConnection ()
-			{
-				var firstHandler = (HttpRequestHandler)PrimaryOperation.Handler;
-				ctx.LogDebug (2, $"{handler.ME}: {handler == firstHandler} {handler.RemoteEndPoint}");
-				if (handler == firstHandler)
-					return;
-				ctx.Assert (connection.RemoteEndPoint, Is.EqualTo (firstHandler.RemoteEndPoint), "RemoteEndPoint");
-			}
-		}
-
 		class Operation : InstrumentationOperation
 		{
 			new public HttpRequestTestRunner Parent => (HttpRequestTestRunner)base.Parent;
@@ -321,12 +265,7 @@ namespace Xamarin.WebTests.TestRunners
 
 			void ConfigureParallelRequest (TestContext ctx, TraditionalRequest request)
 			{
-				switch (EffectiveType) {
-				case HttpRequestTestType.ParallelNtlm:
-					break;
-				default:
-					throw ctx.AssertFail (Parent.EffectiveType);
-				}
+				throw ctx.AssertFail (Parent.EffectiveType);
 			}
 
 			void ConfigurePrimaryRequest (TestContext ctx, TraditionalRequest request)
