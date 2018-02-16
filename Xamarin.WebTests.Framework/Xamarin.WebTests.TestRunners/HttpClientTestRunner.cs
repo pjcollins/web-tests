@@ -62,10 +62,8 @@ namespace Xamarin.WebTests.TestRunners
 			return type;
 		}
 
-		public HttpClientTestRunner (
-			HttpServerProvider provider, HttpClientTestType type)
-			: base (provider.EndPoint, provider.Uri, provider.ServerFlags,
-				type.ToString ())
+		public HttpClientTestRunner (HttpServerProvider provider, HttpClientTestType type)
+			: base (provider, type.ToString ())
 		{
 			Type = type;
 		}

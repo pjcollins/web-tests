@@ -62,10 +62,8 @@ namespace Xamarin.WebTests.TestRunners
 			return type;
 		}
 
-		public HttpInstrumentationTestRunner (
-			HttpServerProvider provider, HttpInstrumentationTestType type)
-			: base (provider.EndPoint, provider.Uri, provider.ServerFlags,
-			        type.ToString ())
+		public HttpInstrumentationTestRunner (HttpServerProvider provider, HttpInstrumentationTestType type)
+			: base (provider, type.ToString ())
 		{
 			Type = type;
 		}

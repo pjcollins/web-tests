@@ -48,9 +48,11 @@ namespace Xamarin.WebTests.TestRunners
 
 	public abstract class InstrumentationTestRunner : AbstractConnection
 	{
-		internal Uri Uri {
+		public HttpServerProvider Provider {
 			get;
 		}
+
+		internal Uri Uri => Provider.Uri;
 
 		internal HttpServerFlags ServerFlags {
 			get;
@@ -64,17 +66,15 @@ namespace Xamarin.WebTests.TestRunners
 			get;
 		}
 
-		public InstrumentationTestRunner (
-			IPortableEndPoint endpoint, Uri uri, HttpServerFlags flags,
-			string identifier)
+		public InstrumentationTestRunner (HttpServerProvider provider, string identifier)
 		{
-			Uri = uri;
-			ServerFlags = flags | HttpServerFlags.InstrumentationListener;
+			Provider = provider;
+			ServerFlags = provider.ServerFlags | HttpServerFlags.InstrumentationListener;
 			ME = $"{GetType ().Name}({identifier})";
 
 			var parameters = GetParameters (identifier);
 
-			Server = new BuiltinHttpServer (uri, endpoint, ServerFlags, parameters, null);
+			Server = new BuiltinHttpServer (provider.Uri, provider.EndPoint, ServerFlags, parameters, null);
 		}
 
 		static ConnectionParameters GetParameters (string identifier)
