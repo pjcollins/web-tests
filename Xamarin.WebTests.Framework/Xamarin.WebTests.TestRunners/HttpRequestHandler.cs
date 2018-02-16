@@ -77,11 +77,6 @@ namespace Xamarin.WebTests.TestRunners
 			get;
 		}
 
-		public bool IsSecondRequest {
-			get;
-			private set;
-		}
-
 		public string ME {
 			get;
 		}
@@ -203,6 +198,7 @@ namespace Xamarin.WebTests.TestRunners
 		}
 
 		HttpRequestRequest currentRequest;
+		bool isSecondRequest;
 
 		public override object Clone ()
 		{
@@ -425,10 +421,10 @@ namespace Xamarin.WebTests.TestRunners
 				return response;
 
 			case HttpRequestTestType.ServerAbortsRedirect:
-				if (IsSecondRequest)
+				if (isSecondRequest)
 					throw ctx.AssertFail ("Should never happen.");
 				var cloned = new HttpRequestHandler (this);
-				cloned.IsSecondRequest = true;
+				cloned.isSecondRequest = true;
 				redirect = operation.RegisterRedirect (ctx, cloned);
 				response = HttpResponse.CreateRedirect (HttpStatusCode.Redirect, redirect);
 				return response;
@@ -508,18 +504,6 @@ namespace Xamarin.WebTests.TestRunners
 				return false;
 
 			return HttpContent.Compare (ctx, response.Content, ExpectedContent, false, "response.Content");
-		}
-
-		public override Task CheckResponse (TestContext ctx, Response response,
-						    CancellationToken cancellationToken,
-						    HttpStatusCode expectedStatus = HttpStatusCode.OK,
-						    WebExceptionStatus expectedError = WebExceptionStatus.Success)
-		{
-			switch (TestRunner.EffectiveType) {
-			case HttpRequestTestType.EntityTooBig:
-			default:
-				return base.CheckResponse (ctx, response, cancellationToken, expectedStatus, expectedError);
-			}
 		}
 
 		class HttpRequestRequest : TraditionalRequest
@@ -930,71 +914,5 @@ namespace Xamarin.WebTests.TestRunners
 				}
 			}
 		}
-
-		class HttpRequestResponse : Response
-		{
-			public HttpRequestTestRunner TestRunner {
-				get;
-			}
-
-			public HttpWebResponse Response {
-				get;
-			}
-
-			public string ME {
-				get;
-			}
-
-			TaskCompletionSource<bool> finishedTcs;
-
-			public Task WaitForCompletion ()
-			{
-				return finishedTcs.Task;
-			}
-
-			public HttpRequestResponse (HttpRequestRequest request, HttpWebResponse response)
-				: base (request)
-			{
-				TestRunner = request.TestRunner;
-				Response = response;
-				finishedTcs = new TaskCompletionSource<bool> ();
-				ME = $"{GetType ().Name}({TestRunner.EffectiveType})";
-			}
-
-			public HttpRequestResponse (HttpRequestRequest request, WebException error)
-				: base (request)
-			{
-				TestRunner = request.TestRunner;
-				Response = (HttpWebResponse)error.Response;
-				Error = error;
-				finishedTcs = new TaskCompletionSource<bool> ();
-				ME = $"{GetType ().Name}({TestRunner.EffectiveType})";
-			}
-
-			public override bool IsSuccess => false;
-
-			public override HttpStatusCode Status => Response.StatusCode;
-
-			public sealed override Exception Error {
-				get;
-			}
-
-			public override HttpContent Content => null;
-
-			internal async Task CheckResponse (TestContext ctx, CancellationToken cancellationToken)
-			{
-				ctx.LogMessage ("CHECK RESPONSE");
-				cancellationToken.ThrowIfCancellationRequested ();
-
-				var stream = Response.GetResponseStream ();
-
-				var buffer = new byte[1024];
-				var ret = await stream.ReadAsync (buffer, 0, buffer.Length, cancellationToken).ConfigureAwait (false);
-
-				ctx.LogMessage ($"CHECK RESPONSE #1: {ret}");
-			}
-		}
-
-
 	}
 }
