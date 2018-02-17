@@ -123,15 +123,7 @@ namespace Xamarin.WebTests.TestRunners
 					return flags == HttpRequestTestFlags.Working;
 				case HttpServerTestCategory.Stress:
 					return flags == HttpRequestTestFlags.Stress;
-				case HttpServerTestCategory.NewWebStackInstrumentation:
-					if (!setup.UsingDotNet &&
-					    (flags == HttpRequestTestFlags.NewWebStackMono ||
-					     flags == HttpRequestTestFlags.NewWebStackRequireSSL))
-						return true;
-					return flags == HttpRequestTestFlags.NewWebStack;
 				case HttpServerTestCategory.NewWebStack:
-					if (flags == HttpRequestTestFlags.NewWebStackMono && !setup.UsingDotNet)
-						return true;
 					return flags == HttpRequestTestFlags.NewWebStack;
 				case HttpServerTestCategory.Experimental:
 					return flags == HttpRequestTestFlags.Unstable;

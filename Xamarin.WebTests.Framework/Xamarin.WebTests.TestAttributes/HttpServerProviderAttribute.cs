@@ -54,47 +54,6 @@ namespace Xamarin.WebTests.TestAttributes
 			Category = category;
 		}
 
-		bool UsingSsl (HttpServerTestCategory category)
-		{
-			switch (category) {
-			case HttpServerTestCategory.HttpListener:
-				return false;
-			default:
-				return true;
-			}
-		}
-
-		bool RequireSsl (HttpServerTestCategory category)
-		{
-			switch (category) {
-			case HttpServerTestCategory.Instrumentation:
-			case HttpServerTestCategory.NewWebStackInstrumentation:
-				return false;
-			default:
-				return false;
-			}
-		}
-
-		bool UsingHttpListener (HttpServerTestCategory category)
-		{
-			switch (category) {
-			case HttpServerTestCategory.HttpListener:
-				return true;
-			default:
-				return false;
-			}
-		}
-
-		bool IsMartinTest (HttpServerTestCategory category)
-		{
-			switch (category) {
-			case HttpServerTestCategory.MartinTest:
-				return true;
-			default:
-				return false;
-			}
-		}
-
 		public IEnumerable<HttpServerProvider> GetParameters (TestContext ctx, string argument)
 		{
 			var category = Category ?? ctx.GetParameter<HttpServerTestCategory> ();
@@ -102,34 +61,8 @@ namespace Xamarin.WebTests.TestAttributes
 			if (!string.IsNullOrEmpty (argument))
 				throw new NotSupportedException ();
 
-			HttpServerFlags serverFlags = HttpServerFlags.None;
-			if (UsingHttpListener (category))
-				serverFlags |= HttpServerFlags.HttpListener;
-
-			if (IsMartinTest (category)) {
-				yield return new HttpServerProvider ("https", serverFlags, null);
-				yield break;
-			}
-
-			if (!RequireSsl (category)) {
-				serverFlags |= HttpServerFlags.NoSSL;
-				yield return new HttpServerProvider ("http", serverFlags, null);
-			}
-
-			if (!UsingSsl (category))
-				yield break;
-
 			var filter = new HttpServerProviderFilter (category);
-			var supportedProviders = filter.GetSupportedProviders (ctx);
-			if (supportedProviders.Count () == 0)
-				ctx.AssertFail ("Could not find any supported HttpServerProvider.");
-
-			serverFlags |= HttpServerFlags.SSL;
-			foreach (var provider in supportedProviders) {
-				yield return new HttpServerProvider (
-					$"https:{provider.Name}", serverFlags,
-					provider.SslStreamProvider);
-			}
+			return filter.GetProviders (ctx);
 		}
 	}
 }

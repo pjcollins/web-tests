@@ -32,6 +32,7 @@ using Xamarin.AsyncTests.Constraints;
 namespace Xamarin.WebTests.TestFramework
 {
 	using ConnectionFramework;
+	using HttpFramework;
 
 	public class HttpServerProviderFilter
 	{
@@ -95,6 +96,82 @@ namespace Xamarin.WebTests.TestFramework
 			if (providers.Count == 0)
 				throw ctx.AssertFail ($"No supported ConnectionProvider for `{Category}'.");
 			return providers;
+		}
+
+		bool UsingSsl {
+			get {
+				switch (Category) {
+				case HttpServerTestCategory.HttpListener:
+					return false;
+				default:
+					return true;
+				}
+			}
+		}
+
+		bool RequireSsl {
+			get {
+				switch (Category) {
+				case HttpServerTestCategory.Instrumentation:
+				case HttpServerTestCategory.NewWebStackInstrumentation:
+					return true;
+				default:
+					return false;
+				}
+			}
+		}
+
+		bool UsingHttpListener {
+			get {
+				switch (Category) {
+				case HttpServerTestCategory.HttpListener:
+					return true;
+				default:
+					return false;
+				}
+			}
+		}
+
+		bool IsMartinTest {
+			get {
+				switch (Category) {
+				case HttpServerTestCategory.MartinTest:
+					return true;
+				default:
+					return false;
+				}
+			}
+		}
+
+		public IEnumerable<HttpServerProvider> GetProviders (TestContext ctx)
+		{
+			HttpServerFlags serverFlags = HttpServerFlags.None;
+			if (UsingHttpListener)
+				serverFlags |= HttpServerFlags.HttpListener;
+
+			if (IsMartinTest) {
+				yield return new HttpServerProvider ("https", serverFlags, null);
+				yield break;
+			}
+
+			if (!RequireSsl) {
+				serverFlags |= HttpServerFlags.NoSSL;
+				yield return new HttpServerProvider ("http", serverFlags, null);
+			}
+
+			if (!UsingSsl)
+				yield break;
+
+			var supportedProviders = GetSupportedProviders (ctx);
+			if (supportedProviders.Count () == 0)
+				ctx.AssertFail ("Could not find any supported HttpServerProvider.");
+
+			serverFlags |= HttpServerFlags.SSL;
+			foreach (var provider in supportedProviders) {
+				yield return new HttpServerProvider (
+					$"https:{provider.Name}", serverFlags,
+					provider.SslStreamProvider);
+			}
 		}
 	}
 }

@@ -110,12 +110,6 @@ namespace Xamarin.WebTests.TestRunners
 
 			bool Filter (HttpInstrumentationTestFlags flags)
 			{
-				if (flags == HttpInstrumentationTestFlags.GZip) {
-					if (!setup.SupportsGZip)
-						return false;
-					flags = HttpInstrumentationTestFlags.Working;
-				}
-
 				switch (category) {
 				case HttpServerTestCategory.MartinTest:
 					return false;
@@ -126,14 +120,8 @@ namespace Xamarin.WebTests.TestRunners
 				case HttpServerTestCategory.Stress:
 					return flags == HttpInstrumentationTestFlags.Stress;
 				case HttpServerTestCategory.NewWebStackInstrumentation:
-					if (!setup.UsingDotNet &&
-					    (flags == HttpInstrumentationTestFlags.NewWebStackMono ||
-					     flags == HttpInstrumentationTestFlags.NewWebStackRequireSSL))
-						return true;
-					return flags == HttpInstrumentationTestFlags.NewWebStack;
+					return flags == HttpInstrumentationTestFlags.NewWebStackRequireSSL;
 				case HttpServerTestCategory.NewWebStack:
-					if (flags == HttpInstrumentationTestFlags.NewWebStackMono && !setup.UsingDotNet)
-						return true;
 					return flags == HttpInstrumentationTestFlags.NewWebStack;
 				case HttpServerTestCategory.Experimental:
 					return flags == HttpInstrumentationTestFlags.Unstable;
