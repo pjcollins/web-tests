@@ -70,14 +70,14 @@ namespace Xamarin.WebTests.TestFramework
 				return false;
 			switch (Category) {
 			case HttpServerTestCategory.Default:
-			case HttpServerTestCategory.Stress:
-				return SupportsSsl (provider);
-			case HttpServerTestCategory.NoSsl:
 				return true;
-			case HttpServerTestCategory.NewWebStack:
+			case HttpServerTestCategory.Stress:
+			case HttpServerTestCategory.Instrumentation:
+				return SupportsSsl (provider);
+			case HttpServerTestCategory.NewWebStackInstrumentation:
 			case HttpServerTestCategory.Experimental:
 				return HasNewWebStack () && SupportsSsl (provider);
-			case HttpServerTestCategory.NewWebStackNoSsl:
+			case HttpServerTestCategory.NewWebStack:
 				return HasNewWebStack ();
 			case HttpServerTestCategory.HttpListener:
 				return SupportsHttpListener (provider);

@@ -120,19 +120,18 @@ namespace Xamarin.WebTests.TestRunners
 				case HttpServerTestCategory.MartinTest:
 					return false;
 				case HttpServerTestCategory.Default:
-					return flags == HttpInstrumentationTestFlags.Working ||
-						flags == HttpInstrumentationTestFlags.WorkingRequireSSL;
-				case HttpServerTestCategory.NoSsl:
 					return flags == HttpInstrumentationTestFlags.Working;
+				case HttpServerTestCategory.Instrumentation:
+					return flags == HttpInstrumentationTestFlags.WorkingRequireSSL;
 				case HttpServerTestCategory.Stress:
 					return flags == HttpInstrumentationTestFlags.Stress;
-				case HttpServerTestCategory.NewWebStack:
+				case HttpServerTestCategory.NewWebStackInstrumentation:
 					if (!setup.UsingDotNet &&
 					    (flags == HttpInstrumentationTestFlags.NewWebStackMono ||
 					     flags == HttpInstrumentationTestFlags.NewWebStackRequireSSL))
 						return true;
 					return flags == HttpInstrumentationTestFlags.NewWebStack;
-				case HttpServerTestCategory.NewWebStackNoSsl:
+				case HttpServerTestCategory.NewWebStack:
 					if (flags == HttpInstrumentationTestFlags.NewWebStackMono && !setup.UsingDotNet)
 						return true;
 					return flags == HttpInstrumentationTestFlags.NewWebStack;

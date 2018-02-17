@@ -57,12 +57,21 @@ namespace Xamarin.WebTests.TestAttributes
 		bool UsingSsl (HttpServerTestCategory category)
 		{
 			switch (category) {
-			case HttpServerTestCategory.NoSsl:
-			case HttpServerTestCategory.NewWebStackNoSsl:
 			case HttpServerTestCategory.HttpListener:
 				return false;
 			default:
 				return true;
+			}
+		}
+
+		bool RequireSsl (HttpServerTestCategory category)
+		{
+			switch (category) {
+			case HttpServerTestCategory.Instrumentation:
+			case HttpServerTestCategory.NewWebStackInstrumentation:
+				return false;
+			default:
+				return false;
 			}
 		}
 
@@ -102,11 +111,13 @@ namespace Xamarin.WebTests.TestAttributes
 				yield break;
 			}
 
-			if (!UsingSsl (category)) {
+			if (!RequireSsl (category)) {
 				serverFlags |= HttpServerFlags.NoSSL;
 				yield return new HttpServerProvider ("http", serverFlags, null);
-				yield break;
 			}
+
+			if (!UsingSsl (category))
+				yield break;
 
 			var filter = new HttpServerProviderFilter (category);
 			var supportedProviders = filter.GetSupportedProviders (ctx);

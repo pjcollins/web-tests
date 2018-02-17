@@ -50,11 +50,12 @@ namespace Xamarin.WebTests.Tests
 
 		[Work]
 		[AsyncTest]
-		[HttpServerTestCategory (HttpServerTestCategory.NoSsl)]
-		public Task RunNoSSL (TestContext ctx, CancellationToken cancellationToken,
-		                      HttpServerProvider provider,
-		                      HttpInstrumentationTestType type,
-		                      HttpInstrumentationTestRunner runner)
+		[HttpServerTestCategory (HttpServerTestCategory.Instrumentation)]
+		public Task RunInstrumentation (
+			TestContext ctx, CancellationToken cancellationToken,
+			HttpServerProvider provider,
+			HttpInstrumentationTestType type,
+			HttpInstrumentationTestRunner runner)
 		{
 			return runner.Run (ctx, cancellationToken);
 		}
@@ -86,10 +87,11 @@ namespace Xamarin.WebTests.Tests
 		[AsyncTest]
 		[NewWebStack]
 		[HttpServerTestCategory (HttpServerTestCategory.NewWebStack)]
-		public Task RunNewWebStackNoSSL (TestContext ctx, CancellationToken cancellationToken,
-		                                 HttpServerProvider provider,
-		                                 HttpInstrumentationTestType type,
-		                                 HttpInstrumentationTestRunner runner)
+		public Task RunNewWebStackInstrumentation (
+			TestContext ctx, CancellationToken cancellationToken,
+			HttpServerProvider provider,
+			HttpInstrumentationTestType type,
+			HttpInstrumentationTestRunner runner)
 		{
 			return runner.Run (ctx, cancellationToken);
 		}

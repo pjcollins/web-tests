@@ -126,6 +126,7 @@ namespace Xamarin.WebTests.TestRunners
 				case HttpServerTestCategory.MartinTest:
 					return false;
 				case HttpServerTestCategory.Default:
+				case HttpServerTestCategory.Instrumentation:
 					if (flags == HttpClientTestFlags.Working)
 						return true;
 					if (setup.UsingDotNet || setup.InternalVersion >= 1)
