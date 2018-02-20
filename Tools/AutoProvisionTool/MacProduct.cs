@@ -41,6 +41,10 @@ namespace AutoProvisionTool
 
 		public override string PackageName => "xamarin.mac";
 
+		public override string RepoOwner => "xamarin";
+
+		public override string RepoName => "xamarin-macios";
+
 		public MacProduct (string branch)
 			: base (branch)
 		{

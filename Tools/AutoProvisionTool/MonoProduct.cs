@@ -40,6 +40,10 @@ namespace AutoProvisionTool
 
 		public override string PackageName => "mono";
 
+		public override string RepoOwner => "mono";
+
+		public override string RepoName => "mono";
+
 		public MonoProduct (string branch)
 			: base (branch)
 		{

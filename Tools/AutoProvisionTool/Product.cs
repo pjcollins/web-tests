@@ -46,6 +46,14 @@ namespace AutoProvisionTool
 			get;
 		}
 
+		public abstract string RepoOwner {
+			get;
+		}
+
+		public abstract string RepoName {
+			get;
+		}
+
 		public string Branch {
 			get;
 		}

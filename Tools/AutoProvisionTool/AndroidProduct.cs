@@ -40,6 +40,10 @@ namespace AutoProvisionTool
 
 		public override string PackageName => "xamarin.android";
 
+		public override string RepoOwner => "xamarin";
+
+		public override string RepoName => "monodroid";
+
 		public AndroidProduct (string branch)
 			: base (branch)
 		{
