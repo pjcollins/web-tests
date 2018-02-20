@@ -45,7 +45,7 @@ def provision ()
 			}
 		} finally {
 			archiveArtifacts artifacts: provisionOutput, fingerprint: true, allowEmptyArchive: true
-			rtp nullAction: '1', parserName: 'html', stableText: "\$\{FILE:$provisionHtml\}"
+			rtp nullAction: '1', parserName: 'html', stableText: "\${FILE:$provisionHtml}"
 		}
 	}
 	
