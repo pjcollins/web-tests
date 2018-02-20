@@ -102,7 +102,6 @@ namespace AutoProvisionTool
 
 			var shortSummary = GetVersionSummary (products, VersionFormat.Summary).Result;
 			var detailedSummary = GetVersionSummary (versionProducts, VersionFormat.Normal).Result;
-			var htmlSummary = GetVersionSummary (versionProducts, VersionFormat.Html).Result;
 
 			if (summaryFile != null) {
 				Log ($"Writing version summary to {summaryFile}.");
@@ -110,10 +109,6 @@ namespace AutoProvisionTool
 					writer.WriteLine (shortSummary);
 					writer.Flush ();
 				}
-			}
-
-			if (HtmlOutput != null) {
-				HtmlOutput.WriteLine (htmlSummary);
 			}
 
 			Log ("Short version summary:");
@@ -179,22 +174,16 @@ namespace AutoProvisionTool
 			if (products.Count == 0)
 				return "No products enabled.";
 			var sb = new StringBuilder ();
-			if (format == VersionFormat.Html)
-				sb.AppendLine ("<ul>");
 			foreach (var product in products) {
 				var version = await product.PrintVersion (VersionFormat.Summary).ConfigureAwait (false);
 				if (format == VersionFormat.Summary) {
 					if (sb.Length > 0)
 						sb.Append ("<br>");
 					sb.Append ($"{product.ShortName}: {version}");
-				} else if (format == VersionFormat.Html) {
-					sb.AppendLine ($"<li>{product.Name}: <i>{version}</i></li>");
 				} else {
 					sb.AppendLine ($"{product.Name}: {version}");
 				}
 			}
-			if (format == VersionFormat.Html)
-				sb.AppendLine ("</ul>");
 			return sb.ToString ();
 		}
 

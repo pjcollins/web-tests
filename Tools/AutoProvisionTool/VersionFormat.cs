@@ -31,7 +31,6 @@ namespace AutoProvisionTool
 		Full,
 		Verbose,
 		Normal,
-		Summary,
-		Html
+		Summary
 	}
 }
