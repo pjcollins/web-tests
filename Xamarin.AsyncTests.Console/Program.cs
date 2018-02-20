@@ -361,7 +361,7 @@ namespace Xamarin.AsyncTests.Console
 			endTime = DateTime.Now;
 			Debug ("Got result: {0} {1}", result.Status, test.Path.FullName);
 
-			SaveResult ();
+			SaveResult (session);
 
 			return ExitCodeForResult;
 		}
@@ -386,7 +386,7 @@ namespace Xamarin.AsyncTests.Console
 			cancellationToken.ThrowIfCancellationRequested ();
 			Debug ("Got result: {0} {1}", result.Status, test.Path.FullName);
 
-			SaveResult ();
+			SaveResult (session);
 
 			await server.Stop (cancellationToken);
 
@@ -442,18 +442,18 @@ namespace Xamarin.AsyncTests.Console
 			cancellationToken.ThrowIfCancellationRequested ();
 			Debug ("Got result: {0} {1}", result.Status, result.Path.FullName);
 
-			SaveResult ();
+			SaveResult (session);
 
 			await server.Stop (cancellationToken);
 
 			return ExitCodeForResult;
 		}
 
-		void SaveResult ()
+		void SaveResult (TestSession session)
 		{
-			WriteSummary ("{0} tests, {1} passed, {2} errors, {3} unstable, {4} ignored.",
-			              countTests, countSuccess, countErrors, countUnstable, countIgnored);
-			WriteSummary ("Total time: {0}.", endTime - startTime);
+			WriteSummary ($"Test Category: {session.Configuration.CurrentCategory}");
+			WriteSummary ($"{countTests} tests, {countSuccess} passed, {countErrors} errors, {countUnstable} unstable, {countIgnored} ignored.");
+			WriteSummary ($"Total time: {endTime - startTime}.");
 
 			if (Options.ResultOutput != null) {
 				var serialized = TestSerializer.WriteTestResult (result);
