@@ -171,6 +171,18 @@ namespace Xamarin.AsyncTests.Console
 			}
 		}
 
+		void JenkinsLog (string message, bool error)
+		{
+			if (JenkinsHtml != null)
+				JenkinsHtml.WriteLine ($"<p>{message}</p>");
+			if (Options.Jenkins) {
+				if (error)
+					System.Console.WriteLine ($"[error] {message}");
+				else
+					System.Console.WriteLine ($"[info] {message}");
+			}
+		}
+
 		internal static void WriteLine ()
 		{
 			global::System.Console.WriteLine();
@@ -204,15 +216,13 @@ namespace Xamarin.AsyncTests.Console
 		internal void WriteSummary (string message)
 		{
 			Debug (message);
-			if (Options.Jenkins)
-				global::System.Console.WriteLine ("[info] {0}", message);
+			JenkinsLog (message, false);
 		}
 
 		internal void WriteErrorSummary (string message)
 		{
 			Debug ("ERROR: {0}", message);
-			if (Options.Jenkins)
-				global::System.Console.WriteLine ("[error] {0}", message);
+			JenkinsLog (message, true);
 		}
 
 		internal static IPEndPoint GetEndPoint (string text)
@@ -250,8 +260,7 @@ namespace Xamarin.AsyncTests.Console
 
 		async Task<int> Run (CancellationToken cancellationToken)
 		{
-			if (Options.Jenkins)
-				global::System.Console.WriteLine ("[start] Running test suite.");
+			JenkinsLog ("Running test suite.", false);
 
 			bool success = false;
 			int? exitCode = null;
