@@ -33,23 +33,19 @@ namespace AutoProvisionTool
 {
 	public class GitHubTool
 	{
-		public string Owner {
+		public Product Product {
 			get;
 		}
 
-		public string Name {
-			get;
-		}
+		public string Owner => Product.RepoOwner;
 
-		public string Branch {
-			get;
-		}
+		public string Name => Product.RepoName;
 
-		public GitHubTool (string owner, string name, string branch)
+		public string Branch => Product.Branch;
+
+		public GitHubTool (Product product)
 		{
-			Owner = owner;
-			Name = name;
-			Branch = branch;
+			Product = product;
 
 			Initialize ();
 		}

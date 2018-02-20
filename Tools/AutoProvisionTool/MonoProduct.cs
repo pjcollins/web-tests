@@ -74,7 +74,7 @@ namespace AutoProvisionTool
 
 		public override async Task Provision ()
 		{
-			var github = new GitHubTool ("mono", "mono", Branch);
+			var github = new GitHubTool (this);
 			var package = await github.GetLatestPackage (this).ConfigureAwait (false);
 			await InstallTool.InstallPackage (package);
 		}
