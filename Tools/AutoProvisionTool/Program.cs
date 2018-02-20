@@ -87,7 +87,7 @@ namespace AutoProvisionTool
 
 			if (htmlFile != null) {
 				HtmlOutput = new StreamWriter (htmlFile);
-				HtmlOutput.WriteLine ("<h3>Provision Summary</p3>");
+				HtmlOutput.WriteLine ("<h3>Provision Summary</h3>");
 			}
 
 			try {
