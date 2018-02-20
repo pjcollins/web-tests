@@ -278,7 +278,7 @@ namespace AutoProvisionTool
 				Output.Dispose ();
 			}
 			if (HtmlOutput != null) {
-				HtmlOutput.WriteLine ("<p>{ME} ERROR: {message}</p>");
+				HtmlOutput.WriteLine ($"<p>{ME} ERROR: {message}</p>");
 				HtmlOutput.Flush ();
 				HtmlOutput.Dispose ();
 			}

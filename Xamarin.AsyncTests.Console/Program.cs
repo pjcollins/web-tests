@@ -71,6 +71,10 @@ namespace Xamarin.AsyncTests.Console
 			get;
 		}
 
+		internal TextWriter JenkinsHtml {
+			get;
+		}
+
 		TestSession session;
 		TestResult result;
 		DateTime startTime, endTime;
@@ -82,16 +86,20 @@ namespace Xamarin.AsyncTests.Console
 
 			DependencyInjector.RegisterAssembly (typeof(PortableSupportImpl).Assembly);
 
+			Program program = null;
+			int result;
 			try {
-				var program = new Program (assembly, args);
-
+				program = new Program (assembly, args);
 				var task = program.Run (CancellationToken.None);
 				task.Wait ();
-				Environment.Exit (task.Result);
+				result = task.Result;
 			} catch (Exception ex) {
 				PrintException (ex);
-				Environment.Exit (-1);
+				result = -1;
 			}
+			if (program != null)
+				program.Finish ();
+			Environment.Exit (result);
 		}
 
 		static void PrintException (Exception ex)
@@ -145,10 +153,21 @@ namespace Xamarin.AsyncTests.Console
 
 			Logger = new TestLogger (new ConsoleLogger (this));
 
+			if (Options.JenkinsHtml != null)
+				JenkinsHtml = new StreamWriter (Options.JenkinsHtml);
+
 			if (Launcher != null) {
 				LauncherOptions = new LauncherOptions {
 					Category = Options.Category, Features = Options.Features
 				};
+			}
+		}
+
+		void Finish ()
+		{
+			if (JenkinsHtml != null) {
+				JenkinsHtml.Flush ();
+				JenkinsHtml.Dispose ();
 			}
 		}
 
