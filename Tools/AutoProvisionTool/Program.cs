@@ -87,8 +87,8 @@ namespace AutoProvisionTool
 
 			if (textFile != null) {
 				Text = new StreamWriter (textFile);
-				Text.WriteLine ("= TEST PAGE TITLE =");
-				Text.WriteLine ("#name: Hello");
+				Text.WriteLine ("<h1>TEST PAGE TITLE</h1>");
+				Text.WriteLine ("<p>");
 				Text.WriteLine ("== Provision Summary ==");
 				Text.WriteLine ("TEST!\n");
 				Text.WriteLine ("HELLO WORLD");
