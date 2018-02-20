@@ -215,7 +215,17 @@ namespace AutoProvisionTool
 				Log ($"Old {product.Name} version: {oldVersion}");
 				Log ($"New {product.Name} version: {newVersion}");
 				LogHtml ($"<p>Provisioned {product.Name} version {newVersion} from " +
-				         $"{product.RepoName}/{product.Branch} commit {package.Commit.Sha}.");
+				         $"{BranchLink (product)} commit {CommitLink (package)}.");
+			}
+
+			string BranchLink (Product product)
+			{
+				return $"<a href=\"https://github.com/{product.RepoOwner}/{product.RepoName}/commits/{product.Branch}\">{product.RepoName}/{product.Branch}</h>";
+			}
+
+			string CommitLink (Package package)
+			{
+				return $"<a href=\"https://github.com/{package.Product.RepoOwner}/{package.Product.RepoName}/commit/{package.Commit.Sha}\">{package.Commit.Sha}</h>";
 			}
 		}
 
