@@ -153,6 +153,8 @@ namespace Xamarin.AsyncTests.Console
 
 			Logger = new TestLogger (new ConsoleLogger (this));
 
+			Error ($"TEST: {Options.JenkinsHtml}!");
+
 			if (Options.JenkinsHtml != null)
 				JenkinsHtml = new StreamWriter (Options.JenkinsHtml);
 
@@ -173,6 +175,7 @@ namespace Xamarin.AsyncTests.Console
 
 		void JenkinsLog (string message, bool error)
 		{
+			Error ($"JENKINS LOG: {JenkinsHtml != null} {error} {message}");
 			if (JenkinsHtml != null)
 				JenkinsHtml.WriteLine ($"<p>{message}</p>");
 			if (Options.Jenkins) {
