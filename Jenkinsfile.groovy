@@ -44,7 +44,7 @@ def provision ()
 			}
 		} finally {
 			archiveArtifacts artifacts: provisionOutput, fingerprint: true, allowEmptyArchive: true
-			rtp nullAction: '1', parserName: 'WikiText', stableText: '${FILE:provision-text.txt}'
+			rtp nullAction: '1', parserName: 'html', stableText: '${FILE:provision-text.txt}'
 		}
 	}
 	
