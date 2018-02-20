@@ -38,6 +38,8 @@ namespace AutoProvisionTool
 
 		public override string FrameworkName => "Mono.framework";
 
+		public override string PackageName => "mono";
+
 		public MonoProduct (string branch)
 			: base (branch)
 		{
@@ -69,7 +71,7 @@ namespace AutoProvisionTool
 		public override async Task Provision ()
 		{
 			var github = new GitHubTool ("mono", "mono", Branch);
-			var package = await github.GetLatestPackage ("mono").ConfigureAwait (false);
+			var package = await github.GetLatestPackage (this).ConfigureAwait (false);
 			await InstallTool.InstallPackage (package);
 		}
 	}

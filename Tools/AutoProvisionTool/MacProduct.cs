@@ -39,6 +39,8 @@ namespace AutoProvisionTool
 
 		public override string FrameworkName => "Xamarin.Mac.framework";
 
+		public override string PackageName => "xamarin.mac";
+
 		public MacProduct (string branch)
 			: base (branch)
 		{
@@ -73,7 +75,7 @@ namespace AutoProvisionTool
 		public override async Task Provision ()
 		{
 			var github = new GitHubTool ("xamarin", "xamarin-macios", Branch);
-			var package = await github.GetLatestPackage ("xamarin.mac").ConfigureAwait (false);
+			var package = await github.GetLatestPackage (this).ConfigureAwait (false);
 			await InstallTool.InstallPackage (package);
 		}
 	}

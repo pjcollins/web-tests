@@ -42,6 +42,10 @@ namespace AutoProvisionTool
 			get;
 		}
 
+		public abstract string PackageName {
+			get;
+		}
+
 		public string Branch {
 			get;
 		}

@@ -38,6 +38,8 @@ namespace AutoProvisionTool
 
 		public override string FrameworkName => "Xamarin.Android.framework";
 
+		public override string PackageName => "xamarin.android";
+
 		public AndroidProduct (string branch)
 			: base (branch)
 		{
@@ -64,7 +66,7 @@ namespace AutoProvisionTool
 		public override async Task Provision ()
 		{
 			var github = new GitHubTool ("xamarin", "monodroid", Branch);
-			var package = await github.GetLatestPackage ("xamarin.android").ConfigureAwait (false);
+			var package = await github.GetLatestPackage (this).ConfigureAwait (false);
 			await InstallTool.InstallPackage (package);
 		}
 	}
