@@ -33,6 +33,7 @@ def provision ()
 	def provisionOutput = "provision-output.txt"
 	args << "--summary=$summaryFile"
 	args << "--out=$provisionOutput"
+	args << "--text=provision-text.txt"
 	def argList = args.join (" ")
 	dir ('web-tests/Tools/AutoProvisionTool') {
 		try {
@@ -43,7 +44,7 @@ def provision ()
 			}
 		} finally {
 			archiveArtifacts artifacts: provisionOutput, fingerprint: true, allowEmptyArchive: true
-			rtp abortedText: '${FILE:provision-output.txt}', nullAction: '3', parserName: 'WikiText', stableText: '${FILE:$provisionOutput}'
+			rtp nullAction: '1', parserName: 'WikiText', stableText: '${FILE:provision-text.txt}'
 		}
 	}
 	

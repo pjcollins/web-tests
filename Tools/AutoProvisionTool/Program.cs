@@ -44,15 +44,18 @@ namespace AutoProvisionTool
 		}
 
 		static TextWriter Output;
+		static TextWriter Text;
 
 		public static void Main (string[] args)
 		{
 			var products = new List<Product> ();
 			string summaryFile = null;
 			string outputFile = null;
+			string textFile = null;
 			var p = new OptionSet ();
 			p.Add ("summary=", "Write summary to file", v => summaryFile = v);
 			p.Add ("out=", "Write output to file", v => outputFile = v);
+			p.Add ("text=", "Write wikitext to file", v => textFile = v);
 			p.Add ("mono=", "Mono branch", v => products.Add (new MonoProduct (v)));
 			p.Add ("xi=", "Xamarin.iOS branch", v => products.Add (new IOSProduct (v)));
 			p.Add ("xm=", "Xamarin.Mac branch", v => products.Add (new MacProduct (v)));
@@ -80,6 +83,13 @@ namespace AutoProvisionTool
 			if (outputFile != null) {
 				Output = new StreamWriter (outputFile);
 				Log ($"Logging output to {outputFile}.");
+			}
+
+			if (textFile != null) {
+				Text = new StreamWriter (textFile);
+				Text.WriteLine ("== Provision Summary ==");
+				Text.WriteLine ("TEST!\n");
+				Text.WriteLine ("HELLO WORLD");
 			}
 
 			try {
@@ -113,6 +123,11 @@ namespace AutoProvisionTool
 			if (Output != null) {
 				Output.Flush ();
 				Output.Dispose ();
+			}
+
+			if (Text != null) {
+				Text.Flush ();
+				Text.Dispose ();
 			}
 
 			void Usage (string message = null)
