@@ -286,6 +286,11 @@ namespace AutoProvisionTool
 				Output.Flush ();
 				Output.Dispose ();
 			}
+			if (HtmlOutput != null) {
+				HtmlOutput.WriteLine ("<p>{ME} ERROR: {message}</p>");
+				HtmlOutput.Flush ();
+				HtmlOutput.Dispose ();
+			}
 			Environment.Exit (1);
 		}
 	}
