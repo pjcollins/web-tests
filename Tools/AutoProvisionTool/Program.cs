@@ -216,6 +216,7 @@ namespace AutoProvisionTool
 				Log ($"New {product.Name} version: {newVersion}");
 				LogHtml ($"<p>Provisioned {product.Name} version {newVersion} from " +
 				         $"{BranchLink (product)} commit {CommitLink (package)}: {PackageLink (package)}.");
+				LogHtml ($"<pre>{fullVersion}</pre>");
 			}
 
 			string BranchLink (Product product)
