@@ -280,6 +280,7 @@ namespace AutoProvisionTool
 			if (HtmlOutput != null) {
 				HtmlOutput.WriteLine ($"<p><b>Auto provisioning failed!</b></p>");
 				HtmlOutput.WriteLine ($"<pre>{message}</pre>");
+				HtmlOutput.WriteLine ($"<p></p>");
 				HtmlOutput.Flush ();
 				HtmlOutput.Dispose ();
 			}
