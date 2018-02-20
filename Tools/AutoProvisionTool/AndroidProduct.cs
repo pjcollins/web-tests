@@ -67,11 +67,12 @@ namespace AutoProvisionTool
 			return null;
 		}
 
-		public override async Task Provision ()
+		public override async Task<Package> Provision ()
 		{
 			var github = new GitHubTool (this);
 			var package = await github.GetLatestPackage (this).ConfigureAwait (false);
 			await InstallTool.InstallPackage (package);
+			return package;
 		}
 	}
 }

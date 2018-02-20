@@ -146,6 +146,6 @@ namespace AutoProvisionTool
 			}
 		}
 
-		public abstract Task Provision ();
+		public abstract Task<Package> Provision ();
 	}
 }

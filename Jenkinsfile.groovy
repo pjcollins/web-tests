@@ -52,6 +52,8 @@ def provision ()
 	def summary = readFile summaryFile
 	echo "Setting build summary: $summary"
 	currentBuild.description = summary
+	
+	error "ABORTING"
 }
 
 def enableMono ()

@@ -203,15 +203,19 @@ namespace AutoProvisionTool
 			foreach (var product in products) {
 				var oldVersion = await product.PrintVersion (VersionFormat.Normal).ConfigureAwait (false);
 				Log ($"Provisioning {product.Name} from {product.Branch}.");
+				Package package;
 				try {
-					await product.Provision ().ConfigureAwait (false);
+					package = await product.Provision ();
 				} catch (Exception ex) {
 					LogError ($"Failed to provision {product.Name} from {product.Branch}:\n{ex}");
 					throw;
 				}
-				var newVersion = await product.PrintVersion (VersionFormat.Normal).ConfigureAwait (false);
+				var newVersion = await product.PrintVersion (VersionFormat.Normal);
+				var fullVersion = await product.PrintVersion (VersionFormat.Full);
 				Log ($"Old {product.Name} version: {oldVersion}");
 				Log ($"New {product.Name} version: {newVersion}");
+				LogHtml ($"<p>Provisioned {product.Name} version {newVersion} from " +
+				         $"{product.RepoName}/{product.Branch} commit {package.Commit.Sha}.");
 			}
 		}
 
@@ -225,6 +229,12 @@ namespace AutoProvisionTool
 		public static void Debug (string format, params object[] args)
 		{
 			Log (string.Format (format, args));
+		}
+
+		public static void LogHtml (string message)
+		{
+			if (HtmlOutput != null)
+				HtmlOutput.WriteLine (message);
 		}
 
 		public static async Task<string> RunCommandWithOutput (
