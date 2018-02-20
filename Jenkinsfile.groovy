@@ -31,9 +31,10 @@ def provision ()
 	}
 	def summaryFile = "${env.WORKSPACE}/summary.txt"
 	def provisionOutput = "provision-output.txt"
+	def provisionHtml = "provision-output.html"
 	args << "--summary=$summaryFile"
 	args << "--out=$provisionOutput"
-	args << "--text=provision-text.txt"
+	args << "--html=$provisionHtml"
 	def argList = args.join (" ")
 	dir ('web-tests/Tools/AutoProvisionTool') {
 		try {
@@ -44,7 +45,7 @@ def provision ()
 			}
 		} finally {
 			archiveArtifacts artifacts: provisionOutput, fingerprint: true, allowEmptyArchive: true
-			rtp nullAction: '1', parserName: 'html', stableText: '${FILE:provision-text.txt}'
+			rtp nullAction: '1', parserName: 'html', stableText: "\$\{FILE:$provisionHtml\}"
 		}
 	}
 	

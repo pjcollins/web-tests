@@ -44,18 +44,18 @@ namespace AutoProvisionTool
 		}
 
 		static TextWriter Output;
-		static TextWriter Text;
+		static TextWriter HtmlOutput;
 
 		public static void Main (string[] args)
 		{
 			var products = new List<Product> ();
 			string summaryFile = null;
 			string outputFile = null;
-			string textFile = null;
+			string htmlFile = null;
 			var p = new OptionSet ();
 			p.Add ("summary=", "Write summary to file", v => summaryFile = v);
 			p.Add ("out=", "Write output to file", v => outputFile = v);
-			p.Add ("text=", "Write wikitext to file", v => textFile = v);
+			p.Add ("html=", "Write html output to file", v => htmlFile = v);
 			p.Add ("mono=", "Mono branch", v => products.Add (new MonoProduct (v)));
 			p.Add ("xi=", "Xamarin.iOS branch", v => products.Add (new IOSProduct (v)));
 			p.Add ("xm=", "Xamarin.Mac branch", v => products.Add (new MacProduct (v)));
@@ -85,13 +85,11 @@ namespace AutoProvisionTool
 				Log ($"Logging output to {outputFile}.");
 			}
 
-			if (textFile != null) {
-				Text = new StreamWriter (textFile);
-				Text.WriteLine ("<h1>TEST PAGE TITLE</h1>");
-				Text.WriteLine ("<p>");
-				Text.WriteLine ("== Provision Summary ==");
-				Text.WriteLine ("TEST!\n");
-				Text.WriteLine ("HELLO WORLD");
+			if (htmlFile != null) {
+				HtmlOutput = new StreamWriter (htmlFile);
+				HtmlOutput.WriteLine ("<h3>Provision Summary</p3>");
+				HtmlOutput.WriteLine ("TEST!\n");
+				HtmlOutput.WriteLine ("HELLO WORLD");
 			}
 
 			try {
@@ -127,9 +125,9 @@ namespace AutoProvisionTool
 				Output.Dispose ();
 			}
 
-			if (Text != null) {
-				Text.Flush ();
-				Text.Dispose ();
+			if (HtmlOutput != null) {
+				HtmlOutput.Flush ();
+				HtmlOutput.Dispose ();
 			}
 
 			void Usage (string message = null)
