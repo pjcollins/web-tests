@@ -215,7 +215,7 @@ namespace AutoProvisionTool
 				Log ($"Old {product.Name} version: {oldVersion}");
 				Log ($"New {product.Name} version: {newVersion}");
 				LogHtml ($"<p>Provisioned {product.Name} version {newVersion} from " +
-				         $"{BranchLink (product)} commit {CommitLink (package)}: {PackageLink (package)}.");
+				         $"{BranchLink (product)} commit {CommitLink (package)} ({PackageLink (package)}).");
 				LogHtml ($"<pre>{fullVersion}</pre>");
 			}
 
@@ -231,7 +231,7 @@ namespace AutoProvisionTool
 
 			string PackageLink (Package package)
 			{
-				return $"<a href=\"{package.TargetUri}\">{package.TargetUri}</a>";
+				return $"<a href=\"{package.TargetUri}\">{Path.GetFileName (package.TargetUri.AbsolutePath)}</a>";
 			}
 		}
 
