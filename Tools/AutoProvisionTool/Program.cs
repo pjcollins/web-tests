@@ -215,17 +215,22 @@ namespace AutoProvisionTool
 				Log ($"Old {product.Name} version: {oldVersion}");
 				Log ($"New {product.Name} version: {newVersion}");
 				LogHtml ($"<p>Provisioned {product.Name} version {newVersion} from " +
-				         $"{BranchLink (product)} commit {CommitLink (package)}.");
+				         $"{BranchLink (product)} commit {CommitLink (package)}: {PackageLink (package)}.");
 			}
 
 			string BranchLink (Product product)
 			{
-				return $"<a href=\"https://github.com/{product.RepoOwner}/{product.RepoName}/commits/{product.Branch}\">{product.RepoName}/{product.Branch}</h>";
+				return $"<a href=\"https://github.com/{product.RepoOwner}/{product.RepoName}/commits/{product.Branch}\">{product.RepoName}/{product.Branch}</a>";
 			}
 
 			string CommitLink (Package package)
 			{
-				return $"<a href=\"https://github.com/{package.Product.RepoOwner}/{package.Product.RepoName}/commit/{package.Commit.Sha}\">{package.Commit.Sha}</h>";
+				return $"<a href=\"https://github.com/{package.Product.RepoOwner}/{package.Product.RepoName}/commit/{package.Commit.Sha}\">{package.Commit.Sha.Substring (0, 7)}</a>";
+			}
+
+			string PackageLink (Package package)
+			{
+				return $"<a href=\"{package.TargetUri}\">{package.TargetUri}</a>";
 			}
 		}
 
