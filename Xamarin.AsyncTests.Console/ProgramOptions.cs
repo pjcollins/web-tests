@@ -222,7 +222,7 @@ namespace Xamarin.AsyncTests.Console {
 			p.Add ("android-sdkroot=", v => androidSdkRoot = v);
 			p.Add ("save-logcat=", v => SaveLogCat = v);
 			p.Add ("jenkins", v => Jenkins = true);
-			p.Add ("jenkins-html", v => JenkinsHtml = v);
+			p.Add ("jenkins-html=", v => JenkinsHtml = v);
 			p.Add ("output-dir=", v => outputDir = v);
 			p.Add ("repeat=", v => repeat = int.Parse (v));
 			p.Add ("dont-save-logging", v => dontSaveLogging = true);
