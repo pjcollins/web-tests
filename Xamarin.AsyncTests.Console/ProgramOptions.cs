@@ -80,6 +80,11 @@ namespace Xamarin.AsyncTests.Console {
 			private set;
 		}
 
+		public string JenkinsHtml {
+			get;
+			private set;
+		}
+
 		public string OutputDirectory {
 			get;
 		}
@@ -217,6 +222,7 @@ namespace Xamarin.AsyncTests.Console {
 			p.Add ("android-sdkroot=", v => androidSdkRoot = v);
 			p.Add ("save-logcat=", v => SaveLogCat = v);
 			p.Add ("jenkins", v => Jenkins = true);
+			p.Add ("jenkins-html", v => JenkinsHtml = v);
 			p.Add ("output-dir=", v => outputDir = v);
 			p.Add ("repeat=", v => repeat = int.Parse (v));
 			p.Add ("dont-save-logging", v => dontSaveLogging = true);
@@ -346,6 +352,7 @@ namespace Xamarin.AsyncTests.Console {
 			ResultOutput = MakeAbsolute (OutputDirectory, resultOutput);
 			if (!noJUnit)
 				JUnitResultOutput = MakeAbsolute (OutputDirectory, junitResultOutput);
+			JenkinsHtml = MakeAbsolute (OutputDirectory, JenkinsHtml);
 
 			if (settingsFile != null) {
 				if (saveSettings == null)

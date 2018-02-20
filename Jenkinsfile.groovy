@@ -21,7 +21,7 @@ def provision ()
 		args << "--mono=${params.USE_MONO_BRANCH}"
 	}
 	if (params.USE_XI_BRANCH != 'NONE' && params.USE_XI_BRANCH != '') {
-		args << "--xi=${params.USE_XI_BRANCH}"
+		args << "--xi=${params.USE_XI_BRANCH}X"
 	}
 	if (params.USE_XM_BRANCH != 'NONE' && params.USE_XM_BRANCH != '') {
 		args << "--xm=${params.USE_XM_BRANCH}"

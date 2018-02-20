@@ -124,6 +124,7 @@ namespace AutoProvisionTool
 			}
 
 			if (HtmlOutput != null) {
+				HtmlOutput.WriteLine ("<p></p>");
 				HtmlOutput.Flush ();
 				HtmlOutput.Dispose ();
 			}
