@@ -18,7 +18,7 @@ def provision ()
 {
 	def args = [ ]
 	if (params.USE_MONO_BRANCH != 'NONE' && params.USE_MONO_BRANCH != '') {
-		args << "--mono=${params.USE_MONO_BRANCH}X"
+		args << "--mono=${params.USE_MONO_BRANCH}"
 	}
 	if (params.USE_XI_BRANCH != 'NONE' && params.USE_XI_BRANCH != '') {
 		args << "--xi=${params.USE_XI_BRANCH}"
@@ -52,8 +52,6 @@ def provision ()
 	def summary = readFile summaryFile
 	echo "Setting build summary: $summary"
 	currentBuild.description = summary
-	
-	error "ABORTING"
 }
 
 def enableMono ()
@@ -118,11 +116,11 @@ def buildAll ()
 	build (targetList)
 }
 
-def run (String target, String testCategory, String resultOutput, String junitResultOutput, String stdOut, String stdErr)
+def run (String target, String testCategory, String resultOutput, String junitResultOutput, String stdOut, String stdErr, String jenkinsHtml)
 {
 	def iosParams = "IosRuntime=$IOS_RUNTIME,IosDeviceType=$IOS_DEVICE_TYPE"
 	def resultParams = "ResultOutput=$resultOutput,JUnitResultOutput=$junitResultOutput"
-	def outputParams = "StdOut=$stdOut,StdErr=$stdErr"
+	def outputParams = "StdOut=$stdOut,StdErr=$stdErr,JenkinsHtml=$jenkinsHtml"
 	def extraParams = ""
 	if (params.EXTRA_JENKINS_ARGUMENTS != '') {
 		def extraParamValue = params.EXTRA_JENKINS_ARGUMENTS
@@ -141,10 +139,11 @@ def runTests (String target, String category, Boolean unstable = false, Integer 
 		def junitResultOutput = "$outputDirAbs/JUnitTestResult-${target}-${category}.xml"
         def stdOutLog = "$outputDirAbs/stdout-${target}-${category}.log"
         def stdErrLog = "$outputDirAbs/stderr-${target}-${category}.log"
+		def jenkinsHtmlLog = "$outputDirAbs/jenkins-${target}-${category}.html"
 		Boolean error = false
 		try {
 			timeout (timeoutValue) {
-				run (target, category, resultOutput, junitResultOutput, stdOutLog, stdErrLog)
+				run (target, category, resultOutput, junitResultOutput, stdOutLog, stdErrLog, jenkinsHtmlLog)
 			}
 		} catch (exception) {
 			def result = currentBuild.result
@@ -156,6 +155,10 @@ def runTests (String target, String category, Boolean unstable = false, Integer 
 			}
 		} finally {
 			archiveArtifacts artifacts: "$outputDir/*.log", fingerprint: true, allowEmptyArchive: true
+			if (fileExists (jenkinsHtmlLog)) {
+				archiveArtifacts artifacts: "$jenkinsHtmlLog", fingerprint: true, allowEmptyArchive: true
+				rtp nullAction: '1', parserName: 'html', stableText: "\${FILE:$jenkinsHtmlLog}"
+			}
 			if (!error) {
 				junit keepLongStdio: true, testResults: "$outputDir/*.xml"
 				archiveArtifacts artifacts: "$outputDir/*.xml", fingerprint: true

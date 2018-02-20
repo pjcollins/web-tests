@@ -127,10 +127,11 @@
 		<CategoryArguments>--category=$(TestCategory)</CategoryArguments>
 		<StdOutArguments Condition="'(StdOut)' != ''">--stdout=$(StdOut)</StdOutArguments>
 		<StdErrArguments Condition="'(StdErr)' != ''">--stderr=$(StdErr)</StdErrArguments>
+		<JenkinsHtmlArguments Condition="'(JenkinsHtml)' != ''">--jenkins-html=$(JenkinsHtml)</JenkinsHtmlArguments>
 		<IosDeviceTypeArgument Condition="'$(IosDeviceType)' != ''">--ios-device-type=$(IosDeviceType)</IosDeviceTypeArgument>
 		<IosRuntimeArgument Condition="'$(IosRuntime)' != ''">--ios-runtime=$(IosRuntime)</IosRuntimeArgument>
 		<IosArguments Condition="'$(JenkinsPlatform)' == 'IOS'">$(IosDeviceTypeArgument) $(IosRuntimeArgument)</IosArguments>
-		<AsyncTestsArguments>$(JenkinsArguments) $(IosArguments) $(CategoryArguments) $(ResultArguments) $(StdOutArguments) $(StdErrArguments) $(ExtraJenkinsArguments)</AsyncTestsArguments>
+		<AsyncTestsArguments>$(JenkinsArguments) $(IosArguments) $(CategoryArguments) $(ResultArguments) $(StdOutArguments) $(StdErrArguments) $(JenkinsHtmlArguments) $(ExtraJenkinsArguments)</AsyncTestsArguments>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(JenkinsPlatform)' == 'Android'">
