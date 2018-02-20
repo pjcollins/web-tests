@@ -158,6 +158,9 @@ def runTests (String target, String category, Boolean unstable = false, Integer 
 			if (fileExists (jenkinsHtmlLog)) {
 				archiveArtifacts artifacts: "$jenkinsHtmlLog", fingerprint: true, allowEmptyArchive: true
 				rtp nullAction: '1', parserName: 'html', stableText: "\${FILE:$jenkinsHtmlLog}"
+			} else {
+				echo "MARTIN TEST: Jenkins HTML missing - $jenkinsHtmlLog"
+				sh "ls -l $outputDirAbs"
 			}
 			if (!error) {
 				junit keepLongStdio: true, testResults: "$outputDir/*.xml"
