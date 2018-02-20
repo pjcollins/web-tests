@@ -43,7 +43,7 @@ def provision ()
 			}
 		} finally {
 			archiveArtifacts artifacts: provisionOutput, fingerprint: true, allowEmptyArchive: true
-			rtp parserName: 'WikiText', stableText: '${FILE:$provisionOutput}'
+			rtp abortedText: '${FILE:$provisionOutput}', nullAction: '3', parserName: 'WikiText', stableText: '${FILE:$provisionOutput}'
 		}
 	}
 	
