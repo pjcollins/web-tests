@@ -373,7 +373,7 @@ namespace Xamarin.AsyncTests.Console
 			session = TestSession.CreateLocal (this, framework);
 			Options.UpdateConfiguration (session);
 
-			PrintConfigSummary (session.Configuration);
+			PrintSummary (session);
 
 			var test = session.RootTestCase;
 
@@ -398,7 +398,7 @@ namespace Xamarin.AsyncTests.Console
 			if (Options.UpdateConfiguration (session))
 				await session.UpdateSettings (cancellationToken);
 
-			PrintConfigSummary (session.Configuration);
+			PrintSummary (session);
 
 			var test = session.RootTestCase;
 			cancellationToken.ThrowIfCancellationRequested ();
@@ -456,7 +456,7 @@ namespace Xamarin.AsyncTests.Console
 			if (Options.UpdateConfiguration (session))
 				await session.UpdateSettings (cancellationToken);
 
-			PrintConfigSummary (session.Configuration);
+			PrintSummary (session);
 
 			var test = session.RootTestCase;
 			cancellationToken.ThrowIfCancellationRequested ();
@@ -475,11 +475,13 @@ namespace Xamarin.AsyncTests.Console
 			return ExitCodeForResult;
 		}
 
-		void PrintConfigSummary (TestConfiguration config)
+		void PrintSummary (TestSession session)
 		{
+			var config = session.Configuration;
 			var category = config.CurrentCategory.Name;
-			Debug ($"Test Category: {category}");
-			var sb = new StringBuilder ();
+			var shortText = new StringBuilder ();
+			var detailedText = new List<string> ();
+			detailedText.Add ($"Test Category: {category}");
 			foreach (var feature in config.Features) {
 				if (!feature.CanModify || feature.Constant != null)
 					continue;
@@ -488,17 +490,22 @@ namespace Xamarin.AsyncTests.Console
 				if (enabled == defaultValue)
 					continue;
 				var prefix = enabled ? "+" : "-";
-				Debug ($"Test Feature: {prefix}{feature.Name}");
-				if (sb.Length > 0)
-					sb.Append (", ");
-				sb.Append ($"{prefix}{feature.Name}");
+				detailedText.Add ($"Test Feature: {prefix}{feature.Name}");
+				if (shortText.Length > 0)
+					shortText.Append (", ");
+				shortText.Append ($"{prefix}{feature.Name}");
 			}
 			var categoryText = category;
-			if (sb.Length > 0)
-				categoryText += $" ({sb})";
-			
+			if (shortText.Length > 0)
+				categoryText += $" ({shortText})";
+
+			var header = $"Test Suite: {session.App.PackageName ?? session.Name} - {categoryText}";
 			if (JenkinsHtml != null)
-				JenkinsHtml.WriteLine ($"<h3>Test Category: {categoryText}</h3>");
+				JenkinsHtml.WriteLine ($"<h3>{header}</h3>");
+			LogInfo (header);
+
+			foreach (var line in detailedText)
+				LogInfo (line);
 		}
 
 		void SaveResult (TestSession session)
