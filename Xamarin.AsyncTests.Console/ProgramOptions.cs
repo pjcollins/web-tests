@@ -263,7 +263,7 @@ namespace Xamarin.AsyncTests.Console {
 			case Command.Local:
 				if (assembly != null) {
 					if (arguments.Count != 0) {
-						arguments.ForEach (a => Program.Error ("Unexpected remaining argument: {0}", a));
+						arguments.ForEach (a => Program.PrintError ("Unexpected remaining argument: {0}", a));
 						throw new ProgramException ("Unexpected extra argument.");
 					}
 					Assembly = assembly;
@@ -285,7 +285,7 @@ namespace Xamarin.AsyncTests.Console {
 					if (EndPoint == null)
 						throw new ProgramException ("Missing endpoint");
 				} else {
-					arguments.ForEach (a => Program.Error ("Unexpected remaining argument: {0}", a));
+					arguments.ForEach (a => Program.PrintError ("Unexpected remaining argument: {0}", a));
 					throw new ProgramException ("Unexpected extra argument.");
 				}
 				break;
