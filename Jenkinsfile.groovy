@@ -138,7 +138,7 @@ def runTests (String target, String category, Boolean unstable = false, Integer 
 		def resultOutput = "$outputDirAbs/TestResult-${target}-${category}.xml"
 		def junitResultOutput = "$outputDirAbs/JUnitTestResult-${target}-${category}.xml"
         def stdOutLog = "$outputDirAbs/stdout-${target}-${category}.log"
-        def stdErrLog = "$outputDirAbs/stderr-${target}-${category}.log"
+        def stdErrLog = "$outputDir/stderr-${target}-${category}.log"
 		def jenkinsHtmlLog = "$outputDirAbs/jenkins-${target}-${category}.html"
 		Boolean error = false
 		try {
