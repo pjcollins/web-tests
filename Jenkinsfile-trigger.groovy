@@ -110,6 +110,10 @@ node ('felix-25-sierra') {
             stage ('initialize') {
 				profileSetup ()
 			}
+			stage ('before') {
+				sh 'pwd'
+				sh 'ls -lR'
+			}
             stage ('build') {
 				slackSend ()
 				triggerJob ()
