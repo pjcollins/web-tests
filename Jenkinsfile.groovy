@@ -137,7 +137,7 @@ def runTests (String target, String category, Boolean unstable = false, Integer 
 		sh "mkdir -p $outputDirAbs"
 		def resultOutput = "$outputDirAbs/TestResult-${target}-${category}.xml"
 		def junitResultOutput = "$outputDirAbs/JUnitTestResult-${target}-${category}.xml"
-        def stdOutLog = "$outputDirAbs/stdout-${target}-${category}.log"
+        def stdOutLog = "$outputDir/stdout-${target}-${category}.log"
         def stdErrLog = "$outputDir/stderr-${target}-${category}.log"
 		def jenkinsHtmlLog = "$outputDir/jenkins-${target}-${category}.html"
 		Boolean error = false
