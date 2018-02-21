@@ -45,16 +45,16 @@ namespace AutoProvisionTool
 
 		static TextWriter Output;
 		static string HtmlFile;
+		static string OutputFile;
 		static TextWriter HtmlOutput;
 
 		public static void Main (string[] args)
 		{
 			var products = new List<Product> ();
 			string summaryFile = null;
-			string outputFile = null;
 			var p = new OptionSet ();
 			p.Add ("summary=", "Write summary to file", v => summaryFile = v);
-			p.Add ("out=", "Write output to file", v => outputFile = v);
+			p.Add ("out=", "Write output to file", v => OutputFile = v);
 			p.Add ("html=", "Write html output to file", v => HtmlFile = v);
 			p.Add ("mono=", "Mono branch", v => products.Add (new MonoProduct (v)));
 			p.Add ("xi=", "Xamarin.iOS branch", v => products.Add (new IOSProduct (v)));
@@ -80,9 +80,9 @@ namespace AutoProvisionTool
 				return;
 			}
 
-			if (outputFile != null) {
-				Output = new StreamWriter (outputFile);
-				Log ($"Logging output to {outputFile}.");
+			if (OutputFile != null) {
+				Output = new StreamWriter (OutputFile);
+				Log ($"Logging output to {OutputFile}.");
 			}
 
 			if (HtmlFile != null) {
@@ -284,8 +284,10 @@ namespace AutoProvisionTool
 		static void Finish ()
 		{
 			if (HtmlOutput != null) {
-				HtmlOutput.WriteLine ($"<p></p>");
-				HtmlOutput.WriteLine ($"<p>Provision output: <a href=\"artifact/{HtmlFile}\">{HtmlFile}</a></p>");
+				if (OutputFile != null) {
+					HtmlOutput.WriteLine ($"<p></p>");
+					HtmlOutput.WriteLine ($"<p>Provision output: <a href=\"artifact/{OutputFile}\">{OutputFile}</a></p>");
+				}
 				HtmlOutput.WriteLine ($"<p></p>");
 				HtmlOutput.Flush ();
 				HtmlOutput.Dispose ();
