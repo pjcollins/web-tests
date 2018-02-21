@@ -72,6 +72,8 @@ def triggerJob ()
 		string (name: 'EXTRA_JENKINS_ARGUMENTS', value: EXTRA_JENKINS_ARGUMENTS),
 	], wait: true, propagate: false
 	def result = triggeredBuild.result
+	currentBuild.result = result
+	currentBuild.description = triggeredBuild.description
 	echo "TEST: $result"
 }
 
