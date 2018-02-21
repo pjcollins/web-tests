@@ -84,6 +84,8 @@ def triggerJob ()
 	def triggeredId = (''+triggeredBuild.id).split('#')[0]
 	echo "COPY ARTIFACTS #1"
 	
+	triggeredBuild = null
+	
 //	try {
 //		copyArtifacts projectName: 'web-tests-martin4', selector: specific("${triggeredBuild.id}"), fingerprintArtifacts: true
 //	} catch (exception) {
