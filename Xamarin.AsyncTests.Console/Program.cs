@@ -547,8 +547,13 @@ namespace Xamarin.AsyncTests.Console
 				Debug ("JUnit result written to {0}.", Options.JUnitResultOutput);
 			}
 
-			var printer = new ResultPrinter (global::System.Console.Out, result);
+			var printer = new ResultPrinter (System.Console.Out, result);
 			printer.Print ();
+
+			if (StdOut != null) {
+				var stdoutPrinter = new ResultPrinter (StdOut, result);
+				stdoutPrinter.Print ();
+			}
 		}
 
 		async Task<bool> ShowResult (CancellationToken cancellationToken)

@@ -285,7 +285,7 @@ namespace AutoProvisionTool
 		{
 			if (HtmlOutput != null) {
 				HtmlOutput.WriteLine ($"<p></p>");
-				HtmlOutput.WriteLine ($"<p>Provision output: <a href=\"artifact{HtmlFile}\">{HtmlFile}</a></p>/");
+				HtmlOutput.WriteLine ($"<p>Provision output: <a href=\"artifact/{HtmlFile}\">{HtmlFile}</a></p>");
 				HtmlOutput.WriteLine ($"<p></p>");
 				HtmlOutput.Flush ();
 				HtmlOutput.Dispose ();
