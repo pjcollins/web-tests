@@ -58,7 +58,7 @@ def profileSetup ()
 def triggerJob ()
 {
     build job: 'web-tests-martin4', parameters: [
-		[$class: 'ChoiceParameterValue', name: 'USE_MONO_BRANCH', value: USE_MONO_BRANCH]
+		[$class: 'StringParameterValue', name: 'USE_MONO_BRANCH', value: USE_MONO_BRANCH]
 	]
 }
 
