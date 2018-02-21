@@ -72,8 +72,19 @@ namespace Xamarin.AsyncTests.Console
 			get;
 		}
 
-		internal TextWriter JenkinsHtml {
+		internal static bool Jenkins {
 			get;
+			private set;
+		}
+
+		internal static TextWriter JenkinsHtml {
+			get;
+			private set;
+		}
+
+		internal static TextWriter StdOut {
+			get;
+			private set;
 		}
 
 		TestSession session;
@@ -101,11 +112,10 @@ namespace Xamarin.AsyncTests.Console
 				task.Wait ();
 				result = task.Result;
 			} catch (Exception ex) {
-				program.LogException (ex);
+				PrintException (ex);
 				result = -1;
 			}
-			if (program.JenkinsHtml != null)
-				program.FinishJenkinsHtml ();
+			program.Finish ();
 			Environment.Exit (result);
 		}
 
@@ -120,13 +130,13 @@ namespace Xamarin.AsyncTests.Console
 			var toolEx = ex as ExternalToolException;
 			if (toolEx != null) {
 				if (!string.IsNullOrEmpty (toolEx.ErrorOutput))
-					PrintError ("ERROR: External tool '{0}' failed:\n{1}\n", toolEx.Tool, toolEx.ErrorOutput);
+					PrintError ($"External tool '{toolEx.Tool}' failed:\n{toolEx.ErrorOutput}\n");
 				else
-					PrintError ("ERROR: External tool '{0}' failed:\n{1}\n", toolEx.Tool, toolEx);
+					PrintError ($"External tool '{toolEx.Tool}' failed:\n{toolEx}\n");
 				return;
 			}
 
-			PrintError ("ERROR: {0}", ex);
+			PrintError (ex.ToString ());
 		}
 
 		static void Main (string[] args)
@@ -156,7 +166,16 @@ namespace Xamarin.AsyncTests.Console
 			case Command.Apk:
 				DroidHelper = new DroidHelper (this);
 				break;
+			default:
+				if (Options.StdOut != null)
+					StdOut = new StreamWriter (Options.StdOut);
+				break;
 			}
+
+			if (StdOut != null)
+				SD.Debug.Listeners.Add (new SD.TextWriterTraceListener (StdOut));
+
+			Jenkins = Options.Jenkins;
 
 			Logger = new TestLogger (new ConsoleLogger (this));
 
@@ -170,14 +189,20 @@ namespace Xamarin.AsyncTests.Console
 			}
 		}
 
-		void FinishJenkinsHtml ()
+		void Finish ()
 		{
-			if (Options.StdOut != null)
-				JenkinsHtml.WriteLine ($"<p>Output: <a href=\"{Options.StdOut}\">{Options.StdOut}</a>.");
-			if (Options.StdErr != null)
-				JenkinsHtml.WriteLine ($"<p>Error Output: <a href=\"{Options.StdErr}\">{Options.StdErr}</a>.");
-			JenkinsHtml.Flush ();
-			JenkinsHtml.Dispose ();
+			if (JenkinsHtml != null) {
+				if (Options.StdOut != null)
+					JenkinsHtml.WriteLine ($"<p>Output: <a href=\"{Options.StdOut}\">{Options.StdOut}</a>.");
+				if (Options.StdErr != null)
+					JenkinsHtml.WriteLine ($"<p>Error Output: <a href=\"{Options.StdErr}\">{Options.StdErr}</a>.");
+				JenkinsHtml.Flush ();
+				JenkinsHtml.Dispose ();
+			}
+			if (StdOut != null) {
+				StdOut.Flush ();
+				StdOut.Dispose ();
+			}
 		}
 
 		void LogInfo (string message)
@@ -187,16 +212,16 @@ namespace Xamarin.AsyncTests.Console
 			Debug (message);
 		}
 
-		void LogError (string message, Exception error = null)
+		internal static void PrintError (string message, Exception error = null)
 		{
-			if (Options.Jenkins) {
-				System.Console.WriteLine ($"[error] {message}");
+			if (Jenkins) {
+				WriteLine ($"[error] {message}");
 				if (error != null)
-					System.Console.WriteLine ($"[error] {error}");
+					WriteLine ($"[error] {error}");
 			} else {
-				PrintError (message);
+				WriteLine ($"ERROR: {message}");
 				if (error != null)
-					PrintError (error.ToString ());
+					WriteLine (error.ToString ());
 			}
 
 			if (JenkinsHtml != null) {
@@ -204,36 +229,27 @@ namespace Xamarin.AsyncTests.Console
 				if (error != null)
 					JenkinsHtml.WriteLine ("<pre>{error}</pre>");
 			}
-		}
 
-		void LogException (Exception ex)
-		{
-			var aggregate = ex as AggregateException;
-			if (aggregate != null && aggregate.InnerExceptions.Count == 1) {
-				LogException (aggregate.InnerException);
-				return;
+			void WriteLine (string text)
+			{
+				System.Console.Error.WriteLine (text);
+				if (StdOut != null)
+					StdOut.WriteLine (text);
 			}
-
-			var toolEx = ex as ExternalToolException;
-			if (toolEx != null) {
-				if (!string.IsNullOrEmpty (toolEx.ErrorOutput))
-					LogError ($"ERROR: External tool '{toolEx.Tool}' failed:\n{toolEx.ErrorOutput}\n");
-				else
-					LogError ($"ERROR: External tool '{toolEx.Tool}' failed:\n{toolEx}\n");
-				return;
-			}
-
-			LogError ($"ERROR: {ex.Message}", ex);
 		}
 
 		internal static void WriteLine ()
 		{
-			global::System.Console.WriteLine();
+			System.Console.WriteLine ();
+			if (StdOut != null)
+				StdOut.WriteLine ();
 		}
 
 		internal static void WriteLine (string message, params object[] args)
 		{
-			global::System.Console.WriteLine (message, args);
+			System.Console.WriteLine (message, args);
+			if (StdOut != null)
+				StdOut.WriteLine (message, args);
 		}
 
 		internal static void Debug (string message)
@@ -244,11 +260,6 @@ namespace Xamarin.AsyncTests.Console
 		internal static void Debug (string message, params object[] args)
 		{
 			Debug (string.Format (message, args));
-		}
-
-		internal static void PrintError (string message, params object[] args)
-		{
-			System.Console.Error.WriteLine (string.Format (message, args));
 		}
 
 		internal static IPEndPoint GetEndPoint (string text)
@@ -428,7 +439,7 @@ namespace Xamarin.AsyncTests.Console
 			try {
 				server = await TestServer.LaunchApplication (this, endpoint, Launcher, LauncherOptions, cancellationToken);
 			} catch (LauncherErrorException ex) {
-				LogException (ex);
+				PrintException (ex);
 				Environment.Exit (255);
 				throw;
 			}
