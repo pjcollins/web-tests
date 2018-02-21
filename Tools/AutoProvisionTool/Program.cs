@@ -44,6 +44,7 @@ namespace AutoProvisionTool
 		}
 
 		static TextWriter Output;
+		static string HtmlFile;
 		static TextWriter HtmlOutput;
 
 		public static void Main (string[] args)
@@ -51,11 +52,10 @@ namespace AutoProvisionTool
 			var products = new List<Product> ();
 			string summaryFile = null;
 			string outputFile = null;
-			string htmlFile = null;
 			var p = new OptionSet ();
 			p.Add ("summary=", "Write summary to file", v => summaryFile = v);
 			p.Add ("out=", "Write output to file", v => outputFile = v);
-			p.Add ("html=", "Write html output to file", v => htmlFile = v);
+			p.Add ("html=", "Write html output to file", v => HtmlFile = v);
 			p.Add ("mono=", "Mono branch", v => products.Add (new MonoProduct (v)));
 			p.Add ("xi=", "Xamarin.iOS branch", v => products.Add (new IOSProduct (v)));
 			p.Add ("xm=", "Xamarin.Mac branch", v => products.Add (new MacProduct (v)));
@@ -85,8 +85,8 @@ namespace AutoProvisionTool
 				Log ($"Logging output to {outputFile}.");
 			}
 
-			if (htmlFile != null) {
-				HtmlOutput = new StreamWriter (htmlFile);
+			if (HtmlFile != null) {
+				HtmlOutput = new StreamWriter (HtmlFile);
 				HtmlOutput.WriteLine ("<h3>Provision Summary</h3>");
 			}
 
@@ -123,11 +123,7 @@ namespace AutoProvisionTool
 				Output.Dispose ();
 			}
 
-			if (HtmlOutput != null) {
-				HtmlOutput.WriteLine ("<p></p>");
-				HtmlOutput.Flush ();
-				HtmlOutput.Dispose ();
-			}
+			Finish ();
 
 			void Usage (string message = null)
 			{
@@ -280,11 +276,20 @@ namespace AutoProvisionTool
 			if (HtmlOutput != null) {
 				HtmlOutput.WriteLine ($"<p><b>Auto provisioning failed!</b></p>");
 				HtmlOutput.WriteLine ($"<pre>{message}</pre>");
+			}
+			Finish ();
+			Environment.Exit (1);
+		}
+
+		static void Finish ()
+		{
+			if (HtmlOutput != null) {
+				HtmlOutput.WriteLine ($"<p></p>");
+				HtmlOutput.WriteLine ($"<p>Provision output: <a href=\"artifact{HtmlFile}\">{HtmlFile}</a></p>/");
 				HtmlOutput.WriteLine ($"<p></p>");
 				HtmlOutput.Flush ();
 				HtmlOutput.Dispose ();
 			}
-			Environment.Exit (1);
 		}
 	}
 }
