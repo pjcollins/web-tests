@@ -91,7 +91,7 @@ def triggerJob ()
 //		echo "ERROR: $exception"
 //	}
 
-//	copyArtifacts projectName: 'web-tests-martin4', selector: specific('37'), fingerprintArtifacts: true
+	copyArtifacts projectName: 'web-tests-martin4', selector: specific('37'), fingerprintArtifacts: true
 }
 
 def slackSend ()
@@ -109,10 +109,10 @@ node ('felix-25-sierra') {
 				slackSend ()
 				triggerJob ()
             }
-			stage ('test') {
-				sh 'pwd'
-				sh 'ls -lR'
-			}
+//			stage ('test') {
+//				sh 'pwd'
+//				sh 'ls -lR'
+//			}
         }
     } finally {
         stage ('parse-logs') {
