@@ -72,13 +72,13 @@ def triggerJob ()
 		string (name: 'EXTRA_JENKINS_ARGUMENTS', value: EXTRA_JENKINS_ARGUMENTS),
 	], wait: true, propagate: false
 	currentBuild.result = triggeredBuild.result
-	currentBuild.description = triggeredBuild.description
-
+	
 	def vars = triggeredBuild.getBuildVariables ()
 	echo "VAR: ${vars.WEB_TESTS_COMMIT} - ${vars.WEB_TESTS_BUILD} - ${vars.WEB_TESTS_PROVISION_SUMMARY} - ${triggeredBuild.id}"
+	currentBuild.description = "${triggeredbuild.displayName} - ${vars.WEB_TESTS_BUILD}"
 	
-	def summaryBadge = manager.createSummary ('text.gif')
-	def text = "<h1>My Build Summary: ${vars.WEB_TESTS_COMMIT} - ${vars.WEB_TESTS_BUILD} - ${vars.WEB_TESTS_PROVISION_SUMMARY} - ${vars.BUILD_ID}</h1>"
+	def summaryBadge = manager.createSummary ('info.gif')
+	def text = "<h3>Downstream build: <a href=\"${triggeredBuild.absoluteUrl}\"${vars.WEB_TESTS_BUILD}</a></h3>"
 	summaryBadge.appendText (text, false)
 }
 
