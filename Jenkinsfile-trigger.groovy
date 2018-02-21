@@ -81,6 +81,7 @@ def triggerJob ()
 	summaryBadge.appendText ("<p>${triggeredBuild.description}</p>", false)
 	
 	echo "COPY ARTIFACTS: ${triggeredBuild.id}"
+	def triggeredId = (''+triggeredBuild.id).split('#')[1]
 	
 //	try {
 //		copyArtifacts projectName: 'web-tests-martin4', selector: specific("${triggeredBuild.id}"), fingerprintArtifacts: true
@@ -89,7 +90,7 @@ def triggerJob ()
 //		echo "ERROR: $exception"
 //	}
 
-	copyArtifacts projectName: 'web-tests-martin4', selector: specific('37'), fingerprintArtifacts: true
+//	copyArtifacts projectName: 'web-tests-martin4', selector: specific('37'), fingerprintArtifacts: true
 }
 
 def slackSend ()
