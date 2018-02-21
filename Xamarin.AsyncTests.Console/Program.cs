@@ -155,6 +155,8 @@ namespace Xamarin.AsyncTests.Console
 				Launcher = new TouchLauncher (this);
 				break;
 			case Command.Mac:
+				if (Options.StdOut != null)
+					StdOut = new StreamWriter (Options.StdOut);
 				Launcher = new MacLauncher (this);
 				break;
 			case Command.Android:
