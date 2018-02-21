@@ -86,7 +86,7 @@ def triggerJob ()
 	
 	triggeredBuild = null
 	
-    [$class: 'CopyArtifacts', projectName: 'web-tests-martin4', fingerprint: true]
+    [$class: 'CopyArtifacts', projectName: 'web-tests-martin4', selector: specific ('41'), fingerprint: true]
 	
 	
 //	try {
