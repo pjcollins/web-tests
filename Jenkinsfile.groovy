@@ -210,6 +210,7 @@ node ('master') {
         // We need to define this on the master node.
         logParsingRuleFile = "${env.WORKSPACE}/../workspace@script/jenkins-log-parser.txt"
 		profileSetup ()
+		env.WEB_TESTS_COMMITX = "TEST"
     }
 }
 
