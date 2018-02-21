@@ -162,7 +162,9 @@ def runTests (String target, String category, Boolean unstable = false, Integer 
 				echo "MARTIN TEST: Jenkins HTML missing - $jenkinsHtmlLog"
 				sh "ls -l $outputDirAbs"
 			}
+			sh "pwd"
 			sh "ls -l $outputDirAbs"
+			sh "ls -l $outputDir"
 			sh "ls -l $outputDir/*.log"
 			if (!error) {
 				junit keepLongStdio: true, testResults: "$outputDir/*.xml"
