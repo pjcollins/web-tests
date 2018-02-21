@@ -86,6 +86,9 @@ def triggerJob ()
 	
 	triggeredBuild = null
 	
+    [$class: 'CopyArtifacts', projectName: 'web-tests-martin4', fingerprint: true]
+	
+	
 //	try {
 //		copyArtifacts projectName: 'web-tests-martin4', selector: specific("${triggeredBuild.id}"), fingerprintArtifacts: true
 //	} catch (exception) {
@@ -93,7 +96,7 @@ def triggerJob ()
 //		echo "ERROR: $exception"
 //	}
 
-	copyArtifacts projectName: 'web-tests-martin4', selector: specific('37'), fingerprintArtifacts: true
+//	copyArtifacts projectName: 'web-tests-martin4', selector: specific('37'), fingerprintArtifacts: true
 }
 
 def slackSend ()
