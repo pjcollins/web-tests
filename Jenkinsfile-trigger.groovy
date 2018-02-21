@@ -83,7 +83,7 @@ def triggerJob ()
 	echo "COPY ARTIFACTS: ${triggeredBuild.id}"
 	
 	try {
-		copyArtifacts projectName: 'web-tests-martin4', selector: specific("${triggeredBuild.id}"), fingerprintArtifacts: true
+		copyArtifacts (projectName: 'web-tests-martin4', selector: specific("${triggeredBuild.id}"), fingerprintArtifacts: true)
 	} catch {
 		echo "COPY ARTIFACTS FAILED!"
 	}
