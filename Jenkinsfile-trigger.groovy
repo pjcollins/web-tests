@@ -78,7 +78,8 @@ def triggerJob ()
 	echo "VAR: ${vars.WEB_TESTS_COMMIT} - ${vars.WEB_TESTS_BUILD} - ${vars.WEB_TESTS_PROVISION_SUMMARY} - ${vars.BUILD_ID}"
 	
 	def summary = manager.createSummary ('text.gif')
-	summary.appendText ("<h1>My Build Summary: ${vars.WEB_TESTS_COMMIT} - ${vars.WEB_TESTS_BUILD} - ${vars.WEB_TESTS_PROVISION_SUMMARY} - ${vars.BUILD_ID}</h1>")
+	summary.appendText ("Hello")
+	def text = "<h1>My Build Summary: ${vars.WEB_TESTS_COMMIT} - ${vars.WEB_TESTS_BUILD} - ${vars.WEB_TESTS_PROVISION_SUMMARY} - ${vars.BUILD_ID}</h1>"
 }
 
 def slackSend ()
