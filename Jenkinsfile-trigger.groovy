@@ -56,11 +56,17 @@ def profileSetup ()
 
 def triggerJob ()
 {
-    build job: 'web-tests-martin4', parameters: [
+    def triggeredBuild = build job: 'web-tests-martin4', parameters: [
 		string (name: 'USE_MONO_BRANCH', value: USE_MONO_BRANCH),
 		string (name: 'USE_XI_BRANCH', value: USE_XI_BRANCH),
+		string (name: 'USE_XM_BRANCH', value: USE_XM_BRANCH),
+		string (name: 'USE_XA_BRANCH', value: USE_XA_BRANCH),
+		string (name: 'IOS_DEVICE_TYPE', value: IOS_DEVICE_TYPE),
+		string (name: 'IOS_RUNTIME', value: IOS_RUNTIME),
 		string (name: 'EXTRA_JENKINS_ARGUMENTS', value: EXTRA_JENKINS_ARGUMENTS),
-	]
+	], wait: true
+	def result = triggeredBuild.getResult()
+	echo "TEST: $result"
 }
 
 node ('felix-25-sierra') {
