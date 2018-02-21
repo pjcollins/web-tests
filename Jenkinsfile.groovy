@@ -52,6 +52,7 @@ def provision ()
 	def summary = readFile summaryFile
 	echo "Setting build summary: $summary"
 	currentBuild.description = summary
+	env.WEB_TESTS_PROVISION_SUMMARY = summary
 }
 
 def enableMono ()

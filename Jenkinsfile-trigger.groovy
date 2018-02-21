@@ -71,17 +71,11 @@ def triggerJob ()
 		string (name: 'IOS_RUNTIME', value: IOS_RUNTIME),
 		string (name: 'EXTRA_JENKINS_ARGUMENTS', value: EXTRA_JENKINS_ARGUMENTS),
 	], wait: true, propagate: false
-	def result = triggeredBuild.result
 	currentBuild.result = result
 	currentBuild.description = triggeredBuild.description
-	echo "TEST: $result"
-	def properties = triggeredBuild.rawBuild.getEnvironment()
-	echo "COMMIT: ${properties.WEB_TESTS_COMMIT} - ${properties.WEB_TESTS_BUILD}"
-	echo "COMMIT #1: ${properties.WEB_TESTS_COMMITX} - ${properties.WEB_TESTS_BUILD}"
 
-	def vars = triggeredBuild.getBuildVariables()
-	echo "VAR: ${vars.WEB_TESTS_COMMIT} - ${vars.WEB_TESTS_BUILD}"
-	echo "VAR #1: ${vars.WEB_TESTS_COMMITX} - ${properties.WEB_TESTS_BUILD}"
+	def vars = triggeredBuild.getBuildVariables ()
+	echo "VAR: ${vars.WEB_TESTS_COMMIT} - ${vars.WEB_TESTS_BUILD} - ${vars.WEB_TESTS_PROVISION_SUMMARY} - {vars.BUILD_ID}"
 
 }
 
