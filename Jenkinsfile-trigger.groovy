@@ -80,11 +80,13 @@ def triggerJob ()
 	def summaryBadge = manager.createSummary ('info.gif')
 	summaryBadge.appendText ("<h2>Downstream build: <a href=\"${triggeredBuild.absoluteUrl}\">${triggeredBuild.displayName}</a></h2>", false)
 	summaryBadge.appendText ("<p>${triggeredBuild.description}</p>", false)
+	
+	copyArtifacts projectName: 'web-tests-martin4', selector: specific(triggeredBuild.id), fingerprintArtifacts: true
 }
 
 def slackSend ()
 {
-	slackSend channel: "#martin-jenkins", message: "${env.JOB_NAME} - #${env.BUILD_NUMBER} {currentBuild.result} (<${env.BUILD_URL}|Open>)"
+	slackSend channel: "#martin-jenkins", message: "${env.JOB_NAME} - #${env.BUILD_NUMBER} ${currentBuild.result} (<${env.BUILD_URL}|Open>)"
 }
 
 node ('felix-25-sierra') {
