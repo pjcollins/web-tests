@@ -13,11 +13,35 @@ def EXTRA_JENKINS_ARGUMENTS = ""
 def profileSetup ()
 {
 	def profile = "${env.JENKINS_PROFILE}"
-	if (profile == 'martin') {
+	if (profile == 'master') {
 		USE_MONO_BRANCH = 'master'
 		USE_XI_BRANCH = 'NONE'
 		USE_XM_BRANCH = 'NONE'
 		USE_XA_BRANCH = 'NONE'
+	} else if (profile == '2017-12') {
+		USE_MONO_BRANCH = '2017-12'
+		USE_XI_BRANCH = 'NONE'
+		USE_XM_BRANCH = 'NONE'
+		USE_XA_BRANCH = 'NONE'
+	} else if (profile == '2018-02') {
+		USE_MONO_BRANCH = '2018-02'
+		USE_XI_BRANCH = 'NONE'
+		USE_XM_BRANCH = 'NONE'
+		USE_XA_BRANCH = 'NONE'
+	} else if (profile == 'macios') {
+		USE_MONO_BRANCH = 'NONE'
+		USE_XI_BRANCH = 'master'
+		USE_XM_BRANCH = 'master'
+		USE_XA_BRANCH = 'NONE'
+		IOS_DEVICE_TYPE = "iPhone-5s"
+		IOS_RUNTIME = "iOS-10-0"
+	} else if (profile == 'macios-2018-02') {
+		USE_MONO_BRANCH = 'NONE'
+		USE_XI_BRANCH = 'mono-2018-02'
+		USE_XM_BRANCH = 'mono-2018-02'
+		USE_XA_BRANCH = 'NONE'
+		IOS_DEVICE_TYPE = "iPhone-5s"
+		IOS_RUNTIME = "iOS-10-0"
 	} else {
 		USE_MONO_BRANCH = params.USE_MONO_BRANCH
 		USE_XI_BRANCH = params.USE_XI_BRANCH
