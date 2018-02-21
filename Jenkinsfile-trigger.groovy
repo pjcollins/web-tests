@@ -81,7 +81,8 @@ def triggerJob ()
 	summaryBadge.appendText ("<p>${triggeredBuild.description}</p>", false)
 	
 	echo "COPY ARTIFACTS: ${triggeredBuild.id}"
-	def triggeredId = (''+triggeredBuild.id).split('#')[1]
+	def triggeredId = (''+triggeredBuild.id).split('#')[0]
+	echo "COPY ARTIFACTS #1"
 	
 //	try {
 //		copyArtifacts projectName: 'web-tests-martin4', selector: specific("${triggeredBuild.id}"), fingerprintArtifacts: true
