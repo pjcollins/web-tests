@@ -79,7 +79,7 @@ def triggerJob ()
 
 def slackSend ()
 {
-	slackSend channel: "#martin-jenkins", message: "TEST: ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)"
+	slackSend channel: "#martin-jenkins", message: "${env.JOB_NAME} - #${env.BUILD_NUMBER} {currentBuild.result} (<${env.BUILD_URL}|Open>)"
 }
 
 node ('felix-25-sierra') {
