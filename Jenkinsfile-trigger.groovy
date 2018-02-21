@@ -61,8 +61,8 @@ def triggerJob ()
 		string (name: 'USE_XI_BRANCH', value: USE_XI_BRANCH),
 		string (name: 'USE_XM_BRANCH', value: USE_XM_BRANCH),
 		string (name: 'USE_XA_BRANCH', value: USE_XA_BRANCH),
-		string (name: 'IOS_DEVICE_TYPE', value: IOS_DEVICE_TYPE),
-		string (name: 'IOS_RUNTIME', value: IOS_RUNTIME),
+//		string (name: 'IOS_DEVICE_TYPE', value: IOS_DEVICE_TYPE),
+//		string (name: 'IOS_RUNTIME', value: IOS_RUNTIME),
 		string (name: 'EXTRA_JENKINS_ARGUMENTS', value: EXTRA_JENKINS_ARGUMENTS),
 	], wait: true
 	def result = triggeredBuild.getResult()
