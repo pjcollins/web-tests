@@ -78,6 +78,11 @@ def triggerJob ()
 	def properties = triggeredBuild.rawBuild.getEnvironment()
 	echo "COMMIT: ${properties.WEB_TESTS_COMMIT} - ${properties.WEB_TESTS_BUILD}"
 	echo "COMMIT #1: ${properties.WEB_TESTS_COMMITX} - ${properties.WEB_TESTS_BUILD}"
+
+	def vars = triggeredBuild.getBuildVariables()
+	echo "VAR: ${vars.WEB_TESTS_COMMIT} - ${vars.WEB_TESTS_BUILD}"
+	echo "VAR #1: ${vars.WEB_TESTS_COMMITX} - ${properties.WEB_TESTS_BUILD}"
+
 }
 
 def slackSend ()
