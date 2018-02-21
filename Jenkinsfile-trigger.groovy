@@ -71,7 +71,7 @@ def triggerJob ()
 		string (name: 'IOS_RUNTIME', value: IOS_RUNTIME),
 		string (name: 'EXTRA_JENKINS_ARGUMENTS', value: EXTRA_JENKINS_ARGUMENTS),
 	], wait: true, propagate: false
-	currentBuild.result = result
+	currentBuild.result = triggeredBuild.result
 	currentBuild.description = triggeredBuild.description
 
 	def vars = triggeredBuild.getBuildVariables ()
