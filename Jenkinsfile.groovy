@@ -1,72 +1,33 @@
 #!/bin/groovy
+properties([
+	parameters([
+		choice (name: 'USE_MONO_BRANCH', choices: 'NONE\n2017-12\n2018-02\nmaster', description: 'Mono branch'),
+		choice (name: 'USE_XI_BRANCH', choices: 'NONE\nmaster\nd15-6\nmono-2018-02', description: 'XI branch'),
+		choice (name: 'USE_XM_BRANCH', choices: 'NONE\nmaster\nd15-6\nmono-2018-02', description: 'XM branch'),
+		choice (name: 'USE_XA_BRANCH', choices: 'NONE\nmaster\nd15-6\nmono-2018-02', description: 'XA branch'),
+		choice (name: 'IOS_DEVICE_TYPE', choices: 'iPhone-5s', description: ''),
+		choice (name: 'IOS_RUNTIME', choices: 'iOS-10-0\niOS-10-3', description: ''),
+		string (defaultValue: '', description: '', name: 'EXTRA_JENKINS_ARGUMENTS')
+	])
+])
+
 def logParsingRuleFile = ""
 def gitCommitHash = ""
-
-def USE_MONO_BRANCH = "NONE"
-def USE_XI_BRANCH = "NONE"
-def USE_XM_BRANCH = "NONE"
-def USE_XA_BRANCH = "NONE"
-def IOS_DEVICE_TYPE = "iPhone-5s"
-def IOS_RUNTIME = "iOS-10-3"
-def EXTRA_JENKINS_ARGUMENTS = ""
-
-def profileSetup ()
-{
-	def profile = "${env.JENKINS_PROFILE}"
-	if (profile == 'master') {
-		USE_MONO_BRANCH = 'master'
-		USE_XI_BRANCH = 'NONE'
-		USE_XM_BRANCH = 'NONE'
-		USE_XA_BRANCH = 'NONE'
-	} else if (profile == '2017-12') {
-		USE_MONO_BRANCH = '2017-12'
-		USE_XI_BRANCH = 'NONE'
-		USE_XM_BRANCH = 'NONE'
-		USE_XA_BRANCH = 'NONE'
-	} else if (profile == '2018-02') {
-		USE_MONO_BRANCH = '2018-02'
-		USE_XI_BRANCH = 'NONE'
-		USE_XM_BRANCH = 'NONE'
-		USE_XA_BRANCH = 'NONE'
-	} else if (profile == 'macios') {
-		USE_MONO_BRANCH = 'NONE'
-		USE_XI_BRANCH = 'master'
-		USE_XM_BRANCH = 'master'
-		USE_XA_BRANCH = 'NONE'
-		IOS_DEVICE_TYPE = "iPhone-5s"
-		IOS_RUNTIME = "iOS-10-0"
-	} else if (profile == 'macios-2018-02') {
-		USE_MONO_BRANCH = 'NONE'
-		USE_XI_BRANCH = 'mono-2018-02'
-		USE_XM_BRANCH = 'mono-2018-02'
-		USE_XA_BRANCH = 'NONE'
-		IOS_DEVICE_TYPE = "iPhone-5s"
-		IOS_RUNTIME = "iOS-10-0"
-	} else {
-		USE_MONO_BRANCH = params.USE_MONO_BRANCH
-		USE_XI_BRANCH = params.USE_XI_BRANCH
-		USE_XM_BRANCH = params.USE_XM_BRANCH
-		USE_XA_BRANCH = params.USE_XA_BRANCH
-		IOS_DEVICE_TYPE = params.IOS_DEVICE_TYPE
-		IOS_RUNTIME = params.IOS_RUNTIME
-		EXTRA_JENKINS_ARGUMENTS = params.EXTRA_JENKINS_ARGUMENTS
-	}
-}
 
 def provision ()
 {
 	def args = [ ]
-	if (USE_MONO_BRANCH != 'NONE' && USE_MONO_BRANCH != '') {
-		args << "--mono=${USE_MONO_BRANCH}"
+	if (params.USE_MONO_BRANCH != 'NONE' && params.USE_MONO_BRANCH != '') {
+		args << "--mono=${params.USE_MONO_BRANCH}"
 	}
-	if (USE_XI_BRANCH != 'NONE' && USE_XI_BRANCH != '') {
-		args << "--xi=${USE_XI_BRANCH}"
+	if (params.USE_XI_BRANCH != 'NONE' && params.USE_XI_BRANCH != '') {
+		args << "--xi=${params.USE_XI_BRANCH}"
 	}
-	if (USE_XM_BRANCH != 'NONE' && USE_XM_BRANCH != '') {
-		args << "--xm=${USE_XM_BRANCH}"
+	if (params.USE_XM_BRANCH != 'NONE' && params.USE_XM_BRANCH != '') {
+		args << "--xm=${params.USE_XM_BRANCH}"
 	}
-	if (USE_XA_BRANCH != 'NONE' && USE_XA_BRANCH != '') {
-		args << "--xa=${USE_XA_BRANCH}"
+	if (params.USE_XA_BRANCH != 'NONE' && params.USE_XA_BRANCH != '') {
+		args << "--xa=${params.USE_XA_BRANCH}"
 	}
 	def summaryFile = "${env.WORKSPACE}/summary.txt"
 	def provisionOutput = "provision-output.txt"
@@ -95,22 +56,22 @@ def provision ()
 
 def enableMono ()
 {
-	return USE_MONO_BRANCH != 'NONE' && USE_MONO_BRANCH != ''
+	return params.USE_MONO_BRANCH != 'NONE' && params.USE_MONO_BRANCH != ''
 }
 
 def enableXI ()
 {
-	return USE_XI_BRANCH != 'NONE' && USE_XI_BRANCH != ''
+	return params.USE_XI_BRANCH != 'NONE' && params.USE_XI_BRANCH != ''
 }
 
 def enableXM ()
 {
-	return USE_XM_BRANCH != 'NONE' && USE_XM_BRANCH != ''
+	return params.USE_XM_BRANCH != 'NONE' && params.USE_XM_BRANCH != ''
 }
 
 def enableXA ()
 {
-	return USE_XA_BRANCH != 'NONE' && USE_XA_BRANCH != ''
+	return params.USE_XA_BRANCH != 'NONE' && params.USE_XA_BRANCH != ''
 }
 
 def runShell (String command)
@@ -161,8 +122,8 @@ def run (String target, String testCategory, String resultOutput, String junitRe
 	def resultParams = "ResultOutput=$resultOutput,JUnitResultOutput=$junitResultOutput"
 	def outputParams = "StdOut=$stdOut,JenkinsHtml=$jenkinsHtml"
 	def extraParams = ""
-	if (EXTRA_JENKINS_ARGUMENTS != '') {
-		def extraParamValue = EXTRA_JENKINS_ARGUMENTS
+	if (params.EXTRA_JENKINS_ARGUMENTS != '') {
+		def extraParamValue = params.EXTRA_JENKINS_ARGUMENTS
 		extraParams = ",JenkinsExtraArguments=\"$extraParamValue\""
 	}
 	runShell ("msbuild Jenkinsfile.targets /t:Run /p:JenkinsTarget=$target,TestCategory=$testCategory,$iosParams,$resultParams,$outputParams$extraParams")
@@ -209,7 +170,6 @@ node ('master') {
     stage ('initialize') {
         // We need to define this on the master node.
         logParsingRuleFile = "${env.WORKSPACE}/../workspace@script/jenkins-log-parser.txt"
-		profileSetup ()
     }
 }
 
