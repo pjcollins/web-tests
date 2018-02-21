@@ -82,12 +82,12 @@ def triggerJob ()
 	
 	echo "COPY ARTIFACTS: ${triggeredBuild.id}"
 	
-	try {
-		copyArtifacts projectName: 'web-tests-martin4', selector: specific("${triggeredBuild.id}"), fingerprintArtifacts: true
-	} catch (exception) {
-		echo "COPY ARTIFACTS FAILED!"
-		echo "ERROR: $exception"
-	}
+//	try {
+//		copyArtifacts projectName: 'web-tests-martin4', selector: specific("${triggeredBuild.id}"), fingerprintArtifacts: true
+//	} catch (exception) {
+//		echo "COPY ARTIFACTS FAILED!"
+//		echo "ERROR: $exception"
+//	}
 
 	copyArtifacts projectName: 'web-tests-martin4', selector: specific('37'), fingerprintArtifacts: true
 }
