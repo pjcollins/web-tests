@@ -78,7 +78,7 @@ def triggerJob ()
 	currentBuild.description = "${triggeredBuild.displayName} - ${triggeredBuild.description}"
 	
 	def summaryBadge = manager.createSummary ('info.gif')
-	summaryBadge.appendText ("<h2>Downstream build: <a href=\"${triggeredBuild.absoluteUrl}\">${vars.WEB_TESTS_BUILD}</a></h2>", false)
+	summaryBadge.appendText ("<h2>Downstream build: <a href=\"${triggeredBuild.absoluteUrl}\">${triggeredBuild.displayName}</a></h2>", false)
 	summaryBadge.appendText ("<p>${triggeredBuild.description}</p>", false)
 }
 
@@ -97,6 +97,10 @@ node ('felix-25-sierra') {
 				slackSend ()
 				triggerJob ()
             }
+			stage ('test') {
+				sh 'pwd'
+				sh 'ls -lR'
+			}
         }
     } finally {
         stage ('parse-logs') {
