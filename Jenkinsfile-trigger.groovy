@@ -19,6 +19,7 @@ def profileSetup ()
 		USE_XM_BRANCH = 'NONE'
 		USE_XA_BRANCH = 'NONE'
 		EXTRA_JENKINS_ARGUMENTS = 'MARTIN'
+		IOS_DEVICE_TYPE = 'iPhone-5s'
 	} else if (profile == '2017-12') {
 		USE_MONO_BRANCH = '2017-12'
 		USE_XI_BRANCH = 'NONE'
@@ -61,8 +62,8 @@ def triggerJob ()
 		string (name: 'USE_XI_BRANCH', value: USE_XI_BRANCH),
 		string (name: 'USE_XM_BRANCH', value: USE_XM_BRANCH),
 		string (name: 'USE_XA_BRANCH', value: USE_XA_BRANCH),
-//		string (name: 'IOS_DEVICE_TYPE', value: IOS_DEVICE_TYPE),
-		string (name: 'IOS_RUNTIME', value: ""),
+		string (name: 'IOS_DEVICE_TYPE', value: IOS_DEVICE_TYPE),
+//		string (name: 'IOS_RUNTIME', value: ""),
 		string (name: 'EXTRA_JENKINS_ARGUMENTS', value: EXTRA_JENKINS_ARGUMENTS),
 	], wait: true, propagate: false
 	def result = triggeredBuild.getResult()
