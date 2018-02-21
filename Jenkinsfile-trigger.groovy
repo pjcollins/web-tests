@@ -75,11 +75,11 @@ def triggerJob ()
 	
 	def vars = triggeredBuild.getBuildVariables ()
 	echo "VAR: ${vars.WEB_TESTS_COMMIT} - ${vars.WEB_TESTS_BUILD} - ${vars.WEB_TESTS_PROVISION_SUMMARY} - ${triggeredBuild.id}"
-	currentBuild.description = "${triggeredBuild.displayName} - ${vars.WEB_TESTS_BUILD}"
+	currentBuild.description = triggeredBuild.displayName
 	
 	def summaryBadge = manager.createSummary ('info.gif')
-	def text = "<h3>Downstream build: <a href=\"${triggeredBuild.absoluteUrl}\">${vars.WEB_TESTS_BUILD}</a></h3>"
-	summaryBadge.appendText (text, false)
+	summaryBadge.appendText ("<h2>Downstream build: <a href=\"${triggeredBuild.absoluteUrl}\">${vars.WEB_TESTS_BUILD}</a></h2>", false)
+	summaryBadge.appendText ("<p>${triggeredBuild.summary}</p>", false)
 }
 
 def slackSend ()
