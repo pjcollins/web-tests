@@ -14,6 +14,17 @@ properties([
 def logParsingRuleFile = ""
 def gitCommitHash = ""
 
+def profileSetup ()
+{
+	def profile = "${env.JENKINS_PROFILE}"
+	if (profile == 'martin') {
+		params.USE_MONO_BRANCH = 'master'
+		params.USE_XI_BRANCH = 'NONE'
+		params.USE_XM_BRANCH = 'NONE'
+		params.USE_XA_BRANCH = 'NONE'
+	}
+}
+
 def provision ()
 {
 	def args = [ ]
@@ -170,6 +181,7 @@ node ('master') {
     stage ('initialize') {
         // We need to define this on the master node.
         logParsingRuleFile = "${env.WORKSPACE}/../workspace@script/jenkins-log-parser.txt"
+		profileSetup ()
     }
 }
 
