@@ -2,6 +2,11 @@
 def logParsingRuleFile = ""
 def gitCommitHash = ""
 
+def USE_MONO_BRANCH = "NONE"
+def USE_XI_BRANCH = "NONE"
+def USE_XM_BRANCH = "NONE"
+def USE_XA_BRANCH = "NONE"
+
 def profileSetup ()
 {
 	def profile = "${env.JENKINS_PROFILE}"
@@ -10,23 +15,28 @@ def profileSetup ()
 		params.USE_XI_BRANCH = 'NONE'
 		params.USE_XM_BRANCH = 'NONE'
 		params.USE_XA_BRANCH = 'NONE'
+	} else {
+		USE_MONO_BRANCH = params.USE_MONO_BRANCH
+		USE_XI_BRANCH = params.USE_XI_BRANCH
+		USE_XM_BRANCH = params.USE_XM_BRANCH
+		USE_XA_BRANCH = params.USE_XA_BRANCH
 	}
 }
 
 def provision ()
 {
 	def args = [ ]
-	if (params.USE_MONO_BRANCH != 'NONE' && params.USE_MONO_BRANCH != '') {
-		args << "--mono=${params.USE_MONO_BRANCH}"
+	if (USE_MONO_BRANCH != 'NONE' && USE_MONO_BRANCH != '') {
+		args << "--mono=${USE_MONO_BRANCH}"
 	}
-	if (params.USE_XI_BRANCH != 'NONE' && params.USE_XI_BRANCH != '') {
-		args << "--xi=${params.USE_XI_BRANCH}"
+	if (USE_XI_BRANCH != 'NONE' && USE_XI_BRANCH != '') {
+		args << "--xi=${USE_XI_BRANCH}"
 	}
-	if (params.USE_XM_BRANCH != 'NONE' && params.USE_XM_BRANCH != '') {
-		args << "--xm=${params.USE_XM_BRANCH}"
+	if (USE_XM_BRANCH != 'NONE' && USE_XM_BRANCH != '') {
+		args << "--xm=${USE_XM_BRANCH}"
 	}
-	if (params.USE_XA_BRANCH != 'NONE' && params.USE_XA_BRANCH != '') {
-		args << "--xa=${params.USE_XA_BRANCH}"
+	if (USE_XA_BRANCH != 'NONE' && USE_XA_BRANCH != '') {
+		args << "--xa=${USE_XA_BRANCH}"
 	}
 	def summaryFile = "${env.WORKSPACE}/summary.txt"
 	def provisionOutput = "provision-output.txt"
@@ -55,22 +65,22 @@ def provision ()
 
 def enableMono ()
 {
-	return params.USE_MONO_BRANCH != 'NONE' && params.USE_MONO_BRANCH != ''
+	return USE_MONO_BRANCH != 'NONE' && USE_MONO_BRANCH != ''
 }
 
 def enableXI ()
 {
-	return params.USE_XI_BRANCH != 'NONE' && params.USE_XI_BRANCH != ''
+	return USE_XI_BRANCH != 'NONE' && USE_XI_BRANCH != ''
 }
 
 def enableXM ()
 {
-	return params.USE_XM_BRANCH != 'NONE' && params.USE_XM_BRANCH != ''
+	return USE_XM_BRANCH != 'NONE' && USE_XM_BRANCH != ''
 }
 
 def enableXA ()
 {
-	return params.USE_XA_BRANCH != 'NONE' && params.USE_XA_BRANCH != ''
+	return USE_XA_BRANCH != 'NONE' && USE_XA_BRANCH != ''
 }
 
 def runShell (String command)
@@ -121,8 +131,8 @@ def run (String target, String testCategory, String resultOutput, String junitRe
 	def resultParams = "ResultOutput=$resultOutput,JUnitResultOutput=$junitResultOutput"
 	def outputParams = "StdOut=$stdOut,JenkinsHtml=$jenkinsHtml"
 	def extraParams = ""
-	if (params.EXTRA_JENKINS_ARGUMENTS != '') {
-		def extraParamValue = params.EXTRA_JENKINS_ARGUMENTS
+	if (EXTRA_JENKINS_ARGUMENTS != '') {
+		def extraParamValue = EXTRA_JENKINS_ARGUMENTS
 		extraParams = ",JenkinsExtraArguments=\"$extraParamValue\""
 	}
 	runShell ("msbuild Jenkinsfile.targets /t:Run /p:JenkinsTarget=$target,TestCategory=$testCategory,$iosParams,$resultParams,$outputParams$extraParams")
