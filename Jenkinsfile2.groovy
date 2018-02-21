@@ -11,10 +11,10 @@ def profileSetup ()
 {
 	def profile = "${env.JENKINS_PROFILE}"
 	if (profile == 'martin') {
-		params.USE_MONO_BRANCH = 'master'
-		params.USE_XI_BRANCH = 'NONE'
-		params.USE_XM_BRANCH = 'NONE'
-		params.USE_XA_BRANCH = 'NONE'
+		USE_MONO_BRANCH = 'master'
+		USE_XI_BRANCH = 'NONE'
+		USE_XM_BRANCH = 'NONE'
+		USE_XA_BRANCH = 'NONE'
 	} else {
 		USE_MONO_BRANCH = params.USE_MONO_BRANCH
 		USE_XI_BRANCH = params.USE_XI_BRANCH
