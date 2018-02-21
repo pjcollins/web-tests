@@ -75,7 +75,7 @@ def triggerJob ()
 	
 	def vars = triggeredBuild.getBuildVariables ()
 	echo "VAR: ${vars.WEB_TESTS_COMMIT} - ${vars.WEB_TESTS_BUILD} - ${vars.WEB_TESTS_PROVISION_SUMMARY} - ${triggeredBuild.id}"
-	currentBuild.description = "${triggeredbuild.displayName} - ${vars.WEB_TESTS_BUILD}"
+	currentBuild.description = "${triggeredBuild.displayName} - ${vars.WEB_TESTS_BUILD}"
 	
 	def summaryBadge = manager.createSummary ('info.gif')
 	def text = "<h3>Downstream build: <a href=\"${triggeredBuild.absoluteUrl}\"${vars.WEB_TESTS_BUILD}</a></h3>"
