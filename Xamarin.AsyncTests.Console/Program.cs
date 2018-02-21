@@ -522,12 +522,14 @@ namespace Xamarin.AsyncTests.Console
 				LogInfo (line);
 		}
 
-		void SaveResult (TestSession session)
+		void SaveResult ()
 		{
+			LogInfo ($"Test Result: {result.Status}");
 			LogInfo ($"{countTests} tests, {countSuccess} passed, {countErrors} errors, {countUnstable} unstable, {countIgnored} ignored.");
 			LogInfo ($"Total time: {endTime - startTime}.");
 			if (JenkinsHtml != null) {
-				JenkinsHtml.WriteLine ($"<p>{countTests} tests, {countSuccess} passed, {countErrors} errors, {countUnstable} unstable, {countIgnored} ignored.");
+				JenkinsHtml.WriteLine ($"<p>Test Result: {result.Status}");
+				JenkinsHtml.WriteLine ($"<br>{countTests} tests, {countSuccess} passed, {countErrors} errors, {countUnstable} unstable, {countIgnored} ignored.");
 				JenkinsHtml.WriteLine ($"<br>Total time: {endTime - startTime}.</p>");
 			}
 
