@@ -218,7 +218,7 @@ node ('felix-25-sierra') {
         timestamps {
             stage ('checkout') {
                 dir ('web-tests') {
-                    git url: 'git@github.com:xamarin/web-tests.git', branch: 'work-jenkins'
+                    git url: 'git@github.com:xamarin/web-tests.git', branch: 'work-jenkins2'
                     sh 'git clean -xffd'
 					gitCommitHash = sh (script: "git log -n 1 --pretty=format:'%h'", returnStdout: true)
 					currentBuild.displayName = "#$currentBuild.number:$gitCommitHash"
