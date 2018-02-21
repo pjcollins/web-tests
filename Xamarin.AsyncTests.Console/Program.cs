@@ -104,7 +104,8 @@ namespace Xamarin.AsyncTests.Console
 				program.LogException (ex);
 				result = -1;
 			}
-			program.Finish ();
+			if (program.JenkinsHtml != null)
+				program.FinishJenkinsHtml ();
 			Environment.Exit (result);
 		}
 
@@ -169,12 +170,14 @@ namespace Xamarin.AsyncTests.Console
 			}
 		}
 
-		void Finish ()
+		void FinishJenkinsHtml ()
 		{
-			if (JenkinsHtml != null) {
-				JenkinsHtml.Flush ();
-				JenkinsHtml.Dispose ();
-			}
+			if (Options.StdOut != null)
+				JenkinsHtml.WriteLine ($"<p>Output: <a href=\"{Options.StdOut}\">{Options.StdOut}</a>.");
+			if (Options.StdErr != null)
+				JenkinsHtml.WriteLine ($"<p>Error Output: <a href=\"{Options.StdErr}\">{Options.StdErr}</a>.");
+			JenkinsHtml.Flush ();
+			JenkinsHtml.Dispose ();
 		}
 
 		void LogInfo (string message)
@@ -373,7 +376,7 @@ namespace Xamarin.AsyncTests.Console
 			session = TestSession.CreateLocal (this, framework);
 			Options.UpdateConfiguration (session);
 
-			PrintSummary (session);
+			PrintSummary ();
 
 			var test = session.RootTestCase;
 
@@ -398,7 +401,7 @@ namespace Xamarin.AsyncTests.Console
 			if (Options.UpdateConfiguration (session))
 				await session.UpdateSettings (cancellationToken);
 
-			PrintSummary (session);
+			PrintSummary ();
 
 			var test = session.RootTestCase;
 			cancellationToken.ThrowIfCancellationRequested ();
@@ -456,7 +459,7 @@ namespace Xamarin.AsyncTests.Console
 			if (Options.UpdateConfiguration (session))
 				await session.UpdateSettings (cancellationToken);
 
-			PrintSummary (session);
+			PrintSummary ();
 
 			var test = session.RootTestCase;
 			cancellationToken.ThrowIfCancellationRequested ();
@@ -475,7 +478,7 @@ namespace Xamarin.AsyncTests.Console
 			return ExitCodeForResult;
 		}
 
-		void PrintSummary (TestSession session)
+		void PrintSummary ()
 		{
 			var config = session.Configuration;
 			var category = config.CurrentCategory.Name;
