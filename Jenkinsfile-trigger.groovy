@@ -77,6 +77,11 @@ def triggerJob ()
 	echo "TEST: $result"
 }
 
+def slackSend ()
+{
+	slackSend channel: "#martin-jenkins", message: "TEST: ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)"
+}
+
 node ('felix-25-sierra') {
     try {
         timestamps {
@@ -84,6 +89,7 @@ node ('felix-25-sierra') {
 				profileSetup ()
 			}
             stage ('build') {
+				slackSend ()
 				triggerJob ()
             }
         }
