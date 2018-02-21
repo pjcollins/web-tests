@@ -52,10 +52,6 @@ def provision ()
 	def summary = readFile summaryFile
 	echo "Setting build summary: $summary"
 	currentBuild.description = summary
-    manager.addShortText (summary)
-	manager.addInfoBadge("<h1>My Build Summary: $summary</h1>")
-//	def theSummary = manager.createSummary ('text.gif')
-//	theSummary.appendText ("<h1>My Build Summary: $summary</h1>")
 }
 
 def enableMono ()
