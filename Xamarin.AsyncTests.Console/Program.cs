@@ -397,7 +397,7 @@ namespace Xamarin.AsyncTests.Console
 			endTime = DateTime.Now;
 			Debug ("Got result: {0} {1}", result.Status, test.Path.FullName);
 
-			SaveResult (session);
+			SaveResult ();
 
 			return ExitCodeForResult;
 		}
@@ -424,7 +424,7 @@ namespace Xamarin.AsyncTests.Console
 			cancellationToken.ThrowIfCancellationRequested ();
 			Debug ("Got result: {0} {1}", result.Status, test.Path.FullName);
 
-			SaveResult (session);
+			SaveResult ();
 
 			await server.Stop (cancellationToken);
 
@@ -482,7 +482,7 @@ namespace Xamarin.AsyncTests.Console
 			cancellationToken.ThrowIfCancellationRequested ();
 			Debug ("Got result: {0} {1}", result.Status, result.Path.FullName);
 
-			SaveResult (session);
+			SaveResult ();
 
 			await server.Stop (cancellationToken);
 
