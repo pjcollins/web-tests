@@ -126,10 +126,6 @@ namespace Xamarin.AsyncTests.Console {
 			get;
 		}
 
-		public string StdErr {
-			get;
-		}
-
 		public string SdkRoot {
 			get;
 		}
@@ -179,7 +175,7 @@ namespace Xamarin.AsyncTests.Console {
 			var junitResultOutput = "JUnitTestResult.xml";
 			string packageName = null;
 
-			string outputDir = null, stdout = null, stderr = null;
+			string outputDir = null, stdout = null;
 			string customSettings = null;
 			string sdkRoot = null, iosDeviceType = null, iosRuntime = null;
 			string androidSdkRoot = null;
@@ -217,7 +213,6 @@ namespace Xamarin.AsyncTests.Console {
 			p.Add ("ios-device-type=", v => iosDeviceType = v);
 			p.Add ("ios-runtime=", v => iosRuntime = v);
 			p.Add ("stdout=", v => stdout = v);
-			p.Add ("stderr=", v => stderr = v);
 			p.Add ("sdkroot=", v => sdkRoot = v);
 			p.Add ("android-sdkroot=", v => androidSdkRoot = v);
 			p.Add ("save-logcat=", v => SaveLogCat = v);
@@ -348,7 +343,6 @@ namespace Xamarin.AsyncTests.Console {
 				Directory.CreateDirectory (OutputDirectory);
 
 			StdOut = MakeAbsolute (OutputDirectory, stdout);
-			StdErr = MakeAbsolute (OutputDirectory, stderr);
 			ResultOutput = MakeAbsolute (OutputDirectory, resultOutput);
 			if (!noJUnit)
 				JUnitResultOutput = MakeAbsolute (OutputDirectory, junitResultOutput);

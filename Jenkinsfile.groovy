@@ -116,11 +116,11 @@ def buildAll ()
 	build (targetList)
 }
 
-def run (String target, String testCategory, String resultOutput, String junitResultOutput, String stdOut, String stdErr, String jenkinsHtml)
+def run (String target, String testCategory, String resultOutput, String junitResultOutput, String stdOut, String jenkinsHtml)
 {
 	def iosParams = "IosRuntime=$IOS_RUNTIME,IosDeviceType=$IOS_DEVICE_TYPE"
 	def resultParams = "ResultOutput=$resultOutput,JUnitResultOutput=$junitResultOutput"
-	def outputParams = "StdOut=$stdOut,StdErr=$stdErr,JenkinsHtml=$jenkinsHtml"
+	def outputParams = "StdOut=$stdOut,JenkinsHtml=$jenkinsHtml"
 	def extraParams = ""
 	if (params.EXTRA_JENKINS_ARGUMENTS != '') {
 		def extraParamValue = params.EXTRA_JENKINS_ARGUMENTS
@@ -137,13 +137,12 @@ def runTests (String target, String category, Boolean unstable = false, Integer 
 		sh "mkdir -p $outputDirAbs"
 		def resultOutput = "$outputDirAbs/TestResult-${target}-${category}.xml"
 		def junitResultOutput = "$outputDirAbs/JUnitTestResult-${target}-${category}.xml"
-        def stdOutLog = "$outputDir/stdout-${target}-${category}.log"
-        def stdErrLog = "$outputDir/stderr-${target}-${category}.log"
+        def outputLog = "$outputDir/output-${target}-${category}.log"
 		def jenkinsHtmlLog = "$outputDir/jenkins-${target}-${category}.html"
 		Boolean error = false
 		try {
 			timeout (timeoutValue) {
-				run (target, category, resultOutput, junitResultOutput, stdOutLog, stdErrLog, jenkinsHtmlLog)
+				run (target, category, resultOutput, junitResultOutput, outputLog, jenkinsHtmlLog)
 			}
 		} catch (exception) {
 			def result = currentBuild.result

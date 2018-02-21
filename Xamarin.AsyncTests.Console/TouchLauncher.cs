@@ -139,8 +139,6 @@ namespace Xamarin.AsyncTests.Console
 				args.AppendFormat (" --stdout={0}", Options.StdOut);
 				args.AppendFormat (" --stderr={0}", Options.StdOut);
 			}
-			if (!string.IsNullOrWhiteSpace (Options.StdErr))
-				args.AppendFormat (" --stderr={0}", Options.StdErr);
 			args.AppendFormat (" --sdkroot={0}", Options.SdkRoot);
 			args.AppendFormat (" --device=\"{0}\"", DeviceName);
 
