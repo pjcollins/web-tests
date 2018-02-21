@@ -64,16 +64,12 @@
 			<Output TaskParameter="TargetOutputs" ItemName="_ChildOutputs" />
 		</MSBuild>
 
-		<Message Text="CHILD OUTPUTS: %(_ChildOutputs.Identity)" />
-
 		<MSBuild Projects="$(AndroidProjectFile)"
 				Targets="JenkinsGetApkFile"
 				Properties="Configuration=$(ProjectConfiguration);AndroidPackageName=$(AndroidPackageName)"
 				Condition="'$(JenkinsPlatform)' == 'Android'" >
 			<Output TaskParameter="TargetOutputs" ItemName="_ChildOutputs2" />
 		</MSBuild>
-
-		<Message Text="CHILD OUTPUTS 2: %(_ChildOutputs2.Identity)" />
 
 		<ItemGroup Condition="'$(JenkinsPlatform)' == 'Console'">
 			<_MainAssemblyOutput Include="@(_ChildOutputs)" Condition="'%(FileName)' == '$(MainAssembly)'" />
