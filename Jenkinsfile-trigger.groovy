@@ -74,12 +74,13 @@ def triggerJob ()
 	currentBuild.result = triggeredBuild.result
 	
 	def vars = triggeredBuild.getBuildVariables ()
-	echo "VAR: ${vars.WEB_TESTS_COMMIT} - ${vars.WEB_TESTS_BUILD} - ${vars.WEB_TESTS_PROVISION_SUMMARY} - ${triggeredBuild.id}"
 	currentBuild.description = "${triggeredBuild.displayName} - ${triggeredBuild.description}"
 	
 	def summaryBadge = manager.createSummary ('info.gif')
 	summaryBadge.appendText ("<h2>Downstream build: <a href=\"${triggeredBuild.absoluteUrl}\">${triggeredBuild.displayName}</a></h2>", false)
 	summaryBadge.appendText ("<p>${triggeredBuild.description}</p>", false)
+	
+	echo "COPY ARTIFACTS: ${triggeredBuild.id}"
 	
 	copyArtifacts projectName: 'web-tests-martin4', selector: specific(triggeredBuild.id), fingerprintArtifacts: true
 }
