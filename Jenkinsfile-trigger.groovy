@@ -82,7 +82,7 @@ def triggerJob ()
 	
 	echo "COPY ARTIFACTS: ${triggeredBuild.id}"
 	
-	copyArtifacts projectName: 'web-tests-martin4', selector: specific(triggeredBuild.id), fingerprintArtifacts: true
+	copyArtifacts projectName: 'web-tests-martin4', selector: specific("${triggeredBuild.id}"), fingerprintArtifacts: true
 }
 
 def slackSend ()
