@@ -222,6 +222,8 @@ node ('felix-25-sierra') {
                     sh 'git clean -xffd'
 					gitCommitHash = sh (script: "git log -n 1 --pretty=format:'%h'", returnStdout: true)
 					currentBuild.displayName = "#$currentBuild.number:$gitCommitHash"
+					env.WEB_TESTS_COMMIT = gitCommitHash
+					env.WEB_TESTS_BUILD = currentBuild.displayName
                 }
             }
             stage ('provision') {
