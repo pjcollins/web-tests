@@ -1,38 +1,55 @@
 #!/bin/groovy
-properties([
-	parameters([
-		choice (name: 'USE_MONO_BRANCH', choices: 'NONE\n2017-12\n2018-02\nmaster', description: 'Mono branch'),
-		choice (name: 'USE_XI_BRANCH', choices: 'NONE\nmaster\nd15-6\nmono-2018-02', description: 'XI branch'),
-		choice (name: 'USE_XM_BRANCH', choices: 'NONE\nmaster\nd15-6\nmono-2018-02', description: 'XM branch'),
-		choice (name: 'USE_XA_BRANCH', choices: 'NONE\nmaster\nd15-6\nmono-2018-02', description: 'XA branch'),
-		choice (name: 'IOS_DEVICE_TYPE', choices: 'iPhone-5s', description: ''),
-		choice (name: 'IOS_RUNTIME', choices: 'iOS-10-0\niOS-10-3', description: ''),
-		string (defaultValue: '', description: '', name: 'EXTRA_JENKINS_ARGUMENTS')
-	])
-])
-
 def logParsingRuleFile = ""
 def gitCommitHash = ""
+
+def USE_MONO_BRANCH = "NONE"
+def USE_XI_BRANCH = "NONE"
+def USE_XM_BRANCH = "NONE"
+def USE_XA_BRANCH = "NONE"
+def IOS_DEVICE_TYPE = "iPhone-5s"
+def IOS_RUNTIME = "iOS-10-3"
+def EXTRA_JENKINS_ARGUMENTS = ""
+
+def profileSetup ()
+{
+	def profile = "${env.JENKINS_PROFILE}"
+	if (profile == 'martin') {
+		USE_MONO_BRANCH = 'master'
+		USE_XI_BRANCH = 'NONE'
+		USE_XM_BRANCH = 'NONE'
+		USE_XA_BRANCH = 'NONE'
+	} else {
+		USE_MONO_BRANCH = params.USE_MONO_BRANCH
+		USE_XI_BRANCH = params.USE_XI_BRANCH
+		USE_XM_BRANCH = params.USE_XM_BRANCH
+		USE_XA_BRANCH = params.USE_XA_BRANCH
+		IOS_DEVICE_TYPE = params.IOS_DEVICE_TYPE
+		IOS_RUNTIME = params.IOS_RUNTIME
+		EXTRA_JENKINS_ARGUMENTS = params.EXTRA_JENKINS_ARGUMENTS
+	}
+}
 
 def provision ()
 {
 	def args = [ ]
-	if (params.USE_MONO_BRANCH != 'NONE' && params.USE_MONO_BRANCH != '') {
-		args << "--mono=${params.USE_MONO_BRANCH}"
+	if (USE_MONO_BRANCH != 'NONE' && USE_MONO_BRANCH != '') {
+		args << "--mono=${USE_MONO_BRANCH}"
 	}
-	if (params.USE_XI_BRANCH != 'NONE' && params.USE_XI_BRANCH != '') {
-		args << "--xi=${params.USE_XI_BRANCH}"
+	if (USE_XI_BRANCH != 'NONE' && USE_XI_BRANCH != '') {
+		args << "--xi=${USE_XI_BRANCH}"
 	}
-	if (params.USE_XM_BRANCH != 'NONE' && params.USE_XM_BRANCH != '') {
-		args << "--xm=${params.USE_XM_BRANCH}"
+	if (USE_XM_BRANCH != 'NONE' && USE_XM_BRANCH != '') {
+		args << "--xm=${USE_XM_BRANCH}"
 	}
-	if (params.USE_XA_BRANCH != 'NONE' && params.USE_XA_BRANCH != '') {
-		args << "--xa=${params.USE_XA_BRANCH}"
+	if (USE_XA_BRANCH != 'NONE' && USE_XA_BRANCH != '') {
+		args << "--xa=${USE_XA_BRANCH}"
 	}
 	def summaryFile = "${env.WORKSPACE}/summary.txt"
 	def provisionOutput = "provision-output.txt"
+	def provisionHtml = "provision-output.html"
 	args << "--summary=$summaryFile"
 	args << "--out=$provisionOutput"
+	args << "--html=$provisionHtml"
 	def argList = args.join (" ")
 	dir ('web-tests/Tools/AutoProvisionTool') {
 		try {
@@ -43,6 +60,7 @@ def provision ()
 			}
 		} finally {
 			archiveArtifacts artifacts: provisionOutput, fingerprint: true, allowEmptyArchive: true
+			rtp nullAction: '1', parserName: 'html', stableText: "\${FILE:$provisionHtml}"
 		}
 	}
 	
@@ -53,22 +71,22 @@ def provision ()
 
 def enableMono ()
 {
-	return params.USE_MONO_BRANCH != 'NONE' && params.USE_MONO_BRANCH != ''
+	return USE_MONO_BRANCH != 'NONE' && USE_MONO_BRANCH != ''
 }
 
 def enableXI ()
 {
-	return params.USE_XI_BRANCH != 'NONE' && params.USE_XI_BRANCH != ''
+	return USE_XI_BRANCH != 'NONE' && USE_XI_BRANCH != ''
 }
 
 def enableXM ()
 {
-	return params.USE_XM_BRANCH != 'NONE' && params.USE_XM_BRANCH != ''
+	return USE_XM_BRANCH != 'NONE' && USE_XM_BRANCH != ''
 }
 
 def enableXA ()
 {
-	return params.USE_XA_BRANCH != 'NONE' && params.USE_XA_BRANCH != ''
+	return USE_XA_BRANCH != 'NONE' && USE_XA_BRANCH != ''
 }
 
 def runShell (String command)
@@ -113,14 +131,14 @@ def buildAll ()
 	build (targetList)
 }
 
-def run (String target, String testCategory, String resultOutput, String junitResultOutput, String stdOut, String stdErr)
+def run (String target, String testCategory, String resultOutput, String junitResultOutput, String stdOut, String jenkinsHtml)
 {
 	def iosParams = "IosRuntime=$IOS_RUNTIME,IosDeviceType=$IOS_DEVICE_TYPE"
 	def resultParams = "ResultOutput=$resultOutput,JUnitResultOutput=$junitResultOutput"
-	def outputParams = "StdOut=$stdOut,StdErr=$stdErr"
+	def outputParams = "StdOut=$stdOut,JenkinsHtml=$jenkinsHtml"
 	def extraParams = ""
-	if (params.EXTRA_JENKINS_ARGUMENTS != '') {
-		def extraParamValue = params.EXTRA_JENKINS_ARGUMENTS
+	if (EXTRA_JENKINS_ARGUMENTS != '') {
+		def extraParamValue = EXTRA_JENKINS_ARGUMENTS
 		extraParams = ",JenkinsExtraArguments=\"$extraParamValue\""
 	}
 	runShell ("msbuild Jenkinsfile.targets /t:Run /p:JenkinsTarget=$target,TestCategory=$testCategory,$iosParams,$resultParams,$outputParams$extraParams")
@@ -134,12 +152,12 @@ def runTests (String target, String category, Boolean unstable = false, Integer 
 		sh "mkdir -p $outputDirAbs"
 		def resultOutput = "$outputDirAbs/TestResult-${target}-${category}.xml"
 		def junitResultOutput = "$outputDirAbs/JUnitTestResult-${target}-${category}.xml"
-        def stdOutLog = "$outputDirAbs/stdout-${target}-${category}.log"
-        def stdErrLog = "$outputDirAbs/stderr-${target}-${category}.log"
+        def outputLog = "$outputDir/output-${target}-${category}.log"
+		def jenkinsHtmlLog = "$outputDir/jenkins-${target}-${category}.html"
 		Boolean error = false
 		try {
 			timeout (timeoutValue) {
-				run (target, category, resultOutput, junitResultOutput, stdOutLog, stdErrLog)
+				run (target, category, resultOutput, junitResultOutput, outputLog, jenkinsHtmlLog)
 			}
 		} catch (exception) {
 			def result = currentBuild.result
@@ -151,6 +169,10 @@ def runTests (String target, String category, Boolean unstable = false, Integer 
 			}
 		} finally {
 			archiveArtifacts artifacts: "$outputDir/*.log", fingerprint: true, allowEmptyArchive: true
+			if (fileExists (jenkinsHtmlLog)) {
+				archiveArtifacts artifacts: "$jenkinsHtmlLog", fingerprint: true, allowEmptyArchive: true
+				rtp nullAction: '1', parserName: 'html', stableText: "\${FILE:$jenkinsHtmlLog}"
+			}
 			if (!error) {
 				junit keepLongStdio: true, testResults: "$outputDir/*.xml"
 				archiveArtifacts artifacts: "$outputDir/*.xml", fingerprint: true
@@ -163,6 +185,7 @@ node ('master') {
     stage ('initialize') {
         // We need to define this on the master node.
         logParsingRuleFile = "${env.WORKSPACE}/../workspace@script/jenkins-log-parser.txt"
+		profileSetup ()
     }
 }
 
@@ -171,7 +194,7 @@ node ('felix-25-sierra') {
         timestamps {
             stage ('checkout') {
                 dir ('web-tests') {
-                    git url: 'git@github.com:xamarin/web-tests.git', branch: 'master'
+                    git url: 'git@github.com:xamarin/web-tests.git', branch: 'work-jenkins'
                     sh 'git clean -xffd'
 					gitCommitHash = sh (script: "git log -n 1 --pretty=format:'%h'", returnStdout: true)
 					currentBuild.displayName = "#$currentBuild.number:$gitCommitHash"

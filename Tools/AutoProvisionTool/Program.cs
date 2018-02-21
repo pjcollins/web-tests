@@ -44,15 +44,18 @@ namespace AutoProvisionTool
 		}
 
 		static TextWriter Output;
+		static string HtmlFile;
+		static string OutputFile;
+		static TextWriter HtmlOutput;
 
 		public static void Main (string[] args)
 		{
 			var products = new List<Product> ();
 			string summaryFile = null;
-			string outputFile = null;
 			var p = new OptionSet ();
 			p.Add ("summary=", "Write summary to file", v => summaryFile = v);
-			p.Add ("out=", "Write output to file", v => outputFile = v);
+			p.Add ("out=", "Write output to file", v => OutputFile = v);
+			p.Add ("html=", "Write html output to file", v => HtmlFile = v);
 			p.Add ("mono=", "Mono branch", v => products.Add (new MonoProduct (v)));
 			p.Add ("xi=", "Xamarin.iOS branch", v => products.Add (new IOSProduct (v)));
 			p.Add ("xm=", "Xamarin.Mac branch", v => products.Add (new MacProduct (v)));
@@ -77,9 +80,14 @@ namespace AutoProvisionTool
 				return;
 			}
 
-			if (outputFile != null) {
-				Output = new StreamWriter (outputFile);
-				Log ($"Logging output to {outputFile}.");
+			if (OutputFile != null) {
+				Output = new StreamWriter (OutputFile);
+				Log ($"Logging output to {OutputFile}.");
+			}
+
+			if (HtmlFile != null) {
+				HtmlOutput = new StreamWriter (HtmlFile);
+				HtmlOutput.WriteLine ("<h3>Provision Summary</h3>");
 			}
 
 			try {
@@ -114,6 +122,8 @@ namespace AutoProvisionTool
 				Output.Flush ();
 				Output.Dispose ();
 			}
+
+			Finish ();
 
 			void Usage (string message = null)
 			{
@@ -179,15 +189,35 @@ namespace AutoProvisionTool
 			foreach (var product in products) {
 				var oldVersion = await product.PrintVersion (VersionFormat.Normal).ConfigureAwait (false);
 				Log ($"Provisioning {product.Name} from {product.Branch}.");
+				Package package;
 				try {
-					await product.Provision ().ConfigureAwait (false);
+					package = await product.Provision ();
 				} catch (Exception ex) {
 					LogError ($"Failed to provision {product.Name} from {product.Branch}:\n{ex}");
 					throw;
 				}
-				var newVersion = await product.PrintVersion (VersionFormat.Normal).ConfigureAwait (false);
+				var newVersion = await product.PrintVersion (VersionFormat.Normal);
+				var fullVersion = await product.PrintVersion (VersionFormat.Full);
 				Log ($"Old {product.Name} version: {oldVersion}");
 				Log ($"New {product.Name} version: {newVersion}");
+				LogHtml ($"<p>Provisioned {product.Name} version {newVersion} from " +
+				         $"{BranchLink (product)} commit {CommitLink (package)} ({PackageLink (package)}).");
+				LogHtml ($"<pre>{fullVersion}</pre>");
+			}
+
+			string BranchLink (Product product)
+			{
+				return $"<a href=\"https://github.com/{product.RepoOwner}/{product.RepoName}/commits/{product.Branch}\">{product.RepoName}/{product.Branch}</a>";
+			}
+
+			string CommitLink (Package package)
+			{
+				return $"<a href=\"https://github.com/{package.Product.RepoOwner}/{package.Product.RepoName}/commit/{package.Commit.Sha}\">{package.Commit.Sha.Substring (0, 7)}</a>";
+			}
+
+			string PackageLink (Package package)
+			{
+				return $"<a href=\"{package.TargetUri}\">{Path.GetFileName (package.TargetUri.AbsolutePath)}</a>";
 			}
 		}
 
@@ -201,6 +231,12 @@ namespace AutoProvisionTool
 		public static void Debug (string format, params object[] args)
 		{
 			Log (string.Format (format, args));
+		}
+
+		public static void LogHtml (string message)
+		{
+			if (HtmlOutput != null)
+				HtmlOutput.WriteLine (message);
 		}
 
 		public static async Task<string> RunCommandWithOutput (
@@ -237,7 +273,25 @@ namespace AutoProvisionTool
 				Output.Flush ();
 				Output.Dispose ();
 			}
+			if (HtmlOutput != null) {
+				HtmlOutput.WriteLine ($"<p><b>Auto provisioning failed!</b></p>");
+				HtmlOutput.WriteLine ($"<pre>{message}</pre>");
+			}
+			Finish ();
 			Environment.Exit (1);
+		}
+
+		static void Finish ()
+		{
+			if (HtmlOutput != null) {
+				if (OutputFile != null) {
+					HtmlOutput.WriteLine ($"<p></p>");
+					HtmlOutput.WriteLine ($"<p>Provision output: <a href=\"artifact/{OutputFile}\">{OutputFile}</a></p>");
+				}
+				HtmlOutput.WriteLine ($"<p></p>");
+				HtmlOutput.Flush ();
+				HtmlOutput.Dispose ();
+			}
 		}
 	}
 }

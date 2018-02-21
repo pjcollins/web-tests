@@ -80,6 +80,11 @@ namespace Xamarin.AsyncTests.Console {
 			private set;
 		}
 
+		public string JenkinsHtml {
+			get;
+			private set;
+		}
+
 		public string OutputDirectory {
 			get;
 		}
@@ -118,10 +123,6 @@ namespace Xamarin.AsyncTests.Console {
 		}
 
 		public string StdOut {
-			get;
-		}
-
-		public string StdErr {
 			get;
 		}
 
@@ -174,7 +175,7 @@ namespace Xamarin.AsyncTests.Console {
 			var junitResultOutput = "JUnitTestResult.xml";
 			string packageName = null;
 
-			string outputDir = null, stdout = null, stderr = null;
+			string outputDir = null, stdout = null;
 			string customSettings = null;
 			string sdkRoot = null, iosDeviceType = null, iosRuntime = null;
 			string androidSdkRoot = null;
@@ -212,11 +213,11 @@ namespace Xamarin.AsyncTests.Console {
 			p.Add ("ios-device-type=", v => iosDeviceType = v);
 			p.Add ("ios-runtime=", v => iosRuntime = v);
 			p.Add ("stdout=", v => stdout = v);
-			p.Add ("stderr=", v => stderr = v);
 			p.Add ("sdkroot=", v => sdkRoot = v);
 			p.Add ("android-sdkroot=", v => androidSdkRoot = v);
 			p.Add ("save-logcat=", v => SaveLogCat = v);
 			p.Add ("jenkins", v => Jenkins = true);
+			p.Add ("jenkins-html=", v => JenkinsHtml = v);
 			p.Add ("output-dir=", v => outputDir = v);
 			p.Add ("repeat=", v => repeat = int.Parse (v));
 			p.Add ("dont-save-logging", v => dontSaveLogging = true);
@@ -257,7 +258,7 @@ namespace Xamarin.AsyncTests.Console {
 			case Command.Local:
 				if (assembly != null) {
 					if (arguments.Count != 0) {
-						arguments.ForEach (a => Program.Error ("Unexpected remaining argument: {0}", a));
+						arguments.ForEach (a => Program.PrintError ($"Unexpected remaining argument: {a}"));
 						throw new ProgramException ("Unexpected extra argument.");
 					}
 					Assembly = assembly;
@@ -279,7 +280,7 @@ namespace Xamarin.AsyncTests.Console {
 					if (EndPoint == null)
 						throw new ProgramException ("Missing endpoint");
 				} else {
-					arguments.ForEach (a => Program.Error ("Unexpected remaining argument: {0}", a));
+					arguments.ForEach (a => Program.PrintError ($"Unexpected remaining argument: {a}"));
 					throw new ProgramException ("Unexpected extra argument.");
 				}
 				break;
@@ -342,10 +343,10 @@ namespace Xamarin.AsyncTests.Console {
 				Directory.CreateDirectory (OutputDirectory);
 
 			StdOut = MakeAbsolute (OutputDirectory, stdout);
-			StdErr = MakeAbsolute (OutputDirectory, stderr);
 			ResultOutput = MakeAbsolute (OutputDirectory, resultOutput);
 			if (!noJUnit)
 				JUnitResultOutput = MakeAbsolute (OutputDirectory, junitResultOutput);
+			JenkinsHtml = MakeAbsolute (OutputDirectory, JenkinsHtml);
 
 			if (settingsFile != null) {
 				if (saveSettings == null)
