@@ -79,7 +79,7 @@ def triggerJob ()
 	
 	def summaryBadge = manager.createSummary ('info.gif')
 	summaryBadge.appendText ("<h2>Downstream build: <a href=\"${triggeredBuild.absoluteUrl}\">${vars.WEB_TESTS_BUILD}</a></h2>", false)
-	summaryBadge.appendText ("<p>${triggeredBuild.summary}</p>", false)
+	summaryBadge.appendText ("<p>${triggeredBuild.description}</p>", false)
 }
 
 def slackSend ()
