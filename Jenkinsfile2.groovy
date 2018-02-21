@@ -6,6 +6,9 @@ def USE_MONO_BRANCH = "NONE"
 def USE_XI_BRANCH = "NONE"
 def USE_XM_BRANCH = "NONE"
 def USE_XA_BRANCH = "NONE"
+def IOS_DEVICE_TYPE = "iPhone-5s"
+def IOS_RUNTIME = "iOS-10-3"
+def EXTRA_JENKINS_ARGUMENTS = ""
 
 def profileSetup ()
 {
@@ -20,6 +23,9 @@ def profileSetup ()
 		USE_XI_BRANCH = params.USE_XI_BRANCH
 		USE_XM_BRANCH = params.USE_XM_BRANCH
 		USE_XA_BRANCH = params.USE_XA_BRANCH
+		IOS_DEVICE_TYPE = params.IOS_DEVICE_TYPE
+		IOS_RUNTIME = params.IOS_RUNTIME
+		EXTRA_JENKINS_ARGUMENTS = params.EXTRA_JENKINS_ARGUMENTS
 	}
 }
 
