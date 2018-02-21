@@ -2,8 +2,6 @@
 def logParsingRuleFile = ""
 def gitCommitHash = ""
 
-def MASTER_JOB = "web-tests-martin4"
-
 def USE_MONO_BRANCH = "NONE"
 def USE_XI_BRANCH = "NONE"
 def USE_XM_BRANCH = "NONE"
@@ -16,10 +14,11 @@ def profileSetup ()
 {
 	def profile = "${env.JENKINS_PROFILE}"
 	if (profile == 'master') {
-		USE_MONO_BRANCH = 'master'
+		USE_MONO_BRANCH = 'NONE'
 		USE_XI_BRANCH = 'NONE'
 		USE_XM_BRANCH = 'NONE'
 		USE_XA_BRANCH = 'NONE'
+		EXTRA_JENKINS_ARGUMENTS = 'MARTIN'
 	} else if (profile == '2017-12') {
 		USE_MONO_BRANCH = '2017-12'
 		USE_XI_BRANCH = 'NONE'
@@ -58,7 +57,9 @@ def profileSetup ()
 def triggerJob ()
 {
     build job: 'web-tests-martin4', parameters: [
-		[$class: 'StringParameterValue', name: 'USE_MONO_BRANCH', value: USE_MONO_BRANCH]
+		string (name: 'USE_MONO_BRANCH', value: USE_MONO_BRANCH),
+		string (name: 'USE_XI_BRANCH', value: USE_XI_BRANCH),
+		string (name: 'EXTRA_JENKINS_ARGUMENTS', value: EXTRA_JENKINS_ARGUMENTS),
 	]
 }
 
