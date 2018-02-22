@@ -191,16 +191,16 @@ def runTests (String target, String category, Boolean unstable = false, Integer 
 
 	dir ('web-tests') {
 		def outputDir = target + "/" + category
-		def outputDirAbs = pwd() + "/" + OUTPUT_DIRECTORY + "/" + outputDir
-		sh "mkdir -p $outputDirAbs"
-		def resultOutput = "TestResult-${target}-${category}.xml"
-		def junitResultOutput = "JUnitTestResult-${target}-${category}.xml"
-        def outputLog = "output-${target}-${category}.log"
-		def jenkinsHtmlLog = "jenkins-summary-${target}-${category}.html"
+//		def outputDirAbs = pwd() + "/" + OUTPUT_DIRECTORY
+//		sh "mkdir -p $outputDirAbs"
+		def resultOutput = "$outputDir/TestResult-${target}-${category}.xml"
+		def junitResultOutput = "$outputDir/JUnitTestResult-${target}-${category}.xml"
+        def outputLog = "$outputDir/output-${target}-${category}.log"
+		def jenkinsHtmlLog = "$outputDir/jenkins-summary-${target}-${category}.html"
 		Boolean error = false
 		try {
 			timeout (timeoutValue) {
-				run (target, category, outputDirAbs, resultOutput, junitResultOutput, outputLog, jenkinsHtmlLog)
+				run (target, category, OUTPUT_DIRECTORY, resultOutput, junitResultOutput, outputLog, jenkinsHtmlLog)
 			}
 		} catch (exception) {
 			def result = currentBuild.result
@@ -212,13 +212,11 @@ def runTests (String target, String category, Boolean unstable = false, Integer 
 			}
 		} finally {
 			dir (OUTPUT_DIRECTORY) {
-				def outputLogPath = outputDir + "/" + outputLog
-				def htmlLogPath = outputDir + "/" + jenkinsHtmlLog
-				if (fileExists (outputLogPath))
-					archiveArtifacts artifacts: outputLogPath, fingerprint: true, allowEmptyArchive: true
-				if (fileExists (htmlLogPath)) {
+				if (fileExists (outputLog))
+					archiveArtifacts artifacts: outputLog, fingerprint: true, allowEmptyArchive: true
+				if (fileExists (jenkinsHtmlLog)) {
 					archiveArtifacts artifacts: htmlLogPath, fingerprint: true, allowEmptyArchive: true
-					rtp nullAction: '1', parserName: 'html', stableText: "\${FILE:$htmlLogPath}"
+					rtp nullAction: '1', parserName: 'html', stableText: "\${FILE:$jenkinsHtmlLog}"
 				}
 				if (!error) {
 					junit keepLongStdio: true, testResults: "$outputDir/*.xml"
