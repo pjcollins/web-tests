@@ -16,6 +16,19 @@ properties([
 	])
 ])
 
+//
+// Specifying branches and commits:
+// * NONE - skip this product
+// * CURRENT - keep what's currently installed on the bot
+// * SPECIFIC - use specific commit (which needs to be set in the corresponding '_COMMIT' parameter)
+//
+// If you put anything into the '_COMMIT' parameter without using "SPECIFIC", then it will be appended
+// to the branch name using the @{commit} syntax - for instance "master@{yesterday}"
+//
+// By default, the AutoProvisionTool will go back up to 25 commits from the one specified until it
+// finds one that has a package set as github status.  Set the 'SPECIFIC_COMMIT' parameter to disable this.
+//
+
 def logParsingRuleFile = ""
 def gitCommitHash = ""
 
