@@ -121,9 +121,10 @@ def buildAll ()
 
 def run (String target, String testCategory, String resultOutput, String junitResultOutput, String stdOut, String jenkinsHtml)
 {
+	def buildPath = new URL (env.BUILD_URL).getPath()
 	def iosParams = "IosRuntime=$IOS_RUNTIME,IosDeviceType=$IOS_DEVICE_TYPE"
 	def resultParams = "ResultOutput=$resultOutput,JUnitResultOutput=$junitResultOutput"
-	def outputParams = "StdOut=$stdOut,JenkinsHtml=$jenkinsHtml,JenkinsJob=\'${env.BUILD_URL}\'"
+	def outputParams = "StdOut=$stdOut,JenkinsHtml=$jenkinsHtml,JenkinsJob=$buildPath"
 	def extraParams = ""
 	if (params.EXTRA_JENKINS_ARGUMENTS != '') {
 		def extraParamValue = params.EXTRA_JENKINS_ARGUMENTS
