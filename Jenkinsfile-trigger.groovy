@@ -1,5 +1,4 @@
 #!/bin/groovy
-def logParsingRuleFile = ""
 def gitCommitHash = ""
 
 def USE_MONO_BRANCH = "NONE"
@@ -100,33 +99,23 @@ def triggerJob ()
 	echo "Build status #1: ${currentBuild.result}"
 }
 
-def slackSend ()
+def slackSend (String message)
 {
-	slackSend channel: "#martin-jenkins", message: "${env.JOB_NAME} - #${env.BUILD_NUMBER} ${currentBuild.result} (<${env.BUILD_URL}|Open>)"
+	slackSend channel: "#martin-jenkins", message: "${env.JOB_NAME} - #${env.BUILD_NUMBER} ${message} (<${env.BUILD_URL}|Open>)"
 }
 
 node ('felix-25-sierra') {
-    try {
-        timestamps {
-            stage ('initialize') {
-				profileSetup ()
-			}
-//			stage ('before') {
-//				sh 'pwd'
-//				sh 'ls -lR'
-//			}
-            stage ('build') {
-				slackSend ()
+	timestamps {
+		stage ('initialize') {
+			profileSetup ()
+		}
+		stage ('build') {
+			try {
 				triggerJob ()
-            }
-			stage ('test') {
-				sh 'pwd'
-				sh 'ls -lR artifacts'
+				slackSend ("${currentBuild.result}")
+			} catch (exception) {
+				slackSend ("ERROR: $exception")
 			}
-        }
-    } finally {
-        stage ('parse-logs') {
-            step ([$class: 'LogParserPublisher', parsingRulesPath: "$logParsingRuleFile", useProjectRule: false, failBuildOnError: true]);
-        }
-    }
+		}
+	}
 }
