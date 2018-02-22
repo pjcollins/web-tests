@@ -327,7 +327,7 @@ namespace AutoProvisionTool
 			if (HtmlOutput != null) {
 				if (OutputFile != null) {
 					HtmlOutput.WriteLine ($"<p></p>");
-					HtmlOutput.WriteLine ($"<p>Provision output: <a href=\"{GetOutputLink ()}\">{OutputFile}</a></p>");
+					HtmlOutput.WriteLine ($"<p>Provision output: <a href=\"{GetOutputLink ()}\">{Path.GetFileName (OutputFile)}</a></p>");
 				}
 				HtmlOutput.WriteLine ($"<p></p>");
 				HtmlOutput.Flush ();
