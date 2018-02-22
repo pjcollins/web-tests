@@ -123,7 +123,7 @@ def run (String target, String testCategory, String resultOutput, String junitRe
 {
 	def iosParams = "IosRuntime=$IOS_RUNTIME,IosDeviceType=$IOS_DEVICE_TYPE"
 	def resultParams = "ResultOutput=$resultOutput,JUnitResultOutput=$junitResultOutput"
-	def outputParams = "StdOut=$stdOut,JenkinsHtml=$jenkinsHtml,JenkinsJob=${env.BUILD_URL}"
+	def outputParams = "StdOut=$stdOut,JenkinsHtml=$jenkinsHtml,JenkinsJob=\"${env.BUILD_URL}\""
 	def extraParams = ""
 	if (params.EXTRA_JENKINS_ARGUMENTS != '') {
 		def extraParamValue = params.EXTRA_JENKINS_ARGUMENTS
