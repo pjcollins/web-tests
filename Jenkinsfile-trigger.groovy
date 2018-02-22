@@ -14,7 +14,7 @@ def profileSetup ()
 {
 	def profile = "${env.JENKINS_PROFILE}"
 	if (profile == 'master') {
-		USE_MONO_BRANCH = 'NONE'
+		USE_MONO_BRANCH = 'master'
 		USE_XI_BRANCH = 'NONE'
 		USE_XM_BRANCH = 'NONE'
 		USE_XA_BRANCH = 'NONE'
