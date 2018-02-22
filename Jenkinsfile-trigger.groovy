@@ -90,7 +90,6 @@ def triggerJob ()
 	
 	sh "rm -rf artifacts"
 	sh "mkdir -p artifacts"
-	sh "ls -lR artifacts"
 	
 	echo "Copying artifacts."
 	
@@ -113,6 +112,8 @@ def triggerJob ()
 	echo "Done publishing html summaries."
 	
 	junit keepLongStdio: true, testResults: "artifacts/*.xml"
+
+	echo "Done publishing test results."
 }
 
 def slackSend (String color, String message)
