@@ -46,6 +46,7 @@ namespace AutoProvisionTool
 		static TextWriter Output;
 		static string HtmlFile;
 		static string OutputFile;
+		static string JenkinsJobUrl;
 		static TextWriter HtmlOutput;
 
 		public static void Main (string[] args)
@@ -57,6 +58,7 @@ namespace AutoProvisionTool
 			p.Add ("out=", "Write output to file", v => OutputFile = v);
 			p.Add ("html=", "Write html output to file", v => HtmlFile = v);
 			p.Add ("mono=", "Mono branch", v => products.Add (new MonoProduct (v)));
+			p.Add ("jenkins-job=", "Jenkins Job Url", v => JenkinsJobUrl = v);
 			p.Add ("xi=", "Xamarin.iOS branch", v => products.Add (new IOSProduct (v)));
 			p.Add ("xm=", "Xamarin.Mac branch", v => products.Add (new MacProduct (v)));
 			p.Add ("xa=", "Xamarin.Android branch", v => products.Add (new AndroidProduct (v)));
@@ -286,11 +288,18 @@ namespace AutoProvisionTool
 			if (HtmlOutput != null) {
 				if (OutputFile != null) {
 					HtmlOutput.WriteLine ($"<p></p>");
-					HtmlOutput.WriteLine ($"<p>Provision output: <a href=\"artifact/{OutputFile}\">{OutputFile}</a></p>");
+					HtmlOutput.WriteLine ($"<p>Provision output: <a href=\"GetOutputLink ()\">{OutputFile}</a></p>");
 				}
 				HtmlOutput.WriteLine ($"<p></p>");
 				HtmlOutput.Flush ();
 				HtmlOutput.Dispose ();
+			}
+
+			string GetOutputLink ()
+			{
+				if (JenkinsJobUrl == null)
+					return $"artifact/{OutputFile}";
+				return $"{JenkinsJobUrl}/artifact/{OutputFile}";
 			}
 		}
 	}

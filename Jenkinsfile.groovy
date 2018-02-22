@@ -35,6 +35,7 @@ def provision ()
 	args << "--summary=$summaryFile"
 	args << "--out=$provisionOutput"
 	args << "--html=$provisionHtml"
+	args << "--jenkins-job=${env.BUILD_URL}"
 	def argList = args.join (" ")
 	dir ('web-tests/Tools/AutoProvisionTool') {
 		try {
