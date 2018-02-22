@@ -336,9 +336,10 @@ namespace AutoProvisionTool
 
 			string GetOutputLink ()
 			{
-				if (JenkinsJobPath == null)
-					return $"artifact/{OutputFile}";
-				return $"{JenkinsJobPath}/artifact/{OutputFile}";
+				var prefix = "artifact";
+				if (JenkinsJobPath != null)
+					prefix = Path.Combine (JenkinsJobPath, prefix);
+				return Path.Combine (prefix, Path.GetFileName (OutputFile));
 			}
 		}
 	}

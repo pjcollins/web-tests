@@ -195,20 +195,13 @@ namespace Xamarin.AsyncTests.Console
 		{
 			if (JenkinsHtml != null) {
 				if (Options.StdOut != null)
-					JenkinsHtml.WriteLine ($"<p>Output: <a href=\"{GetOutputLink ()}\">{Options.StdOut}</a>.");
+					JenkinsHtml.WriteLine ($"<p>Output: <a href=\"{Options.JenkinsStdOutLink}\">{Options.StdOut}</a>.");
 				JenkinsHtml.Flush ();
 				JenkinsHtml.Dispose ();
 			}
 			if (StdOut != null) {
 				StdOut.Flush ();
 				StdOut.Dispose ();
-			}
-
-			string GetOutputLink ()
-			{
-				if (Options.JenkinsJobPath == null)
-					return $"artifact/{Options.StdOut}";
-				return $"{Options.JenkinsJobPath}/artifact/{Options.StdOut}";
 			}
 		}
 

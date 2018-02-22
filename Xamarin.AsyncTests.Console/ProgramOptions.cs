@@ -126,6 +126,10 @@ namespace Xamarin.AsyncTests.Console {
 			get;
 		}
 
+		public string JenkinsStdOutLink {
+			get;
+		}
+
 		public string SdkRoot {
 			get;
 		}
@@ -347,6 +351,13 @@ namespace Xamarin.AsyncTests.Console {
 
 			if (!string.IsNullOrEmpty (OutputDirectory) && !Directory.Exists (OutputDirectory))
 				Directory.CreateDirectory (OutputDirectory);
+
+			if (stdout != null) {
+				if (JenkinsJobPath != null)
+					JenkinsStdOutLink = Path.Combine (JenkinsJobPath, stdout);
+				else
+					JenkinsStdOutLink = stdout;
+			}
 
 			StdOut = MakeAbsolute (OutputDirectory, stdout);
 			ResultOutput = MakeAbsolute (OutputDirectory, resultOutput);
