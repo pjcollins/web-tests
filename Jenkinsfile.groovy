@@ -1,10 +1,10 @@
 #!/bin/groovy
 properties([
 	parameters([
-		choice (name: 'USE_MONO_BRANCH', choices: 'NONE\n2017-12\n2018-02\nmaster', description: 'Mono branch'),
-		choice (name: 'USE_XI_BRANCH', choices: 'NONE\nmaster\nd15-6\nmono-2018-02', description: 'XI branch'),
-		choice (name: 'USE_XM_BRANCH', choices: 'NONE\nmaster\nd15-6\nmono-2018-02', description: 'XM branch'),
-		choice (name: 'USE_XA_BRANCH', choices: 'NONE\nmaster\nd15-6\nmono-2018-02', description: 'XA branch'),
+		choice (name: 'USE_MONO_BRANCH', choices: 'NONE\nCURRENT\n2017-12\n2018-02\nmaster', description: 'Mono branch'),
+		choice (name: 'USE_XI_BRANCH', choices: 'NONE\nCURRENT\nmaster\nd15-6\nmono-2018-02', description: 'XI branch'),
+		choice (name: 'USE_XM_BRANCH', choices: 'NONE\nCURRENT\nmaster\nd15-6\nmono-2018-02', description: 'XM branch'),
+		choice (name: 'USE_XA_BRANCH', choices: 'NONE\nCURRENT\nmaster\nd15-6\nmono-2018-02', description: 'XA branch'),
 		choice (name: 'IOS_DEVICE_TYPE', choices: 'iPhone-5s', description: ''),
 		choice (name: 'IOS_RUNTIME', choices: 'iOS-10-0\niOS-10-3', description: ''),
 		string (defaultValue: '', description: '', name: 'EXTRA_JENKINS_ARGUMENTS')

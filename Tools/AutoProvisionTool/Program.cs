@@ -71,7 +71,7 @@ namespace AutoProvisionTool
 				return;
 			}
 
-			if (args.Length < 1) {
+			if (arguments.Count < 1) {
 				Usage ("Missing command.");
 				return;
 			}
@@ -190,6 +190,14 @@ namespace AutoProvisionTool
 		{
 			foreach (var product in products) {
 				var oldVersion = await product.PrintVersion (VersionFormat.Normal).ConfigureAwait (false);
+				if (string.Equals (product.Branch, "current", StringComparison.OrdinalIgnoreCase)) {
+					Log ($"Keeping current {product.Name}.");
+					var currentVersion = await product.PrintVersion (VersionFormat.Normal);
+					Log ($"Current {product.Name} version: {currentVersion}");
+					LogHtml ($"<p>Keeping current {product.Name} version {currentVersion}.");
+					await PrintFullVersion (product);
+					continue;
+				}
 				Log ($"Provisioning {product.Name} from {product.Branch}.");
 				Package package;
 				try {
@@ -199,12 +207,11 @@ namespace AutoProvisionTool
 					throw;
 				}
 				var newVersion = await product.PrintVersion (VersionFormat.Normal);
-				var fullVersion = await product.PrintVersion (VersionFormat.Full);
 				Log ($"Old {product.Name} version: {oldVersion}");
 				Log ($"New {product.Name} version: {newVersion}");
 				LogHtml ($"<p>Provisioned {product.Name} version {newVersion} from " +
 				         $"{BranchLink (product)} commit {CommitLink (package)} ({PackageLink (package)}).");
-				LogHtml ($"<pre>{fullVersion}</pre>");
+				await PrintFullVersion (product);
 			}
 
 			string BranchLink (Product product)
@@ -220,6 +227,12 @@ namespace AutoProvisionTool
 			string PackageLink (Package package)
 			{
 				return $"<a href=\"{package.TargetUri}\">{Path.GetFileName (package.TargetUri.AbsolutePath)}</a>";
+			}
+
+			async Task PrintFullVersion (Product product)
+			{
+				var fullVersion = await product.PrintVersion (VersionFormat.Full).ConfigureAwait (false);
+				LogHtml ($"<pre>{fullVersion}</pre>");
 			}
 		}
 
