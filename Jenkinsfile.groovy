@@ -215,7 +215,7 @@ def runTests (String target, String category, Boolean unstable = false, Integer 
 				if (fileExists (outputLog))
 					archiveArtifacts artifacts: outputLog, fingerprint: true, allowEmptyArchive: true
 				if (fileExists (jenkinsHtmlLog)) {
-					archiveArtifacts artifacts: htmlLogPath, fingerprint: true, allowEmptyArchive: true
+					archiveArtifacts artifacts: jenkinsHtmlLog, fingerprint: true, allowEmptyArchive: true
 					rtp nullAction: '1', parserName: 'html', stableText: "\${FILE:$jenkinsHtmlLog}"
 				}
 				if (!error) {
