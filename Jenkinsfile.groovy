@@ -7,11 +7,11 @@ properties([
 		choice (name: 'XA_BRANCH', choices: 'NONE\nCURRENT\nSPECIFIC\nmaster\nd15-6\nmono-2018-02', description: 'XA branch'),
 		choice (name: 'IOS_DEVICE_TYPE', choices: 'iPhone-5s', description: ''),
 		choice (name: 'IOS_RUNTIME', choices: 'iOS-10-0\niOS-10-3', description: ''),
-		string (name: 'MONO_COMMIT', defaultValue: '', description: 'Use specific Mono commit')
-		string (name: 'XI_COMMIT', defaultValue: '', description: 'Use specific XI commit')
-		string (name: 'XM_COMMIT', defaultValue: '', description: 'Use specific XM commit')
-		string (name: 'XA_COMMIT', defaultValue: '', description: 'Use specific Android commit')
-		string (name: 'EXTRA_JENKINS_ARGUMENTS', defaultValue: '', description: '')
+		string (name: 'MONO_COMMIT', defaultValue: '', description: 'Use specific Mono commit'),
+		string (name: 'XI_COMMIT', defaultValue: '', description: 'Use specific XI commit'),
+		string (name: 'XM_COMMIT', defaultValue: '', description: 'Use specific XM commit'),
+		string (name: 'XA_COMMIT', defaultValue: '', description: 'Use specific Android commit'),
+		string (name: 'EXTRA_JENKINS_ARGUMENTS', defaultValue: '', description: ''),
 		bool (name: 'SPECIFIC_COMMIT', defaultValue: false, description: 'Use specific commit')
 	])
 ])
