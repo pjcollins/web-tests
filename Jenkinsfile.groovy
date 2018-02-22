@@ -1,13 +1,17 @@
 #!/bin/groovy
 properties([
 	parameters([
-		choice (name: 'USE_MONO_BRANCH', choices: 'NONE\nCURRENT\n2017-12\n2018-02\nmaster', description: 'Mono branch'),
-		choice (name: 'USE_XI_BRANCH', choices: 'NONE\nCURRENT\nmaster\nd15-6\nmono-2018-02', description: 'XI branch'),
-		choice (name: 'USE_XM_BRANCH', choices: 'NONE\nCURRENT\nmaster\nd15-6\nmono-2018-02', description: 'XM branch'),
-		choice (name: 'USE_XA_BRANCH', choices: 'NONE\nCURRENT\nmaster\nd15-6\nmono-2018-02', description: 'XA branch'),
+		choice (name: 'USE_MONO_BRANCH', choices: 'NONE\nCURRENT\nSPECIFIC\n2017-12\n2018-02\nmaster', description: 'Mono branch'),
+		choice (name: 'USE_XI_BRANCH', choices: 'NONE\nCURRENT\nSPECIFIC\nmaster\nd15-6\nmono-2018-02', description: 'XI branch'),
+		choice (name: 'USE_XM_BRANCH', choices: 'NONE\nCURRENT\nSPECIFIC\nmaster\nd15-6\nmono-2018-02', description: 'XM branch'),
+		choice (name: 'USE_XA_BRANCH', choices: 'NONE\nCURRENT\nSPECIFIC\nmaster\nd15-6\nmono-2018-02', description: 'XA branch'),
 		choice (name: 'IOS_DEVICE_TYPE', choices: 'iPhone-5s', description: ''),
 		choice (name: 'IOS_RUNTIME', choices: 'iOS-10-0\niOS-10-3', description: ''),
-		string (defaultValue: '', description: '', name: 'EXTRA_JENKINS_ARGUMENTS')
+		string (name: 'MONO_COMMIT', defaultValue: '', description: 'Use specific Mono commit')
+		string (name: 'XI_COMMIT', defaultValue: '', description: 'Use specific XI commit')
+		string (name: 'XM_COMMIT', defaultValue: '', description: 'Use specific XM commit')
+		string (name: 'XA_COMMIT', defaultValue: '', description: 'Use specific Android commit')
+		string (name: 'EXTRA_JENKINS_ARGUMENTS', defaultValue: '', description: '')
 	])
 ])
 
@@ -211,6 +215,11 @@ node ('felix-25-sierra') {
                 buildAll ()
             }
             if (enableMono ()) {
+                stage ('console-new') {
+                    runTests ('Console', 'New')
+                }
+			}
+            if (false) {
                 stage ('console-work') {
                     runTests ('Console', 'Work')
                 }
