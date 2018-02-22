@@ -353,10 +353,10 @@ namespace Xamarin.AsyncTests.Console {
 				Directory.CreateDirectory (OutputDirectory);
 
 			if (stdout != null) {
+				var fullPath = Path.Combine ("artifact", stdout);
 				if (JenkinsJobPath != null)
-					JenkinsStdOutLink = Path.Combine (JenkinsJobPath, stdout);
-				else
-					JenkinsStdOutLink = stdout;
+					fullPath = Path.Combine (JenkinsJobPath, fullPath);
+				JenkinsStdOutLink = $"<a href=\"{fullPath}\">{stdout}</a>";
 			}
 
 			StdOut = MakeAbsolute (OutputDirectory, stdout);

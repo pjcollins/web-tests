@@ -133,8 +133,6 @@ def enableXA ()
 
 def runShell (String command)
 {
-    def dir = pwd()
-    echo "SHELL ($dir): $command"
     sh command
 }
 

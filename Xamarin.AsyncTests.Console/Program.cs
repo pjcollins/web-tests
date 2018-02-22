@@ -195,7 +195,7 @@ namespace Xamarin.AsyncTests.Console
 		{
 			if (JenkinsHtml != null) {
 				if (Options.StdOut != null)
-					JenkinsHtml.WriteLine ($"<p>Output: <a href=\"{Options.JenkinsStdOutLink}\">{Options.StdOut}</a>.");
+					JenkinsHtml.WriteLine ($"<p>Output: {Options.JenkinsStdOutLink}.");
 				JenkinsHtml.Flush ();
 				JenkinsHtml.Dispose ();
 			}
