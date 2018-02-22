@@ -89,6 +89,10 @@ def triggerJob ()
 	summaryBadge = null
 	
 	sh "rm -rf artifacts"
+	sh "mkdir -p artifacts"
+	sh "ls -lR artifacts"
+	
+	echo "Copying artifacts."
 	
 	copyArtifacts projectName: 'web-tests-martin4', selector: specific (triggeredId), target: 'artifacts', flatten: true, fingerprintArtifacts: true
 	
@@ -99,19 +103,14 @@ def triggerJob ()
 		rtp nullAction: '1', parserName: 'html', stableText: "\${FILE:$provisionHtml}"
 	}
 	
-	echo "Build status #1: ${currentBuild.result}"
+	echo "Publishing html summaries."
 	
 	def htmlFiles = findFiles (glob: 'artifacts/jenkins-summary-*.html')
 	for (file in htmlFiles) {
-		echo "TEST: $file"
-	}
-	
-	echo "FILE LIST DONE!"
-
-	for (file in htmlFiles) {
-		echo "TEST #1: $file"
 		rtp nullAction: '1', parserName: 'html', stableText: "\${FILE:$file}"
 	}
+	
+	echo "Done publishing html summaries."
 	
 	junit keepLongStdio: true, testResults: "artifacts/*.xml"
 }
