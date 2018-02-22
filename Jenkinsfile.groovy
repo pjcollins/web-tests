@@ -38,6 +38,7 @@ def provision ()
 	def argList = args.join (" ")
 	dir ('web-tests/Tools/AutoProvisionTool') {
 		try {
+			runShell ("mkdir -p out")
 			runShell ("nuget restore AutoProvisionTool.sln")
 			runShell ("msbuild AutoProvisionTool.sln")
 			withCredentials ([string(credentialsId: 'mono-webtests-github-token', variable: 'JENKINS_OAUTH_TOKEN')]) {
