@@ -88,6 +88,8 @@ def triggerJob ()
 	vars = null
 	summaryBadge = null
 	
+	sh "rm -rf artifacts"
+	
 	copyArtifacts projectName: 'web-tests-martin4', selector: specific (triggeredId), target: 'artifacts', flatten: true, fingerprintArtifacts: true
 	
 	sh "ls -lR artifacts"
@@ -110,6 +112,8 @@ def triggerJob ()
 		echo "TEST #1: $file"
 		rtp nullAction: '1', parserName: 'html', stableText: "\${FILE:$file}"
 	}
+	
+	junit keepLongStdio: true, testResults: "artifacts/*.xml"
 }
 
 def slackSend (String color, String message)
