@@ -191,8 +191,6 @@ def runTests (String target, String category, Boolean unstable = false, Integer 
 
 	dir ('web-tests') {
 		def outputDir = target + "/" + category
-//		def outputDirAbs = pwd() + "/" + OUTPUT_DIRECTORY
-//		sh "mkdir -p $outputDirAbs"
 		def resultOutput = "$outputDir/TestResult-${target}-${category}.xml"
 		def junitResultOutput = "$outputDir/JUnitTestResult-${target}-${category}.xml"
         def outputLog = "$outputDir/output-${target}-${category}.log"
@@ -254,11 +252,6 @@ node ('felix-25-sierra') {
                 buildAll ()
             }
             if (enableMono ()) {
-                stage ('console-new') {
-                    runTests ('Console', 'New')
-                }
-			}
-            if (false) {
                 stage ('console-work') {
                     runTests ('Console', 'Work')
                 }
