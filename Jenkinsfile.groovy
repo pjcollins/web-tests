@@ -32,7 +32,7 @@ def getBranchAndCommit (String name, String branch, String commit)
 		return commit
 	}
 	if (commit != '') {
-		return "$branch{{$commit}}"
+		return "$branch{$commit}"
 	}
 	return branch
 }
@@ -81,7 +81,7 @@ def provision ()
 		try {
 			runShell ("mkdir -p $OUTPUT_DIRECTORY")
 			runShell ("nuget restore AutoProvisionTool.sln")
-			runShell ("msbuild AutoProvisionTool.sln")
+			runShell ("msbuild /verbosity:minimal AutoProvisionTool.sln")
 			withCredentials ([string(credentialsId: 'mono-webtests-github-token', variable: 'JENKINS_OAUTH_TOKEN')]) {
 				runShell ("mono --debug ./bin/Debug/AutoProvisionTool.exe $argList provision")
 			}
