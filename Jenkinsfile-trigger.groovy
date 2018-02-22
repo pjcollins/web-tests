@@ -87,6 +87,13 @@ def triggerJob ()
 	summaryBadge = null
 	
 	copyArtifacts projectName: 'web-tests-martin4', selector: specific (triggeredId), target: 'artifacts', fingerprintArtifacts: true
+	
+	def provisionHtml = 'artifacts/provision-output.html'
+	if (fileExists (provisionHtml)) {
+		echo "PROVISION HTML!"
+		rtp nullAction: '1', parserName: 'html', stableText: "\${FILE:provisionHtml}"
+	}
+	
 }
 
 def slackSend ()
