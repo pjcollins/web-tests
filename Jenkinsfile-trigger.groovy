@@ -88,16 +88,20 @@ def triggerJob ()
 	vars = null
 	summaryBadge = null
 	
-	copyArtifacts projectName: 'web-tests-martin4', selector: specific (triggeredId), target: 'artifacts', fingerprintArtifacts: true
+	copyArtifacts projectName: 'web-tests-martin4', selector: specific (triggeredId), target: 'artifacts', flatten: true, fingerprintArtifacts: true
 	
 	sh "ls -lR artifacts"
 	
-	def provisionHtml = 'artifacts/out/provision-output.html'
+	def provisionHtml = 'artifacts/provision-output.html'
 	if (fileExists (provisionHtml)) {
 		rtp nullAction: '1', parserName: 'html', stableText: "\${FILE:$provisionHtml}"
 	}
 	
 	echo "Build status #1: ${currentBuild.result}"
+	
+	def htmlFiles = findFiles (glob: 'artifacts/*.html')
+	echo "TEST: $htmlFiles[0]"
+
 }
 
 def slackSend (String color, String message)
