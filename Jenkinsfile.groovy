@@ -200,12 +200,7 @@ node ('felix-25-sierra') {
             stage ('build') {
                 buildAll ()
             }
-			if (enableMono ()) {
-                stage ('console-new') {
-                    runTests ('Console', 'New')
-                }
-			}
-            if (false) {
+            if (enableMono ()) {
                 stage ('console-work') {
                     runTests ('Console', 'Work')
                 }
