@@ -141,7 +141,7 @@ def runTests (String target, String category, Boolean unstable = false, Integer 
 		def resultOutput = "$outputDirAbs/TestResult-${target}-${category}.xml"
 		def junitResultOutput = "$outputDirAbs/JUnitTestResult-${target}-${category}.xml"
         def outputLog = "$outputDir/output-${target}-${category}.log"
-		def jenkinsHtmlLog = "$outputDir/jenkins-${target}-${category}.html"
+		def jenkinsHtmlLog = "$outputDir/jenkins-summary-${target}-${category}.html"
 		Boolean error = false
 		try {
 			timeout (timeoutValue) {

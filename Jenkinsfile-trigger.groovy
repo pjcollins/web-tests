@@ -99,7 +99,7 @@ def triggerJob ()
 	
 	echo "Build status #1: ${currentBuild.result}"
 	
-	def htmlFiles = findFiles (glob: 'artifacts/*.html')
+	def htmlFiles = findFiles (glob: 'artifacts/jenkins-summary-*.html')
 	for (file in htmlFiles) {
 		echo "TEST: $file"
 	}
