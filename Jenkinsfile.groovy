@@ -141,7 +141,7 @@ def runShell (String command)
 def build (String targets)
 {
 	dir ('web-tests') {
-		runShell ("msbuild Jenkinsfile.targets /t:MultiBuild /p:JenkinsTargets=$targets")
+		runShell ("msbuild /verbosity:minimal Jenkinsfile.targets /t:MultiBuild /p:JenkinsTargets=$targets")
 	}
 }
 
@@ -184,7 +184,7 @@ def run (String target, String testCategory, String outputDir, String resultOutp
 		def extraParamValue = params.EXTRA_JENKINS_ARGUMENTS
 		extraParams = ",JenkinsExtraArguments=\"$extraParamValue\""
 	}
-	runShell ("msbuild Jenkinsfile.targets /t:Run /p:JenkinsTarget=$target,TestCategory=$testCategory,OutputDir=$outputDir,$iosParams,$resultParams,$outputParams$extraParams")
+	runShell ("msbuild /verbosity:minimal Jenkinsfile.targets /t:Run /p:JenkinsTarget=$target,TestCategory=$testCategory,OutputDir=$outputDir,$iosParams,$resultParams,$outputParams$extraParams")
 }
 
 def runTests (String target, String category, Boolean unstable = false, Integer timeoutValue = 15)
