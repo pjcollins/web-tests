@@ -76,6 +76,9 @@ def triggerJob ()
 	def vars = triggeredBuild.getBuildVariables ()
 	currentBuild.description = "${triggeredBuild.displayName} - ${triggeredBuild.description}"
 	
+	def summaryText = "<h2>Downstream build: <a href=\"${triggeredBuild.absoluteUrl}\">${triggeredBuild.displayName}</a></h2><p>${triggeredBuild.description}</p>"
+	rtp nullAction: '1', parserName: 'html', stableText: summaryText
+	
 	def summaryBadge = manager.createSummary ('info.gif')
 	summaryBadge.appendText ("<h2>Downstream build: <a href=\"${triggeredBuild.absoluteUrl}\">${triggeredBuild.displayName}</a></h2>", false)
 	summaryBadge.appendText ("<p>${triggeredBuild.description}</p>", false)
