@@ -100,8 +100,16 @@ def triggerJob ()
 	echo "Build status #1: ${currentBuild.result}"
 	
 	def htmlFiles = findFiles (glob: 'artifacts/*.html')
-	echo "TEST: $htmlFiles[0]"
+	for (file in htmlFiles) {
+		echo "TEST: $file"
+	}
+	
+	echo "FILE LIST DONE!"
 
+	for (file in htmlFiles) {
+		echo "TEST #1: $file"
+		rtp nullAction: '1', parserName: 'html', stableText: "\${FILE:$file}"
+	}
 }
 
 def slackSend (String color, String message)
