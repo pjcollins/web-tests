@@ -91,7 +91,7 @@ def triggerJob ()
 	def provisionHtml = 'artifacts/out/provision-output.html'
 	if (fileExists (provisionHtml)) {
 		echo "PROVISION HTML!"
-		rtp nullAction: '1', parserName: 'html', stableText: "\${FILE:provisionHtml}"
+		rtp nullAction: '1', parserName: 'html', stableText: "\${FILE:$provisionHtml}"
 	}
 	
 }
