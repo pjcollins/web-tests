@@ -79,34 +79,14 @@ def triggerJob ()
 	def summaryBadge = manager.createSummary ('info.gif')
 	summaryBadge.appendText ("<h2>Downstream build: <a href=\"${triggeredBuild.absoluteUrl}\">${triggeredBuild.displayName}</a></h2>", false)
 	summaryBadge.appendText ("<p>${triggeredBuild.description}</p>", false)
-	
-	echo "COPY ARTIFACTS: ${triggeredBuild.id}"
-	def triggeredId = (''+triggeredBuild.id).split('#')[0]
-	echo "COPY ARTIFACTS #1"
 
+	// Unset to avoid a NonSerializableException
+	def triggeredId = (''+triggeredBuild.id).split('#')[0]
 	triggeredBuild = null
 	vars = null
 	summaryBadge = null
 	
-	sh 'pwd'
-	
-	echo "COPY ARTIFACTS #2"
-	
-//    [$class: 'CopyArtifacts', projectName: 'web-tests-martin4', selector: specific (triggeredId), target: 'artifacts', fingerprint: true]
-//	
-//	echo "COPY ARTIFACTS #3"
-//	
-//	sh 'pwd'
-//	sh 'ls -lR'
-	
-//	try {
-//		copyArtifacts projectName: 'web-tests-martin4', selector: specific("${triggeredBuild.id}"), fingerprintArtifacts: true
-//	} catch (exception) {
-//		echo "COPY ARTIFACTS FAILED!"
-//		echo "ERROR: $exception"
-//	}
-
-	copyArtifacts projectName: 'web-tests-martin4', selector: specific (triggeredId), fingerprintArtifacts: true
+	copyArtifacts projectName: 'web-tests-martin4', selector: specific (triggeredId), target: 'artifacts', fingerprintArtifacts: true
 }
 
 def slackSend ()
