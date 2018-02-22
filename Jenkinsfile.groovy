@@ -1,10 +1,10 @@
 #!/bin/groovy
 properties([
 	parameters([
-		choice (name: 'USE_MONO_BRANCH', choices: 'NONE\nCURRENT\nSPECIFIC\n2017-12\n2018-02\nmaster', description: 'Mono branch'),
-		choice (name: 'USE_XI_BRANCH', choices: 'NONE\nCURRENT\nSPECIFIC\nmaster\nd15-6\nmono-2018-02', description: 'XI branch'),
-		choice (name: 'USE_XM_BRANCH', choices: 'NONE\nCURRENT\nSPECIFIC\nmaster\nd15-6\nmono-2018-02', description: 'XM branch'),
-		choice (name: 'USE_XA_BRANCH', choices: 'NONE\nCURRENT\nSPECIFIC\nmaster\nd15-6\nmono-2018-02', description: 'XA branch'),
+		choice (name: 'MONO_BRANCH', choices: 'NONE\nCURRENT\nSPECIFIC\n2017-12\n2018-02\nmaster', description: 'Mono branch'),
+		choice (name: 'XI_BRANCH', choices: 'NONE\nCURRENT\nSPECIFIC\nmaster\nd15-6\nmono-2018-02', description: 'XI branch'),
+		choice (name: 'XM_BRANCH', choices: 'NONE\nCURRENT\nSPECIFIC\nmaster\nd15-6\nmono-2018-02', description: 'XM branch'),
+		choice (name: 'XA_BRANCH', choices: 'NONE\nCURRENT\nSPECIFIC\nmaster\nd15-6\nmono-2018-02', description: 'XA branch'),
 		choice (name: 'IOS_DEVICE_TYPE', choices: 'iPhone-5s', description: ''),
 		choice (name: 'IOS_RUNTIME', choices: 'iOS-10-0\niOS-10-3', description: ''),
 		string (name: 'MONO_COMMIT', defaultValue: '', description: 'Use specific Mono commit')
@@ -12,28 +12,60 @@ properties([
 		string (name: 'XM_COMMIT', defaultValue: '', description: 'Use specific XM commit')
 		string (name: 'XA_COMMIT', defaultValue: '', description: 'Use specific Android commit')
 		string (name: 'EXTRA_JENKINS_ARGUMENTS', defaultValue: '', description: '')
+		bool (name: 'SPECIFIC_COMMIT', defaultValue: false, description: 'Use specific commit')
 	])
 ])
 
 def logParsingRuleFile = ""
 def gitCommitHash = ""
 
+def getBranchAndCommit (String branch, String commit)
+{
+	def branchValue = params.$branch
+	def commitValue = params.$commit
+	if (branchValue == 'NONE' || branchValue == '') {
+		return null
+	}
+	if (branchValue == 'SPECIFIC') {
+		if (commitValue == '') {
+			error "Must set $commit."
+			return null
+		}
+		return commitValue
+	}
+	if (commitValue != '') {
+		return "$branchValue{$commitValue}"
+	}
+	return branchValue
+}
+
 def provision ()
 {
 	final String OUTPUT_DIRECTORY = 'artifacts'
 
 	def args = [ ]
-	if (params.USE_MONO_BRANCH != 'NONE' && params.USE_MONO_BRANCH != '') {
-		args << "--mono=${params.USE_MONO_BRANCH}"
+	def monoBranch = getBranchAndCommit ('MONO_BRANCH', 'MONO_COMMIT')
+	if (monoBranch != null) {
+		args << "--mono=$monoBranch"
 	}
-	if (params.USE_XI_BRANCH != 'NONE' && params.USE_XI_BRANCH != '') {
-		args << "--xi=${params.USE_XI_BRANCH}"
+	
+	def xiBranch = getBranchAndCommit ('XI_BRANCH', 'XI_COMMIT')
+	if (xiBranch != null) {
+		args << "--xi=$xiBranch"
 	}
-	if (params.USE_XM_BRANCH != 'NONE' && params.USE_XM_BRANCH != '') {
-		args << "--xm=${params.USE_XM_BRANCH}"
+	
+	def xmBranch = getBranchAndCommit ('XM_BRANCH', 'XM_COMMIT')
+	if (xmBranch != null) {
+		args << "--xm=$xmBranch"
 	}
-	if (params.USE_XA_BRANCH != 'NONE' && params.USE_XA_BRANCH != '') {
-		args << "--xa=${params.USE_XA_BRANCH}"
+	
+	def xaBranch = getBranchAndCommit ('XA_BRANCH', 'XA_COMMIT')
+	if (xaBranch != null) {
+		args << "--xa=$xaBranch"
+	}
+	
+	if (params.SPECIFIC_COMMIT) {
+		args << "--specific"
 	}
 	
 	def buildPath = new URI (env.BUILD_URL).getPath()
@@ -70,22 +102,22 @@ def provision ()
 
 def enableMono ()
 {
-	return params.USE_MONO_BRANCH != 'NONE' && params.USE_MONO_BRANCH != ''
+	return params.MONO_BRANCH != 'NONE' && params.MONO_BRANCH != ''
 }
 
 def enableXI ()
 {
-	return params.USE_XI_BRANCH != 'NONE' && params.USE_XI_BRANCH != ''
+	return params.XI_BRANCH != 'NONE' && params.XI_BRANCH != ''
 }
 
 def enableXM ()
 {
-	return params.USE_XM_BRANCH != 'NONE' && params.USE_XM_BRANCH != ''
+	return params.XM_BRANCH != 'NONE' && params.XM_BRANCH != ''
 }
 
 def enableXA ()
 {
-	return params.USE_XA_BRANCH != 'NONE' && params.USE_XA_BRANCH != ''
+	return params.XA_BRANCH != 'NONE' && params.XA_BRANCH != ''
 }
 
 def runShell (String command)
