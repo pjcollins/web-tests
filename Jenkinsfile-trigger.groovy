@@ -120,7 +120,7 @@ node ('felix-25-sierra') {
             }
 			stage ('test') {
 				sh 'pwd'
-				sh 'ls -lR'
+				sh 'ls -lR artifacts'
 			}
         }
     } finally {
