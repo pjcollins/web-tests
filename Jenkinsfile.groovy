@@ -29,6 +29,10 @@ def provision ()
 	if (params.USE_XA_BRANCH != 'NONE' && params.USE_XA_BRANCH != '') {
 		args << "--xa=${params.USE_XA_BRANCH}"
 	}
+	
+	def buildPath = new URI (env.BUILD_URL).getPath()
+	echo "BUILD PATH: $buildPath"
+	
 	def summaryFile = "${env.WORKSPACE}/summary.txt"
 	def provisionOutput = "out/provision-output.txt"
 	def provisionHtml = "out/provision-output.html"
@@ -121,7 +125,7 @@ def buildAll ()
 
 def run (String target, String testCategory, String resultOutput, String junitResultOutput, String stdOut, String jenkinsHtml)
 {
-	def buildPath = new URL (env.BUILD_URL).getPath()
+	def buildPath = new URI (env.BUILD_URL).getPath()
 	def iosParams = "IosRuntime=$IOS_RUNTIME,IosDeviceType=$IOS_DEVICE_TYPE"
 	def resultParams = "ResultOutput=$resultOutput,JUnitResultOutput=$junitResultOutput"
 	def outputParams = "StdOut=$stdOut,JenkinsHtml=$jenkinsHtml,JenkinsJob=$buildPath"
