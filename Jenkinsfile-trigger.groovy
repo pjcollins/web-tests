@@ -99,9 +99,9 @@ def triggerJob ()
 	echo "Build status #1: ${currentBuild.result}"
 }
 
-def slackSend (String message)
+def slackSend (String color, String message)
 {
-	slackSend channel: "#martin-jenkins", message: "${env.JOB_NAME} - #${env.BUILD_NUMBER} ${message} (<${env.BUILD_URL}|Open>)"
+	slackSend channel: "#martin-jenkins", color: color, message: "${env.JOB_NAME} - ${currentBuild.displayName} ${message} (<${env.BUILD_URL}|Open>)"
 }
 
 node ('felix-25-sierra') {
@@ -112,9 +112,14 @@ node ('felix-25-sierra') {
 		stage ('build') {
 			try {
 				triggerJob ()
-				slackSend ("${currentBuild.result}")
+				if (currentBuild.result == "SUCCESS") {
+					slackSend ("good", "Success")
+				} else {
+					slackSend ("warning", "${currentBuild.result}")
+					slackSend ("danger", "DANGER: ${currentBuild.result}")
+				}
 			} catch (exception) {
-				slackSend ("ERROR: $exception")
+				slackSend ("danger", "ERROR: $exception")
 			}
 		}
 	}
