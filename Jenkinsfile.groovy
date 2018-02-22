@@ -11,6 +11,8 @@ properties([
 	])
 ])
 
+def OUTPUT_DIRECTORY = "artifacts"
+
 def logParsingRuleFile = ""
 def gitCommitHash = ""
 
@@ -33,32 +35,33 @@ def provision ()
 	def buildPath = new URI (env.BUILD_URL).getPath()
 	env.WEB_TESTS_BUILD_PATH = buildPath
 	
-	def summaryFile = "${env.WORKSPACE}/summary.txt"
-	def provisionOutput = "out/provision-output.txt"
-	def provisionHtml = "out/provision-output.html"
-	args << "--summary=$summaryFile"
-	args << "--out=$provisionOutput"
-	args << "--html=$provisionHtml"
+	def summaryFile = "summary.txt"
+	def provisionOutput = "provision-output.txt"
+	def provisionHtml = "provision-output.html"
+	args << "--summary=$OUTPUT_DIRECTORY/$summaryFile"
+	args << "--out=$OUTPUT_DIRECTORY/$provisionOutput"
+	args << "--html=$OUTPUT_DIRECTORY/$provisionHtml"
 	args << "--jenkins-job=$buildPath"
 	def argList = args.join (" ")
 	dir ('web-tests/Tools/AutoProvisionTool') {
 		try {
-			runShell ("mkdir -p out")
+			runShell ("mkdir -p $OUTPUT_DIRECTORY")
 			runShell ("nuget restore AutoProvisionTool.sln")
 			runShell ("msbuild AutoProvisionTool.sln")
 			withCredentials ([string(credentialsId: 'mono-webtests-github-token', variable: 'JENKINS_OAUTH_TOKEN')]) {
 				runShell ("mono --debug ./bin/Debug/AutoProvisionTool.exe $argList provision")
 			}
 		} finally {
-			archiveArtifacts artifacts: "out/provision-output.*", fingerprint: true, allowEmptyArchive: true
-			rtp nullAction: '1', parserName: 'html', stableText: "\${FILE:$provisionHtml}"
+			dir (OUTPUT_DIRECTORY) {
+				archiveArtifacts artifacts: "provision-output.*", fingerprint: true, allowEmptyArchive: true
+				rtp nullAction: '1', parserName: 'html', stableText: "\${FILE:$provisionHtml}"
+				def summary = readFile summaryFile
+				echo "Setting build summary: $summary"
+				currentBuild.description = summary
+				env.WEB_TESTS_PROVISION_SUMMARY = summary
+			}
 		}
 	}
-	
-	def summary = readFile summaryFile
-	echo "Setting build summary: $summary"
-	currentBuild.description = summary
-	env.WEB_TESTS_PROVISION_SUMMARY = summary
 }
 
 def enableMono ()
@@ -123,7 +126,7 @@ def buildAll ()
 	build (targetList)
 }
 
-def run (String target, String testCategory, String resultOutput, String junitResultOutput, String stdOut, String jenkinsHtml)
+def run (String target, String testCategory, String outputDir, String resultOutput, String junitResultOutput, String stdOut, String jenkinsHtml)
 {
 	def buildPath = new URI (env.BUILD_URL).getPath()
 	def iosParams = "IosRuntime=$IOS_RUNTIME,IosDeviceType=$IOS_DEVICE_TYPE"
@@ -134,23 +137,23 @@ def run (String target, String testCategory, String resultOutput, String junitRe
 		def extraParamValue = params.EXTRA_JENKINS_ARGUMENTS
 		extraParams = ",JenkinsExtraArguments=\"$extraParamValue\""
 	}
-	runShell ("msbuild Jenkinsfile.targets /t:Run /p:JenkinsTarget=$target,TestCategory=$testCategory,$iosParams,$resultParams,$outputParams$extraParams")
+	runShell ("msbuild Jenkinsfile.targets /t:Run /p:JenkinsTarget=$target,TestCategory=$testCategory,OutputDir=$outputDir,$iosParams,$resultParams,$outputParams$extraParams")
 }
 
 def runTests (String target, String category, Boolean unstable = false, Integer timeoutValue = 15)
 {
 	dir ('web-tests') {
-		def outputDir = "out/" + target + "/" + category
-		def outputDirAbs = pwd() + "/" + outputDir
+		def outputDir = target + "/" + category
+		def outputDirAbs = pwd() + "/" + OUTPUT_DIRECTORY + "/" + outputDir
 		sh "mkdir -p $outputDirAbs"
-		def resultOutput = "$outputDirAbs/TestResult-${target}-${category}.xml"
-		def junitResultOutput = "$outputDirAbs/JUnitTestResult-${target}-${category}.xml"
-        def outputLog = "$outputDir/output-${target}-${category}.log"
-		def jenkinsHtmlLog = "$outputDir/jenkins-summary-${target}-${category}.html"
+		def resultOutput = "TestResult-${target}-${category}.xml"
+		def junitResultOutput = "JUnitTestResult-${target}-${category}.xml"
+        def outputLog = "output-${target}-${category}.log"
+		def jenkinsHtmlLog = "jenkins-summary-${target}-${category}.html"
 		Boolean error = false
 		try {
 			timeout (timeoutValue) {
-				run (target, category, resultOutput, junitResultOutput, outputLog, jenkinsHtmlLog)
+				run (target, category, outputDirAbs, resultOutput, junitResultOutput, outputLog, jenkinsHtmlLog)
 			}
 		} catch (exception) {
 			def result = currentBuild.result
@@ -161,14 +164,19 @@ def runTests (String target, String category, Boolean unstable = false, Integer 
 				error = true
 			}
 		} finally {
-			archiveArtifacts artifacts: "$outputDir/*.log", fingerprint: true, allowEmptyArchive: true
-			if (fileExists (jenkinsHtmlLog)) {
-				archiveArtifacts artifacts: "$jenkinsHtmlLog", fingerprint: true, allowEmptyArchive: true
-				rtp nullAction: '1', parserName: 'html', stableText: "\${FILE:$jenkinsHtmlLog}"
-			}
-			if (!error) {
-				junit keepLongStdio: true, testResults: "$outputDir/*.xml"
-				archiveArtifacts artifacts: "$outputDir/*.xml", fingerprint: true
+			dir (OUTPUT_DIRECTORY) {
+				def outputLogPath = outputDir + "/" + outputLog
+				def htmlLogPath = outputDir + "/" + jenkinsHtmlLog
+				if (fileExists (outputLogPath))
+					archiveArtifacts artifacts: outputLogPath, fingerprint: true, allowEmptyArchive: true
+				if (fileExists (htmlLogPath)) {
+					archiveArtifacts artifacts: htmlLogPath, fingerprint: true, allowEmptyArchive: true
+					rtp nullAction: '1', parserName: 'html', stableText: "\${FILE:$htmlLogPath}"
+				}
+				if (!error) {
+					junit keepLongStdio: true, testResults: "$outputDir/*.xml"
+					archiveArtifacts artifacts: "$outputDir/*.xml", fingerprint: true
+				}
 			}
 		}
 	}

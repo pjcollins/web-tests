@@ -116,6 +116,7 @@
 		<RunDependsOn>Build; _PrepareRun</RunDependsOn>
 		<TestCategory Condition="'$(TestCategory)' == ''">All</TestCategory>
 		<ResultOutput Condition="'$(ResultOutput)' == ''">TestResult.xml</ResultOutput>
+		<OutputDirArgument Condition="'$(OutputDir)' != ''">--output-dir=$(OutputDir)</OutputDirArgument>
 		<JUnitResultOutput Condition="'$(JUnitResultOutput)' == ''">JUnitTestResult.xml</JUnitResultOutput>
 		<JenkinsPackageName>$(JenkinsTarget)-$(TestCategory)</JenkinsPackageName>
 		<JenkinsArguments>--jenkins --package-name=$(JenkinsPackageName)</JenkinsArguments>
@@ -127,7 +128,7 @@
 		<IosDeviceTypeArgument Condition="'$(IosDeviceType)' != ''">--ios-device-type=$(IosDeviceType)</IosDeviceTypeArgument>
 		<IosRuntimeArgument Condition="'$(IosRuntime)' != ''">--ios-runtime=$(IosRuntime)</IosRuntimeArgument>
 		<IosArguments Condition="'$(JenkinsPlatform)' == 'IOS'">$(IosDeviceTypeArgument) $(IosRuntimeArgument)</IosArguments>
-		<AsyncTestsArguments>$(JenkinsArguments) $(IosArguments) $(CategoryArguments) $(ResultArguments) $(StdOutArguments) $(JenkinsHtmlArguments) $(JenkinsJobArguments) $(ExtraJenkinsArguments)</AsyncTestsArguments>
+		<AsyncTestsArguments>$(OutputDirArgument) $(JenkinsArguments) $(IosArguments) $(CategoryArguments) $(ResultArguments) $(StdOutArguments) $(JenkinsHtmlArguments) $(JenkinsJobArguments) $(ExtraJenkinsArguments)</AsyncTestsArguments>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(JenkinsPlatform)' == 'Android'">
