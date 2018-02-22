@@ -86,8 +86,17 @@ def triggerJob ()
 	
 	triggeredBuild = null
 	
+	sh 'pwd'
+	ls 'ls -lR'
+	
+	echo "COPY ARTIFACTS #2"
+	
     [$class: 'CopyArtifacts', projectName: 'web-tests-martin4', selector: specific (triggeredId), target: 'artifacts', fingerprint: true]
 	
+	echo "COPY ARTIFACTS #3"
+	
+	sh 'pwd'
+	sh 'ls -lR'
 	
 //	try {
 //		copyArtifacts projectName: 'web-tests-martin4', selector: specific("${triggeredBuild.id}"), fingerprintArtifacts: true
@@ -96,7 +105,7 @@ def triggerJob ()
 //		echo "ERROR: $exception"
 //	}
 
-//	copyArtifacts projectName: 'web-tests-martin4', selector: specific('37'), fingerprintArtifacts: true
+	copyArtifacts projectName: 'web-tests-martin4', selector: lastCompleted(), fingerprintArtifacts: true
 }
 
 def slackSend ()
