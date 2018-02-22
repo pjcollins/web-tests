@@ -206,11 +206,9 @@ namespace Xamarin.AsyncTests.Console
 
 			string GetOutputLink ()
 			{
-				var outputPath = $"artifact/{Options.StdOut}";
-				if (Options.JenkinsJobUri == null)
-					return outputPath;
-				var outputUri = new Uri (Options.JenkinsJobUri, outputPath);
-				return outputUri.AbsoluteUri;
+				if (Options.JenkinsJobPath == null)
+					return $"artifact/{Options.StdOut}";
+				return $"{Options.JenkinsJobPath}/artifact/{Options.StdOut}";
 			}
 		}
 

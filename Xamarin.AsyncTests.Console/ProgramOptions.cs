@@ -154,7 +154,7 @@ namespace Xamarin.AsyncTests.Console {
 			private set;
 		}
 
-		public Uri JenkinsJobUri {
+		public string JenkinsJobPath {
 			get;
 			private set;
 		}
@@ -184,7 +184,6 @@ namespace Xamarin.AsyncTests.Console {
 			string customSettings = null;
 			string sdkRoot = null, iosDeviceType = null, iosRuntime = null;
 			string androidSdkRoot = null;
-			string jenkinsJobUrl = null;
 			int? repeat = null;
 
 			bool debugMode = false;
@@ -227,7 +226,7 @@ namespace Xamarin.AsyncTests.Console {
 			p.Add ("output-dir=", v => outputDir = v);
 			p.Add ("repeat=", v => repeat = int.Parse (v));
 			p.Add ("dont-save-logging", v => dontSaveLogging = true);
-			p.Add ("jenkins-job=", "Jenkins Job Url", v => jenkinsJobUrl = v);
+			p.Add ("jenkins-job=", "Jenkins Job Path", v => JenkinsJobPath = v);
 			var arguments = p.Parse (args);
 
 			PackageName = packageName;
@@ -345,9 +344,6 @@ namespace Xamarin.AsyncTests.Console {
 			}
 
 			OutputDirectory = outputDir;
-
-			if (jenkinsJobUrl != null)
-				JenkinsJobUri = new Uri (jenkinsJobUrl);
 
 			if (!string.IsNullOrEmpty (OutputDirectory) && !Directory.Exists (OutputDirectory))
 				Directory.CreateDirectory (OutputDirectory);

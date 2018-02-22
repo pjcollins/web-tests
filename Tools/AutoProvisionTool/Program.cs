@@ -46,20 +46,19 @@ namespace AutoProvisionTool
 		static TextWriter Output;
 		static string HtmlFile;
 		static string OutputFile;
-		static Uri JenkinsJobUri;
+		static string JenkinsJobPath;
 		static TextWriter HtmlOutput;
 
 		public static void Main (string[] args)
 		{
 			var products = new List<Product> ();
 			string summaryFile = null;
-			string jenkinsJobUrl = null;
 			var p = new OptionSet ();
 			p.Add ("summary=", "Write summary to file", v => summaryFile = v);
 			p.Add ("out=", "Write output to file", v => OutputFile = v);
 			p.Add ("html=", "Write html output to file", v => HtmlFile = v);
 			p.Add ("mono=", "Mono branch", v => products.Add (new MonoProduct (v)));
-			p.Add ("jenkins-job=", "Jenkins Job Url", v => jenkinsJobUrl = v);
+			p.Add ("jenkins-job=", "Jenkins Job Path", v => JenkinsJobPath = v);
 			p.Add ("xi=", "Xamarin.iOS branch", v => products.Add (new IOSProduct (v)));
 			p.Add ("xm=", "Xamarin.Mac branch", v => products.Add (new MacProduct (v)));
 			p.Add ("xa=", "Xamarin.Android branch", v => products.Add (new AndroidProduct (v)));
@@ -71,9 +70,6 @@ namespace AutoProvisionTool
 				Usage (ex.Message);
 				return;
 			}
-
-			if (jenkinsJobUrl != null)
-				JenkinsJobUri = new Uri (jenkinsJobUrl);
 
 			if (args.Length < 1) {
 				Usage ("Missing command.");
@@ -299,14 +295,11 @@ namespace AutoProvisionTool
 				HtmlOutput.Dispose ();
 			}
 
-
 			string GetOutputLink ()
 			{
-				var outputPath = $"artifact/{OutputFile}";
-				if (JenkinsJobUri == null)
-					return outputPath;
-				var outputUri = new Uri (JenkinsJobUri, outputPath);
-				return outputUri.AbsoluteUri;
+				if (JenkinsJobPath == null)
+					return $"artifact/{OutputFile}";
+				return $"{JenkinsJobPath}/artifact/{OutputFile}";
 			}
 		}
 	}
