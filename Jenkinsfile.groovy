@@ -31,7 +31,7 @@ def provision ()
 	}
 	
 	def buildPath = new URI (env.BUILD_URL).getPath()
-	echo "BUILD PATH: $buildPath"
+	env.WEB_TESTS_BUILD_PATH = $buildPath
 	
 	def summaryFile = "${env.WORKSPACE}/summary.txt"
 	def provisionOutput = "out/provision-output.txt"
@@ -39,7 +39,7 @@ def provision ()
 	args << "--summary=$summaryFile"
 	args << "--out=$provisionOutput"
 	args << "--html=$provisionHtml"
-	args << "--jenkins-job=${env.BUILD_URL}"
+	args << "--jenkins-job=$buildPath"
 	def argList = args.join (" ")
 	dir ('web-tests/Tools/AutoProvisionTool') {
 		try {
