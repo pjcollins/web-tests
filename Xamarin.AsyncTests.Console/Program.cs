@@ -195,13 +195,20 @@ namespace Xamarin.AsyncTests.Console
 		{
 			if (JenkinsHtml != null) {
 				if (Options.StdOut != null)
-					JenkinsHtml.WriteLine ($"<p>Output: <a href=\"artifact/{Options.StdOut}\">{Options.StdOut}</a>.");
+					JenkinsHtml.WriteLine ($"<p>Output: <a href=\"{GetOutputLink ()}\">{Options.StdOut}</a>.");
 				JenkinsHtml.Flush ();
 				JenkinsHtml.Dispose ();
 			}
 			if (StdOut != null) {
 				StdOut.Flush ();
 				StdOut.Dispose ();
+			}
+
+			string GetOutputLink ()
+			{
+				if (Options.JenkinsJobUrl == null)
+					return $"artifact/{Options.StdOut}";
+				return $"{Options.JenkinsJobUrl}/artifact/{Options.StdOut}";
 			}
 		}
 
@@ -515,7 +522,7 @@ namespace Xamarin.AsyncTests.Console
 
 			var header = $"Test Suite: {session.App.PackageName ?? session.Name} - {categoryText}";
 			if (JenkinsHtml != null)
-				JenkinsHtml.WriteLine ($"<h3>{header}</h3>");
+				JenkinsHtml.WriteLine ($"<h2>{header}</h2>");
 			LogInfo (header);
 
 			foreach (var line in detailedText)

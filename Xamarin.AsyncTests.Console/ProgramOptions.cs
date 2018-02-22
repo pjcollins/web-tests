@@ -154,6 +154,11 @@ namespace Xamarin.AsyncTests.Console {
 			private set;
 		}
 
+		public string JenkinsJobUrl {
+			get;
+			private set;
+		}
+
 		public IList<string> Arguments {
 			get;
 		}
@@ -179,6 +184,7 @@ namespace Xamarin.AsyncTests.Console {
 			string customSettings = null;
 			string sdkRoot = null, iosDeviceType = null, iosRuntime = null;
 			string androidSdkRoot = null;
+			string jenkinsJobUrl = null;
 			int? repeat = null;
 
 			bool debugMode = false;
@@ -221,6 +227,7 @@ namespace Xamarin.AsyncTests.Console {
 			p.Add ("output-dir=", v => outputDir = v);
 			p.Add ("repeat=", v => repeat = int.Parse (v));
 			p.Add ("dont-save-logging", v => dontSaveLogging = true);
+			p.Add ("jenkins-job=", "Jenkins Job Url", v => JenkinsJobUrl = v);
 			var arguments = p.Parse (args);
 
 			PackageName = packageName;
@@ -338,6 +345,7 @@ namespace Xamarin.AsyncTests.Console {
 			}
 
 			OutputDirectory = outputDir;
+			JenkinsJobUrl = jenkinsJobUrl;
 
 			if (!string.IsNullOrEmpty (OutputDirectory) && !Directory.Exists (OutputDirectory))
 				Directory.CreateDirectory (OutputDirectory);
