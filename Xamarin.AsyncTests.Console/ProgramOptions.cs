@@ -504,9 +504,16 @@ namespace Xamarin.AsyncTests.Console {
 
 		static string MakeAbsolute (string directory, string file)
 		{
+			string fullName;
 			if (string.IsNullOrEmpty (directory) || string.IsNullOrEmpty (file) || Path.IsPathRooted (file))
-				return file;
-			return Path.Combine (directory, file);
+				fullName = file;
+			else
+				fullName = Path.Combine (directory, file);
+
+			var fullDir = Path.GetDirectoryName (fullName);
+			if (!string.IsNullOrEmpty (fullDir) && !Directory.Exists (fullDir))
+				Directory.CreateDirectory (fullDir);
+			return fullName;
 		}
 
 		static void ParseSettings (SettingsBag settings, string arg)
