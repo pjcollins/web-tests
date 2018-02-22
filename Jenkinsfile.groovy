@@ -11,7 +11,7 @@ properties([
 	])
 ])
 
-def OUTPUT_DIRECTORY = "artifacts"
+@Field final String OUTPUT_DIRECTORY = 'artifacts'
 
 def logParsingRuleFile = ""
 def gitCommitHash = ""
