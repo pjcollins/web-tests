@@ -63,6 +63,7 @@ namespace AutoProvisionTool
 		{
 			var products = new List<Product> ();
 			string summaryFile = null;
+			int? maxFallback = null;
 			var p = new OptionSet ();
 			p.Add ("summary=", "Write summary to file", v => summaryFile = v);
 			p.Add ("out=", "Write output to file", v => OutputFile = v);
@@ -73,13 +74,19 @@ namespace AutoProvisionTool
 			p.Add ("xm=", "Xamarin.Mac branch", v => products.Add (new MacProduct (v)));
 			p.Add ("xa=", "Xamarin.Android branch", v => products.Add (new AndroidProduct (v)));
 			p.Add ("specific", "Use this specific commit", v => SpecificCommit = true);
-			p.Add ("max-fallback=", "Maximum number of fallback commits to try", v => MaxFallback = int.Parse (v));
+			p.Add ("max-fallback=", "Maximum number of fallback commits to try", v => maxFallback = int.Parse (v));
 
 			if (SpecificCommit)
 				MaxFallback = 0;
-			if (MaxFallback <= 0) {
-				SpecificCommit = true;
-				MaxFallback = 0;
+			else if (maxFallback != null) {
+				if (maxFallback.Value <= 0) {
+					SpecificCommit = true;
+					MaxFallback = 0;
+				} else {
+					MaxFallback = maxFallback.Value;
+				}
+			} else {
+				MaxFallback = 25;
 			}
 
 			List<string> arguments;
