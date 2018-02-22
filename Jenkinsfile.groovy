@@ -32,7 +32,7 @@ def getBranchAndCommit (String name, String branch, String commit)
 		return commit
 	}
 	if (commit != '') {
-		return "$branch{$commit}"
+		return "$branch@{$commit}"
 	}
 	return branch
 }
