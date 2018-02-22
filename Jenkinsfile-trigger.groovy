@@ -108,10 +108,10 @@ node ('felix-25-sierra') {
 				slackSend ()
 				triggerJob ()
             }
-//			stage ('test') {
-//				sh 'pwd'
-//				sh 'ls -lR'
-//			}
+			stage ('test') {
+				sh 'pwd'
+				sh 'ls -lR'
+			}
         }
     } finally {
         stage ('parse-logs') {
