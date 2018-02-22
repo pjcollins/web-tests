@@ -49,6 +49,16 @@ namespace AutoProvisionTool
 		static string JenkinsJobPath;
 		static TextWriter HtmlOutput;
 
+		internal static bool SpecificCommit {
+			get;
+			private set;
+		}
+
+		internal static int MaxFallback {
+			get;
+			private set;
+		}
+
 		public static void Main (string[] args)
 		{
 			var products = new List<Product> ();
@@ -62,6 +72,15 @@ namespace AutoProvisionTool
 			p.Add ("xi=", "Xamarin.iOS branch", v => products.Add (new IOSProduct (v)));
 			p.Add ("xm=", "Xamarin.Mac branch", v => products.Add (new MacProduct (v)));
 			p.Add ("xa=", "Xamarin.Android branch", v => products.Add (new AndroidProduct (v)));
+			p.Add ("specific", "Use this specific commit", v => SpecificCommit = true);
+			p.Add ("max-fallback=", "Maximum number of fallback commits to try", v => MaxFallback = int.Parse (v));
+
+			if (SpecificCommit)
+				MaxFallback = 0;
+			if (MaxFallback <= 0) {
+				SpecificCommit = true;
+				MaxFallback = 0;
+			}
 
 			List<string> arguments;
 			try {

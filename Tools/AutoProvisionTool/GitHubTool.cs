@@ -67,7 +67,7 @@ namespace AutoProvisionTool
 		public async Task<Package> GetLatestCommit (Product product, Func<CombinedCommitStatus,CommitStatus> filter)
 		{
 			Program.Log ($"Getting latest commit from {Owner}/{Name}:{Branch}");
-			for (int goBack = 0; goBack < 25; goBack++) {
+			for (int goBack = 0; goBack < Program.MaxFallback+1; goBack++) {
 				var commit = goBack == 0 ? Branch : $"{Branch}~{goBack}";
 				Program.Log ($"Trying {commit}");
 				var combined = await client.Repository.Status.GetCombined (
