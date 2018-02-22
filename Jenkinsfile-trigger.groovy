@@ -106,7 +106,7 @@ def triggerJob ()
 //		echo "ERROR: $exception"
 //	}
 
-	copyArtifacts projectName: 'web-tests-martin4', selector: lastCompleted(), fingerprintArtifacts: true
+	copyArtifacts projectName: 'web-tests-martin4', selector: specific (triggeredId), fingerprintArtifacts: true
 }
 
 def slackSend ()
