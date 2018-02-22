@@ -19,25 +19,22 @@ properties([
 def logParsingRuleFile = ""
 def gitCommitHash = ""
 
-def getBranchAndCommit (String branch, String commit)
+def getBranchAndCommit (String name, String branch, String commit)
 {
-	def branchValue = "${params.$branch}"
-	def commitValue = "${params.$commit}"
-	echo "TEST: $branch $commit $branchValue $commitValue"
-	if (branchValue == 'NONE' || branchValue == '') {
+	if (branch == 'NONE' || branch == '' || branch == null) {
 		return null
 	}
-	if (branchValue == 'SPECIFIC') {
-		if (commitValue == '') {
-			error "Must set $commit."
+	if (branch == 'SPECIFIC') {
+		if (commit == '') {
+			error "Must set $name commit."
 			return null
 		}
-		return commitValue
+		return commit
 	}
-	if (commitValue != '') {
-		return "$branchValue{$commitValue}"
+	if (commit != '') {
+		return "$branch\{$commit\}"
 	}
-	return branchValue
+	return branch
 }
 
 def provision ()
@@ -45,22 +42,22 @@ def provision ()
 	final String OUTPUT_DIRECTORY = 'artifacts'
 
 	def args = [ ]
-	def monoBranch = getBranchAndCommit ('MONO_BRANCH', 'MONO_COMMIT')
+	def monoBranch = getBranchAndCommit ('Mono', params.MONO_BRANCH, params.MONO_COMMIT)
 	if (monoBranch != null) {
 		args << "--mono=$monoBranch"
 	}
 	
-	def xiBranch = getBranchAndCommit ('XI_BRANCH', 'XI_COMMIT')
+	def xiBranch = getBranchAndCommit ('XI', params.XI_BRANCH, params.XI_COMMIT)
 	if (xiBranch != null) {
 		args << "--xi=$xiBranch"
 	}
 	
-	def xmBranch = getBranchAndCommit ('XM_BRANCH', 'XM_COMMIT')
+	def xmBranch = getBranchAndCommit ('XM', params.XM_BRANCH, params.XM_COMMIT)
 	if (xmBranch != null) {
 		args << "--xm=$xmBranch"
 	}
 	
-	def xaBranch = getBranchAndCommit ('XA_BRANCH', 'XA_COMMIT')
+	def xaBranch = getBranchAndCommit ('XA', params.XA_BRANCH, params.XA_COMMIT)
 	if (xaBranch != null) {
 		args << "--xa=$xaBranch"
 	}
