@@ -90,9 +90,10 @@ def triggerJob ()
 	
 	copyArtifacts projectName: 'web-tests-martin4', selector: specific (triggeredId), target: 'artifacts', fingerprintArtifacts: true
 	
+	sh "ls -lR artifacts"
+	
 	def provisionHtml = 'artifacts/out/provision-output.html'
 	if (fileExists (provisionHtml)) {
-		echo "PROVISION HTML!"
 		rtp nullAction: '1', parserName: 'html', stableText: "\${FILE:$provisionHtml}"
 	}
 	
@@ -115,8 +116,7 @@ node ('felix-25-sierra') {
 				if (currentBuild.result == "SUCCESS") {
 					slackSend ("good", "Success")
 				} else {
-					slackSend ("warning", "${currentBuild.result}")
-					slackSend ("danger", "DANGER: ${currentBuild.result}")
+					slackSend ("danger", "${currentBuild.result}")
 				}
 			} catch (exception) {
 				slackSend ("danger", "ERROR: $exception")
