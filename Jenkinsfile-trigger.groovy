@@ -72,6 +72,7 @@ def triggerJob ()
 		string (name: 'EXTRA_JENKINS_ARGUMENTS', value: EXTRA_JENKINS_ARGUMENTS),
 	], wait: true, propagate: false
 	currentBuild.result = triggeredBuild.result
+	echo "Build status: ${currentBuild.result}"
 	
 	def vars = triggeredBuild.getBuildVariables ()
 	currentBuild.description = "${triggeredBuild.displayName} - ${triggeredBuild.description}"
@@ -96,6 +97,7 @@ def triggerJob ()
 		rtp nullAction: '1', parserName: 'html', stableText: "\${FILE:$provisionHtml}"
 	}
 	
+	echo "Build status #1: ${currentBuild.result}"
 }
 
 def slackSend ()
