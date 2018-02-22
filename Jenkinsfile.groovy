@@ -21,8 +21,8 @@ def gitCommitHash = ""
 
 def getBranchAndCommit (String branch, String commit)
 {
-	def branchValue = params.$branch
-	def commitValue = params.$commit
+	def branchValue = "${params.$branch}"
+	def commitValue = "${params.$commit}"
 	echo "TEST: $branch $commit $branchValue $commitValue"
 	if (branchValue == 'NONE' || branchValue == '') {
 		return null
