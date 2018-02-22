@@ -11,13 +11,13 @@ properties([
 	])
 ])
 
-@Field final String OUTPUT_DIRECTORY = 'artifacts'
-
 def logParsingRuleFile = ""
 def gitCommitHash = ""
 
 def provision ()
 {
+	final String OUTPUT_DIRECTORY = 'artifacts'
+
 	def args = [ ]
 	if (params.USE_MONO_BRANCH != 'NONE' && params.USE_MONO_BRANCH != '') {
 		args << "--mono=${params.USE_MONO_BRANCH}"
@@ -142,6 +142,8 @@ def run (String target, String testCategory, String outputDir, String resultOutp
 
 def runTests (String target, String category, Boolean unstable = false, Integer timeoutValue = 15)
 {
+	final String OUTPUT_DIRECTORY = 'artifacts'
+
 	dir ('web-tests') {
 		def outputDir = target + "/" + category
 		def outputDirAbs = pwd() + "/" + OUTPUT_DIRECTORY + "/" + outputDir
