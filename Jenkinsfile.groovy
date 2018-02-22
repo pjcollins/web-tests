@@ -31,7 +31,7 @@ def provision ()
 	}
 	
 	def buildPath = new URI (env.BUILD_URL).getPath()
-	env.WEB_TESTS_BUILD_PATH = $buildPath
+	env.WEB_TESTS_BUILD_PATH = buildPath
 	
 	def summaryFile = "${env.WORKSPACE}/summary.txt"
 	def provisionOutput = "out/provision-output.txt"
