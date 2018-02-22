@@ -30,8 +30,8 @@ def provision ()
 		args << "--xa=${params.USE_XA_BRANCH}"
 	}
 	def summaryFile = "${env.WORKSPACE}/summary.txt"
-	def provisionOutput = "provision-output.txt"
-	def provisionHtml = "provision-output.html"
+	def provisionOutput = "out/provision-output.txt"
+	def provisionHtml = "out/provision-output.html"
 	args << "--summary=$summaryFile"
 	args << "--out=$provisionOutput"
 	args << "--html=$provisionHtml"
@@ -44,7 +44,7 @@ def provision ()
 				runShell ("mono --debug ./bin/Debug/AutoProvisionTool.exe $argList provision")
 			}
 		} finally {
-			archiveArtifacts artifacts: provisionOutput, fingerprint: true, allowEmptyArchive: true
+			archiveArtifacts artifacts: "out/provision-output.*", fingerprint: true, allowEmptyArchive: true
 			rtp nullAction: '1', parserName: 'html', stableText: "\${FILE:$provisionHtml}"
 		}
 	}
