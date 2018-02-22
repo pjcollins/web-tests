@@ -83,20 +83,21 @@ def triggerJob ()
 	echo "COPY ARTIFACTS: ${triggeredBuild.id}"
 	def triggeredId = (''+triggeredBuild.id).split('#')[0]
 	echo "COPY ARTIFACTS #1"
-	
+
 	triggeredBuild = null
+	vars = null
+	summaryBadge = null
 	
 	sh 'pwd'
-	ls 'ls -lR'
 	
 	echo "COPY ARTIFACTS #2"
 	
-    [$class: 'CopyArtifacts', projectName: 'web-tests-martin4', selector: specific (triggeredId), target: 'artifacts', fingerprint: true]
-	
-	echo "COPY ARTIFACTS #3"
-	
-	sh 'pwd'
-	sh 'ls -lR'
+//    [$class: 'CopyArtifacts', projectName: 'web-tests-martin4', selector: specific (triggeredId), target: 'artifacts', fingerprint: true]
+//	
+//	echo "COPY ARTIFACTS #3"
+//	
+//	sh 'pwd'
+//	sh 'ls -lR'
 	
 //	try {
 //		copyArtifacts projectName: 'web-tests-martin4', selector: specific("${triggeredBuild.id}"), fingerprintArtifacts: true
@@ -119,18 +120,18 @@ node ('felix-25-sierra') {
             stage ('initialize') {
 				profileSetup ()
 			}
-			stage ('before') {
-				sh 'pwd'
-				sh 'ls -lR'
-			}
+//			stage ('before') {
+//				sh 'pwd'
+//				sh 'ls -lR'
+//			}
             stage ('build') {
 				slackSend ()
 				triggerJob ()
             }
-			stage ('test') {
-				sh 'pwd'
-				sh 'ls -lR'
-			}
+//			stage ('test') {
+//				sh 'pwd'
+//				sh 'ls -lR'
+//			}
         }
     } finally {
         stage ('parse-logs') {
