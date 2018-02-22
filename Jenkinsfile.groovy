@@ -12,7 +12,7 @@ properties([
 		string (name: 'XM_COMMIT', defaultValue: '', description: 'Use specific XM commit'),
 		string (name: 'XA_COMMIT', defaultValue: '', description: 'Use specific Android commit'),
 		string (name: 'EXTRA_JENKINS_ARGUMENTS', defaultValue: '', description: ''),
-		boolean (name: 'SPECIFIC_COMMIT', defaultValue: false, description: 'Use specific commit')
+		booleanParam (name: 'SPECIFIC_COMMIT', defaultValue: false, description: 'Use specific commit')
 	])
 ])
 
